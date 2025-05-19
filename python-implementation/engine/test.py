@@ -29,7 +29,9 @@ def main():
     assert lines[0].startswith(
         "8| r n b q k b n r"
     ), f"Back rank line mismatch: {lines[0]!r}"
-    assert lines[-2] == " |----------------", f"Separator line mismatch: {lines[-2]!r}"
+    assert (
+        lines[-2] == " |----------------"
+    ), f"Separator line mismatch: {lines[-2]!r}"
     assert (
         lines[-1].strip() == "a b c d e f g h"
     ), f"File labels mismatch: {lines[-1]!r}"
@@ -81,6 +83,36 @@ def main():
     b[(2, 7)] = b[(2, 1)] = Board.EMPTY
     b.make_move((2, 2), (2, 1), promo="N")
     assert_equal(b[(2, 1)], "N", "Black promotion to N on b1")
+
+    # 7) Knight on empty board (d4)
+    b = Board()  # fresh empty board
+    b[(4, 4)] = "N"  # place a white knight on d4
+    k_moves = moves.knight_moves(b, "white")
+    # Should have 8 jumps from the center
+    assert_equal(len(k_moves), 8, "Knight at d4 should have 8 moves")
+    # Spot‐check one of them: d4→e6
+    assert ((4, 4), (5, 6), None) in k_moves, "Missing jump d4→e6"
+
+    # 8) Knights in standard starting position
+    b = Board()
+    b.init_positions()
+    w_knights = moves.knight_moves(b, "white")
+    # b1 should have exactly two: a3 and c3
+    assert ((2, 1), (1, 3), None) in w_knights, "b1→a3 missing"
+    assert ((2, 1), (3, 3), None) in w_knights, "b1→c3 missing"
+    assert_equal(
+        len([m for m in w_knights if m[0] == (2, 1)]),
+        2,
+        "b1 should have 2 moves",
+    )
+    # g1 should also have exactly two: f3 and h3
+    assert ((7, 1), (6, 3), None) in w_knights, "g1→f3 missing"
+    assert ((7, 1), (8, 3), None) in w_knights, "g1→h3 missing"
+    assert_equal(
+        len([m for m in w_knights if m[0] == (7, 1)]),
+        2,
+        "g1 should have 2 moves",
+    )
 
     print("✔️ All tests passed!")
 

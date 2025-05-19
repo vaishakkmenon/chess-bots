@@ -25,6 +25,17 @@ class Board:
         "BK": "k",
     }
 
+    KNIGHT_OFFSETS = [
+        (2, 1),
+        (2, -1),
+        (-2, 1),
+        (-2, -1),
+        (1, 2),
+        (1, -2),
+        (-1, 2),
+        (-1, -2),
+    ]
+
     def __init__(self):
         self.squares = [
             [self.EMPTY for _ in range(self.FILES)] for _ in range(self.RANKS)
