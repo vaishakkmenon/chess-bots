@@ -2,9 +2,27 @@
 from board import Board
 
 
+def check_bounds(f, r):
+    return 1 <= f <= 8 and 1 <= r <= 8
+
+
 def pawn_moves(
     board: Board, color: str
-) -> list[tuple[tuple[int, int], tuple[int, int]]]:
+) -> list[tuple[tuple[int, int], tuple[int, int], str | None]]:
+    """Function to calculate all possible pawn moves
+    Returns list of moves that include from, to, and promotion or not"""
+
+    # Promotion Logic in function scope to keep pawn logic centralized
+    def append_pawn_move(frm, to, promo_flag=None):
+        """Helper to append either a normal move or the four promotions."""
+        _, r2 = to
+        if promo_flag is None and (
+            r2 == Board.WHITE_PROMOTE_RANK or r2 == Board.BLACK_PROMOTE_RANK
+        ):
+            for piece in ("Q", "R", "B", "N"):
+                moves.append((frm, to, piece))
+        else:
+            moves.append((frm, to, promo_flag))
 
     # list to store moves
     moves = []
@@ -30,20 +48,25 @@ def pawn_moves(
             if board[file, rank] == pawn_char:
                 # Append single move forward
                 first_target = newFile, newRank = file, rank + move
-                if 1 <= newRank <= 8 and board[newFile, newRank] == empty:
-                    moves.append(((file, rank), first_target))
+
+                on_board = check_bounds(newFile, newRank)
+                is_empty = board[newFile, newRank] == empty
+
+                if on_board and is_empty:
+                    append_pawn_move((file, rank), first_target)
 
                 # Append double move forward
                 if rank == start_rank:
-                    double_move = finalFile, finalRank = file, rank + move * 2
+                    mid_f, mid_r = file, rank + move
+                    double_move = end_f, end_r = file, rank + 2 * move
                     # Check if rank is valid
                     # Check one move and two moves is empty
                     if (
-                        1 <= finalRank <= 8
-                        and board[newFile, newRank] == empty
-                        and board[finalFile, finalRank] == empty
+                        check_bounds(end_f, end_r)
+                        and board[mid_f, mid_r] == empty
+                        and board[end_f, end_r] == empty
                     ):
-                        moves.append(((file, rank), double_move))
+                        append_pawn_move((file, rank), double_move)
 
                 # Calculate capture squares
                 # Move is reused to calculate the rank
@@ -54,24 +77,22 @@ def pawn_moves(
                 # Ensure files and ranks are within the board dimensions
                 # Ensure the square has a piece to capture
                 if (
-                    1 <= leftFile <= 8
-                    and 1 <= leftRank <= 8
+                    check_bounds(leftFile, leftRank)
                     and board[leftFile, leftRank] != empty
                     and board[leftFile, leftRank] != pawn_char
                 ):
-                    moves.append(((file, rank), left_cap))
+                    append_pawn_move((file, rank), left_cap)
                 if (
-                    1 <= rightFile <= 8
-                    and 1 <= rightRank <= 8
+                    check_bounds(rightFile, rightRank)
                     and board[rightFile, rightRank] != empty
                     and board[rightFile, rightRank] != pawn_char
                 ):
-                    moves.append(((file, rank), right_cap))
+                    append_pawn_move((file, rank), right_cap)
 
                 # En-Passant Logic
                 en_passant = board.en_passant_target
                 if en_passant:
                     ep_file, ep_rank = en_passant
                     if ep_rank == rank + move and abs(ep_file - file) == 1:
-                        moves.append(((file, rank), (ep_file, ep_rank)))
+                        append_pawn_move((file, rank), (ep_file, ep_rank))
     return moves

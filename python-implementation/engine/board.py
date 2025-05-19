@@ -68,6 +68,7 @@ class Board:
         self,
         from_sq: tuple[int, int],
         to_sq: tuple[int, int],
+        promo: str | None = None,
     ) -> None:
 
         from_f, from_r = from_sq
@@ -83,7 +84,11 @@ class Board:
 
         # Move piece that is capturing
         piece = self[from_sq]
-        self[to_sq] = piece
+        if promo:
+            assert piece.upper() == "P", "Promotion piece is not a pawn!"
+            self[to_sq] = promo
+        else:
+            self[to_sq] = piece
         self[from_sq] = self.EMPTY
 
         # Check if piece being moved is a pawn and update state
