@@ -3,6 +3,12 @@
 
 class Board:
 
+    RANKS = 8
+    FILES = 8
+
+    WHITE_PROMOTE_RANK = 8
+    BLACK_PROMOTE_RANK = 1
+
     EMPTY = "."
     PIECES = {
         "WP": "P",
@@ -18,9 +24,6 @@ class Board:
         "BQ": "q",
         "BK": "k",
     }
-
-    RANKS = 8
-    FILES = 8
 
     def __init__(self):
         self.squares = [
@@ -70,14 +73,24 @@ class Board:
         from_f, from_r = from_sq
         to_f, to_r = to_sq
 
-        if abs(to_r - from_r) == 2:
-            self.en_passant_target = self.en_passant_target = (
+        # Remove piece that is being captured
+        ep = self.en_passant_target
+        if ep is not None and to_sq == ep:
+            pawn = self[from_sq]
+            direction = 1 if pawn.isupper() else -1
+            remove_rank = to_r - direction
+            self[(to_f, remove_rank)] = self.EMPTY
+
+        # Move piece that is capturing
+        piece = self[from_sq]
+        self[to_sq] = piece
+        self[from_sq] = self.EMPTY
+
+        # Check if piece being moved is a pawn and update state
+        if piece.upper() == "P" and abs(to_r - from_r) == 2:
+            self.en_passant_target = (
                 from_f,
                 (to_r + from_r) // 2,
             )
         else:
             self.en_passant_target = None
-
-        piece = self[from_sq]
-        self[to_sq] = piece
-        self[from_sq] = self.EMPTY
