@@ -5,12 +5,13 @@ from .offsets import (
     ROOK_OFFSETS,
     QUEEN_OFFSETS,
 )
-from .moves import pawn_moves, knight_moves, all_moves
+from .moves import pawn_moves, knight_moves, bishop_moves, all_moves
 
 __all__ = [
     "Board",
     "pawn_moves",
     "knight_moves",
+    "bishop_moves",
     "all_moves",
     "KNIGHT_OFFSETS",
     "BISHOP_OFFSETS",

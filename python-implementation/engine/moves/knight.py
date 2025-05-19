@@ -13,10 +13,8 @@ def knight_moves(
     moves = []
     if color == "white":
         knight_char = "N"
-        # start_rank = 1
     else:
         knight_char = "n"
-        # start_rank = 8
 
     for file in range(1, 9):
         for rank in range(1, 9):
