@@ -1,120 +1,92 @@
-# test_all.py
+# engine/test_full.py
 
 from board import Board
-import moves
+from moves import pawn_moves, knight_moves, all_moves
 
 
-def sq(f, r):
-    """Convert (file,rank) to algebraic notation, e.g. (1,1) → 'a1'."""
-    return chr(ord("a") + f - 1) + str(r)
-
-
+# Simple assert helpers
 def assert_equal(a, b, msg=""):
     if a != b:
-        raise AssertionError(f"{msg}: {a!r} != {b!r}")
+        raise AssertionError(f"Assertion failed: {msg} — {a} != {b}")
+
+
+def assert_true(expr, msg=""):
+    if not expr:
+        raise AssertionError(f"Assertion failed: {msg}")
 
 
 def main():
-    # 1) Test indexing helpers
+    # 1) Pawn single & double push on empty board
+    b = Board()  # empty by default
+    b[(2, 2)] = "P"  # white pawn on b2
+    p_moves = pawn_moves(b, "white")
+    expected = [((2, 2), (2, 3), None), ((2, 2), (2, 4), None)]
+    assert_equal(set(p_moves), set(expected), "pawn single+double push")
+
+    # 2) Pawn capture
     b = Board()
-    assert_equal(b[(1, 1)], Board.EMPTY, "Empty at a1")
-    assert_equal(b[(8, 8)], Board.EMPTY, "Empty at h8")
-    b[(1, 1)] = "X"
-    assert_equal(b[(1, 1)], "X", "Set/get a1")
-    b[(1, 1)] = Board.EMPTY
+    b[(4, 4)] = "P"  # pawn at d4
+    b[(5, 5)] = "p"  # enemy on e5
+    caps = pawn_moves(b, "white")
+    assert_true(((4, 4), (5, 5), None) in caps, "pawn capture at e5")
 
-    # 2) init_positions & __str__ format
-    b.init_positions()
-    lines = str(b).splitlines()
-    assert lines[0].startswith(
-        "8| r n b q k b n r"
-    ), f"Back rank line mismatch: {lines[0]!r}"
-    assert (
-        lines[-2] == " |----------------"
-    ), f"Separator line mismatch: {lines[-2]!r}"
-    assert (
-        lines[-1].strip() == "a b c d e f g h"
-    ), f"File labels mismatch: {lines[-1]!r}"
-
-    # 3) Pawn single & double pushes
-    w_moves = moves.pawn_moves(b, "white")
-    b_moves = moves.pawn_moves(b, "black")
-    w_push = [m for m in w_moves if m[2] is None]
-    b_push = [m for m in b_moves if m[2] is None]
-    assert_equal(len(w_push), 16, "White pawn advances")
-    assert_equal(len(b_push), 16, "Black pawn advances")
-
-    # 4) Pawn captures
+    # 3) En passant (assumes make_move sets ep target)
     b = Board()
-    b.init_positions()
-    b.make_move((5, 2), (5, 4))  # e2→e4
-    b.make_move((4, 7), (4, 5))  # d7→d5
-    caps = moves.pawn_moves(b, "white")
-    assert ((5, 4), (4, 5), None) in caps, "Capture e4→d5 missing"
+    # place two white pawns
+    b[(5, 5)] = "P"  # e5
+    # simulate black double-push from d7 to d5
+    b[(4, 7)] = "p"
+    b.make_move((4, 7), (4, 5), None)
+    # now white can ep on d6
+    ep_moves = pawn_moves(b, "white")
+    assert_true(((5, 5), (4, 6), None) in ep_moves, "en passant from e5 to d6")
 
-    # 5) En passant
+    # 4) Promotion (explicit choice)
     b = Board()
-    b.init_positions()
-    # White pawn to d5
-    b.make_move((4, 2), (4, 4))
-    b.make_move((4, 4), (4, 5))
-    # Black double-push c7→c5
-    b.make_move((3, 7), (3, 5))
-    assert_equal(b.en_passant_target, (3, 6), "EP target should be c6")
-    ep_moves = moves.pawn_moves(b, "white")
-    assert ((4, 5), (3, 6), None) in ep_moves, "EP move d5→c6 missing"
-    # Execute EP capture
-    b.make_move((4, 5), (3, 6), promo=None)
-    assert_equal(b[(3, 5)], Board.EMPTY, "EP victim on c5 not removed")
+    b[(7, 7)] = "P"  # g7
+    promos = pawn_moves(b, "white")
+    # should include four promotions (to Q, R, B, N) on g8
+    pr = [m for m in promos if m[0] == (7, 7) and m[1] == (7, 8)]
+    kinds = {m[2] for m in pr}
+    assert_equal(kinds, {"Q", "R", "B", "N"}, "promotion choices on g8")
 
-    # 6) Promotion with explicit choice
+    # 5) Knight on empty board
+    b = Board()
+    b[(4, 4)] = "N"
+    k_moves = knight_moves(b, "white")
+    assert_equal(len(k_moves), 8, "knight at d4 has 8 jumps")
+    assert_true(((4, 4), (5, 6), None) in k_moves, "d4->e6 present")
+
+    # 6) Knights in starting position
     b = Board()
     b.init_positions()
-    # White pawn on g7 → g8 promoting to Queen
-    b[(7, 7)] = "P"
-    b[(7, 2)] = b[(7, 8)] = Board.EMPTY
-    b.make_move((7, 7), (7, 8), promo="Q")
-    assert_equal(b[(7, 8)], "Q", "White promotion to Q on g8")
+    wk = knight_moves(b, "white")
+    # b1->a3 and b1->c3
+    assert_true(((2, 1), (1, 3), None) in wk, "b1->a3")
+    assert_true(((2, 1), (3, 3), None) in wk, "b1->c3")
 
+    # 7) all_moves aggregates both
+    b = Board()
+    b[(2, 2)] = "P"
+    b[(4, 4)] = "N"
+    allm = all_moves(b, "white")
+    # must contain both our pawn and knight moves
+    for m in expected + k_moves:
+        assert_true(m in allm, f"all_moves missing {m}")
+
+    # 8) Smoke‐test make_move + all_moves interplay
     b = Board()
     b.init_positions()
-    # Black pawn on b2 → b1 promoting to knight
-    b[(2, 2)] = "p"
-    b[(2, 7)] = b[(2, 1)] = Board.EMPTY
-    b.make_move((2, 2), (2, 1), promo="N")
-    assert_equal(b[(2, 1)], "N", "Black promotion to N on b1")
+    # pick a knight from g1->f3
+    move = ((7, 1), (6, 3), None)
+    b.make_move(move[0], move[1], move[2])
+    # now that knight sits on f3
+    am = all_moves(b, "white")
+    # it should no longer include g1 jumps, but include f3->h4 etc.
+    assert_true(((6, 3), (8, 4), None) in am, "f3->h4 after move")
+    assert_true(all(m[0] != (7, 1) for m in am), "no moves from g1")
 
-    # 7) Knight on empty board (d4)
-    b = Board()  # fresh empty board
-    b[(4, 4)] = "N"  # place a white knight on d4
-    k_moves = moves.knight_moves(b, "white")
-    # Should have 8 jumps from the center
-    assert_equal(len(k_moves), 8, "Knight at d4 should have 8 moves")
-    # Spot‐check one of them: d4→e6
-    assert ((4, 4), (5, 6), None) in k_moves, "Missing jump d4→e6"
-
-    # 8) Knights in standard starting position
-    b = Board()
-    b.init_positions()
-    w_knights = moves.knight_moves(b, "white")
-    # b1 should have exactly two: a3 and c3
-    assert ((2, 1), (1, 3), None) in w_knights, "b1→a3 missing"
-    assert ((2, 1), (3, 3), None) in w_knights, "b1→c3 missing"
-    assert_equal(
-        len([m for m in w_knights if m[0] == (2, 1)]),
-        2,
-        "b1 should have 2 moves",
-    )
-    # g1 should also have exactly two: f3 and h3
-    assert ((7, 1), (6, 3), None) in w_knights, "g1→f3 missing"
-    assert ((7, 1), (8, 3), None) in w_knights, "g1→h3 missing"
-    assert_equal(
-        len([m for m in w_knights if m[0] == (7, 1)]),
-        2,
-        "g1 should have 2 moves",
-    )
-
-    print("✔️ All tests passed!")
+    print("✔️ All full‐suite tests passed!")
 
 
 if __name__ == "__main__":

@@ -1,14 +1,5 @@
-# File to store functions for generating moves
 from board import Board
-
-KNIGHT_OFFSETS = Board.KNIGHT_OFFSETS
-
-
-# Function used to check bounds
-# Will be used for everything, making it a function early
-# f = file, r = rank
-def check_bounds(f, r):
-    return 1 <= f <= 8 and 1 <= r <= 8
+from .helpers import check_bounds
 
 
 def pawn_moves(
@@ -100,43 +91,4 @@ def pawn_moves(
                     ep_file, ep_rank = en_passant
                     if ep_rank == rank + move and abs(ep_file - file) == 1:
                         append_pawn_move((file, rank), (ep_file, ep_rank))
-    return moves
-
-
-def knight_moves(
-    board: Board, color: str
-) -> list[tuple[tuple[int, int], tuple[int, int], str | None]]:
-    """
-    Generate all knight jumps for the given color.
-    Returns a list of (from_sq, to_sq, None) triples.
-    """
-    moves = []
-    if color == "white":
-        knight_char = "N"
-        # start_rank = 1
-    else:
-        knight_char = "n"
-        # start_rank = 8
-
-    for file in range(1, 9):
-        for rank in range(1, 9):
-            if board[file, rank] == knight_char:
-                for moveF, moveR in KNIGHT_OFFSETS:
-
-                    target = targetFile, targetRank = (
-                        file + moveF,
-                        rank + moveR,
-                    )
-
-                    if not check_bounds(targetFile, targetRank):
-                        continue
-
-                    targetSquare = board[targetFile, targetRank]
-
-                    if (
-                        targetSquare != board.EMPTY
-                        and targetSquare == board.EMPTY
-                        or targetSquare.isupper() != knight_char.isupper()
-                    ):
-                        moves.append(((file, rank), target, None))
     return moves
