@@ -10,6 +10,7 @@ from .moves import (
     knight_moves,
     bishop_moves,
     rook_moves,
+    queen_moves,
     all_moves,
 )
 
@@ -19,6 +20,7 @@ __all__ = [
     "knight_moves",
     "bishop_moves",
     "rook_moves",
+    "queen_moves",
     "all_moves",
     "KNIGHT_OFFSETS",
     "BISHOP_OFFSETS",

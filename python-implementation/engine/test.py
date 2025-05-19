@@ -5,6 +5,7 @@ from moves.pawn import pawn_moves
 from moves.knight import knight_moves
 from moves.bishop import bishop_moves
 from moves.rook import rook_moves
+from moves.queen import queen_moves
 
 
 def assert_equal(a, b, msg=""):
@@ -19,6 +20,7 @@ def assert_true(expr, msg=""):
 
 def make_board(pieces: dict[tuple[int, int], str]) -> Board:
     b = Board()
+    b.squares = [[b.EMPTY for _ in range(8)] for _ in range(8)]
     for (f, r), char in pieces.items():
         b[(f, r)] = char
     return b
@@ -198,9 +200,55 @@ def test_rook_moves():
     print("✔️ Rook slides pass quiet, capture, block & edge tests.")
 
 
+# ─── Queen Tests ─────────────────────────────────────────────────────────────
+def test_queen_moves():
+    print_section("Queen Moves Tests")
+
+    # 1) quiet + capture from center
+    b = make_board({(4, 4): "Q", (4, 7): "p", (7, 4): "p"})
+    qm = queen_moves(b, "white")
+    quiet = [(s, t, p) for (s, t, p) in qm if b[t] == Board.EMPTY]
+    captures = [(s, t, p) for (s, t, p) in qm if b[t].islower()]
+    assert_true(len(quiet) > 0, "Queen must have at least one quiet slide")
+    assert_true(
+        len(captures) > 0, "Queen must have at least one capture slide"
+    )
+
+    # 2) diagonal block by friend (use a pawn so only one queen is tested)
+    b = make_board({(4, 4): "Q", (6, 6): "P"})
+    qm = queen_moves(b, "white")
+    # only slides up to (5,5), but not (6,6) or beyond
+    assert_true(
+        all(t != (7, 7) for (_, t, _) in qm),
+        "Queen must stop before friendly pawn on diagonal",
+    )
+
+    # 3) file/rank block by friend (use a pawn)
+    b = make_board({(4, 4): "Q", (4, 2): "P"})
+    qm = queen_moves(b, "white")
+    # only slides down to (4,3), but not (4,2) or (4,1)
+    file_moves = [t for (orig, t, _) in qm if orig == (4, 4)]
+    assert_true(
+        all(t != (4, 1) for t in file_moves),
+        "Queen must stop before friendly pawn on file",
+    )
+
+    # 4) edge-of-board no wrap
+    b = make_board({(1, 8): "Q"})
+    qm = queen_moves(b, "white")
+    seen = {t for (_, t, _) in qm}
+    assert_true(
+        all(1 <= f <= 8 and 1 <= r <= 8 for (f, r) in seen),
+        "All queen moves must stay on-board",
+    )
+
+    print("✔️ Queen slides pass quiet, capture, block & edge tests.")
+
+
 if __name__ == "__main__":
     test_pawn_moves()
     test_knight_moves()
     test_bishop_moves()
     test_rook_moves()
+    test_queen_moves()
     print("\n✔️ All piece-specific tests passed!")

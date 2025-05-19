@@ -14,4 +14,15 @@ KNIGHT_OFFSETS = [
 BISHOP_OFFSETS = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
 ROOK_OFFSETS = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 
-QUEEN_OFFSETS = BISHOP_OFFSETS + ROOK_OFFSETS
+QUEEN_OFFSETS = [
+    (1, 0),
+    (1, 1),
+    (0, 1),
+    (-1, 1),
+    (-1, 0),
+    (-1, -1),
+    (0, -1),
+    (1, -1),
+]
+
+KING_OFFSETS = QUEEN_OFFSETS
