@@ -1,7 +1,6 @@
 from board import Board
+from offsets import KNIGHT_OFFSETS
 from .helpers import check_bounds
-
-KNIGHT_OFFSETS = Board.KNIGHT_OFFSETS
 
 
 def knight_moves(
