@@ -26,13 +26,16 @@ class Board:
         self.squares = [
             [self.EMPTY for _ in range(self.FILES)] for _ in range(self.RANKS)
         ]
+        # Used to record if a pawn made a double move for possible en passant
+        self.en_passant_target = None
 
     def __str__(self) -> str:
         rows = []
         reverse = reversed(self.squares)
         for rank_no, row in zip(range(self.RANKS, 0, -1), reverse):
-            rows.append(f"{rank_no} " + " ".join(row))
-        rows.append("  a b c d e f g h")
+            rows.append(f"{rank_no}| " + " ".join(row))
+        rows.append(" |----------------")
+        rows.append("   a b c d e f g h")
         return "\n".join(rows)
 
     def __getitem__(self, pos: tuple[int, int]) -> str:
@@ -58,9 +61,23 @@ class Board:
             self.squares[0][f] = self.PIECES[WHITEPIECES[f]]
             self.squares[7][f] = self.PIECES[BLACKPIECES[f]]
 
+    def make_move(
+        self,
+        from_sq: tuple[int, int],
+        to_sq: tuple[int, int],
+    ) -> None:
 
-board = Board()
-print(board)
-board.init_positions()
-print()
-print(board)
+        from_f, from_r = from_sq
+        to_f, to_r = to_sq
+
+        if abs(to_r - from_r) == 2:
+            self.en_passant_target = self.en_passant_target = (
+                from_f,
+                (to_r + from_r) // 2,
+            )
+        else:
+            self.en_passant_target = None
+
+        piece = self[from_sq]
+        self[to_sq] = piece
+        self[from_sq] = self.EMPTY
