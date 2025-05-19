@@ -4,6 +4,7 @@ from board import Board
 from moves.pawn import pawn_moves
 from moves.knight import knight_moves
 from moves.bishop import bishop_moves
+from moves.rook import rook_moves
 
 
 def assert_equal(a, b, msg=""):
@@ -124,23 +125,82 @@ def test_knight_moves():
 def test_bishop_moves():
     print_section("Bishop Moves Tests")
 
-    # center quiet & capture
+    # 1) quiet + capture from center
     b = make_board({(4, 4): "B", (2, 2): "p"})
     bm = bishop_moves(b, "white")
     quiet = [(s, t, p) for (s, t, p) in bm if b[t] == Board.EMPTY]
     captures = [(s, t, p) for (s, t, p) in bm if b[t].islower()]
+    assert_true(len(quiet) > 0, "Bishop must have at least one diagonal quiet")
     assert_true(
-        len(quiet) > 0, "Bishop must have at least one non-capture diagonal"
-    )
-    assert_true(
-        len(captures) > 0, "Bishop must have at least one capture diagonal"
+        len(captures) > 0, "Bishop must have at least one diagonal capture"
     )
 
-    print("✔️ Bishop moves include both quiet and capture.")
+    # 2) blocked by friend
+    b = make_board({(4, 4): "B", (6, 6): "P"})
+    bm = bishop_moves(b, "white")
+    # should NOT include any move landing on (7,7) or beyond
+    assert_true(
+        all(t != (7, 7) for (_, t, _) in bm),
+        "Bishop must stop before a friendly pawn at (6,6)",
+    )
+
+    # 3) edge-of-board no wrap
+    b = make_board({(1, 1): "B"})
+    bm = bishop_moves(b, "white")
+    # only NE direction should produce moves (to 2,2 .. 8,8)
+    expected = {(1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8)}
+    seen = {t for (_, t, _) in bm}
+    assert_equal(
+        seen,
+        expected - {(1, 1)},
+        "Bishop at a1 must slide along one diagonal only",
+    )
+
+    print("✔️ Bishop slides pass quiet, capture, block & edge tests.")
+
+
+# ─── Rook Tests ──────────────────────────────────────────────────────────────
+def test_rook_moves():
+    print_section("Rook Moves Tests")
+
+    # 1) quiet + capture from center
+    b = make_board({(4, 4): "R", (4, 7): "p"})
+    rm = rook_moves(b, "white")
+    quiet = [(s, t, p) for (s, t, p) in rm if b[t] == Board.EMPTY]
+    captures = [(s, t, p) for (s, t, p) in rm if b[t].islower()]
+    assert_true(len(quiet) > 0, "Rook must have at least one file/rank quiet")
+    assert_true(
+        len(captures) > 0, "Rook must have at least one file/rank capture"
+    )
+
+    # 2) blocked by friend
+    b = make_board({(4, 4): "R", (4, 2): "P"})
+    rm = rook_moves(b, "white")
+    # should NOT include any move to (4,1)
+    assert_true(
+        all(t != (4, 1) for (_, t, _) in rm),
+        "Rook must stop before a friendly pawn at (4,2)",
+    )
+
+    # 3) edge-of-board no wrap
+    b = make_board({(8, 8): "R"})
+    rm = rook_moves(b, "white")
+    # only W and S directions: ranks 1–8 at file=8 and files 1–8 at rank=8
+    expected = {(i, 8) for i in range(1, 9)} | {(8, i) for i in range(1, 9)}
+    seen = {t for (_, t, _) in rm}
+    # remove starting square:
+    assert_equal(
+        seen,
+        expected - {(8, 8)},
+        "Rook at h8 must slide along file h and rank 8 only",
+    )
+
+    print("✔️ Rook slides pass quiet, capture, block & edge tests.")
 
 
 if __name__ == "__main__":
     test_pawn_moves()
     test_knight_moves()
     test_bishop_moves()
+    test_rook_moves()
     print("\n✔️ All piece-specific tests passed!")
