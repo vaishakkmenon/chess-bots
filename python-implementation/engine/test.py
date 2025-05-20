@@ -343,7 +343,71 @@ def test_all_attack_vectors():
         assert_equal(
             result, expected, f"{desc} — expected {expected}, got {result}"
         )
-    print("✔️ All attack‐vector tests passed.")
+    print("✔️ All attack-vector tests passed.")
+
+
+def test_king_castling():
+    print_section("King Castling Tests")
+
+    # ——— Kingside allowed ———
+    b = make_board({(5, 1): "K", (8, 1): "R"})
+    b.white_can_castle_kingside = True
+    km = king_moves(b, "white")
+    print_board(b)
+    print("Generated king moves:", km)
+    assert_true(
+        ((5, 1), (7, 1), None) in km,
+        "Must allow kingside castling when all conditions met",
+    )
+
+    # ——— Queenside allowed ———
+    b = make_board({(5, 1): "K", (1, 1): "R"})
+    b.white_can_castle_queenside = True
+    km = king_moves(b, "white")
+    assert_true(
+        ((5, 1), (3, 1), None) in km,
+        "Must allow queenside castling when all conditions met",
+    )
+
+    # ——— Blocked kingside ———
+    b = make_board({(5, 1): "K", (6, 1): "P", (8, 1): "R"})
+    b.white_can_castle_kingside = True
+    km = king_moves(b, "white")
+    assert_true(
+        ((5, 1), (7, 1), None) not in km,
+        "Must NOT allow kingside castling if path blocked",
+    )
+
+    # ——— King in check ———
+    b = make_board(
+        {(5, 1): "K", (8, 1): "R", (5, 8): "q"}
+    )  # Black queen aiming at king
+    b.white_can_castle_kingside = True
+    km = king_moves(b, "white")
+    assert_true(
+        ((5, 1), (7, 1), None) not in km,
+        "Must NOT allow castling while king is in check",
+    )
+
+    # ——— Square passed through is attacked ———
+    b = make_board({(5, 1): "K", (8, 1): "R", (6, 8): "q"})  # Attacks f1
+    b.white_can_castle_kingside = True
+    km = king_moves(b, "white")
+    assert_true(
+        ((5, 1), (7, 1), None) not in km,
+        "Must NOT allow castling if square passed through is attacked",
+    )
+
+    # ——— King not on home square ———
+    b = make_board({(4, 1): "K", (8, 1): "R"})
+    b.white_can_castle_kingside = True
+    km = king_moves(b, "white")
+    assert_true(
+        ((4, 1), (6, 1), None) not in km,
+        "Must NOT allow castling if king is not on e1",
+    )
+
+    print("✔️ Castling tests passed.")
 
 
 if __name__ == "__main__":
@@ -353,5 +417,6 @@ if __name__ == "__main__":
     test_rook_moves()
     test_queen_moves()
     test_king_moves()
+    test_king_castling()
     test_all_attack_vectors()
     print("\n✔️ All tests passed!")

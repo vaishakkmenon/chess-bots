@@ -79,6 +79,8 @@ def is_square_attacked(
         test_file, test_rank = sq_file + file, sq_rank + rank
         if not check_bounds(test_file, test_rank):
             continue
+        if (test_file, test_rank) == (sq_file, sq_rank):
+            continue
         piece = board[test_file, test_rank]
         if piece == king_char:
             return True
