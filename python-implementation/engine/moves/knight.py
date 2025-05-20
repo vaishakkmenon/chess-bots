@@ -32,8 +32,7 @@ def knight_moves(
                     targetSquare = board[targetFile, targetRank]
 
                     if (
-                        targetSquare != board.EMPTY
-                        and targetSquare == board.EMPTY
+                        targetSquare == board.EMPTY
                         or targetSquare.isupper() != knight_char.isupper()
                     ):
                         moves.append(((file, rank), target, None))

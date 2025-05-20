@@ -1,5 +1,10 @@
 # File for all pieces offsets/move possibilities
 
+PAWN_ATTACK_OFFSETS = {
+    "white": [(-1, -1), (1, -1)],
+    "black": [(-1, 1), (1, 1)],
+}
+
 KNIGHT_OFFSETS = [
     (2, 1),
     (2, -1),

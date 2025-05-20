@@ -1,5 +1,6 @@
 from .board import Board
 from .offsets import (
+    PAWN_ATTACK_OFFSETS,
     KNIGHT_OFFSETS,
     BISHOP_OFFSETS,
     ROOK_OFFSETS,
@@ -22,6 +23,7 @@ __all__ = [
     "rook_moves",
     "queen_moves",
     "all_moves",
+    "PAWN_ATTACK_OFFSETS",
     "KNIGHT_OFFSETS",
     "BISHOP_OFFSETS",
     "ROOK_OFFSETS",
