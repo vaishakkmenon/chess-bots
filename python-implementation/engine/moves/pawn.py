@@ -2,6 +2,15 @@ from board import Board
 from .helpers import check_bounds
 
 
+def _generate_promotions(frm, to):
+    """
+    Yield the four promotion triples for a pawn move:
+    (from_sq, to_sq, 'Q'), (from_sq, to_sq, 'R'), …
+    """
+    for piece in ("Q", "R", "B", "N"):
+        yield (frm, to, piece)
+
+
 def pawn_moves(
     board: Board, color: str
 ) -> list[tuple[tuple[int, int], tuple[int, int], str | None]]:
@@ -15,8 +24,7 @@ def pawn_moves(
         if promo_flag is None and (
             r2 == Board.WHITE_PROMOTE_RANK or r2 == Board.BLACK_PROMOTE_RANK
         ):
-            for piece in ("Q", "R", "B", "N"):
-                moves.append((frm, to, piece))
+            moves.extend(_generate_promotions(frm, to))
         else:
             moves.append((frm, to, promo_flag))
 
