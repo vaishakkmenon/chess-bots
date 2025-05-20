@@ -1,8 +1,9 @@
-# Board class to build and initialize the board for the game
+# board.py
+
+from typing import Optional, Tuple
 
 
 class Board:
-
     RANKS = 8
     FILES = 8
 
@@ -25,77 +26,115 @@ class Board:
         "BK": "k",
     }
 
+    @property
+    def white_pieces(self) -> frozenset:
+        return frozenset(
+            self.PIECES[c] for c in self.PIECES if c.startswith("W")
+        )
+
+    @property
+    def black_pieces(self) -> frozenset:
+        return frozenset(
+            self.PIECES[c] for c in self.PIECES if c.startswith("B")
+        )
+
     def __init__(self):
+        # 0-based internal grid
         self.squares = [
             [self.EMPTY for _ in range(self.FILES)] for _ in range(self.RANKS)
         ]
-        # Used to record if a pawn made a double move for possible en passant
-        self.en_passant_target = None
+        # en passant target square
+        self.en_passant_target: Optional[Tuple[int, int]] = None
+        # castling rights flags
+        self.white_can_castle_kingside = False
+        self.white_can_castle_queenside = False
+        self.black_can_castle_kingside = False
+        self.black_can_castle_queenside = False
 
     def __str__(self) -> str:
         rows = []
-        reverse = reversed(self.squares)
-        for rank_no, row in zip(range(self.RANKS, 0, -1), reverse):
+        for rank_no in range(self.RANKS, 0, -1):
+            row = self.squares[rank_no - 1]
             rows.append(f"{rank_no}| " + " ".join(row))
-        rows.append(" |----------------")
-        rows.append("   a b c d e f g h")
+        rows.append(" |" + "-" * (self.FILES * 2 - 1))
+        rows.append("   " + " ".join("abcdefgh"[: self.FILES]))
         return "\n".join(rows)
 
-    def __getitem__(self, pos: tuple[int, int]) -> str:
+    def _to_idx(self, pos: Tuple[int, int]) -> Tuple[int, int]:
         file, rank = pos
-        return self.squares[rank - 1][file - 1]
+        return rank - 1, file - 1
 
-    def __setitem__(self, pos: tuple[int, int], piece: str):
-        file, rank = pos
-        self.squares[rank - 1][file - 1] = piece
+    def __getitem__(self, pos: Tuple[int, int]) -> str:
+        r, c = self._to_idx(pos)
+        return self.squares[r][c]
 
-    def init_positions(self):
-        for i in range(self.RANKS):
-            for j in range(self.FILES):
-                self.squares[i][j] = self.EMPTY
+    def __setitem__(self, pos: Tuple[int, int], piece: str):
+        r, c = self._to_idx(pos)
+        self.squares[r][c] = piece
 
-        for f in range(self.FILES):
-            self.squares[1][f] = self.PIECES["WP"]
-            self.squares[6][f] = self.PIECES["BP"]
+    def is_empty(self, pos: Tuple[int, int]) -> bool:
+        return self[pos] == self.EMPTY
 
-        WHITEPIECES = ["WR", "WN", "WB", "WQ", "WK", "WB", "WN", "WR"]
-        BLACKPIECES = ["BR", "BN", "BB", "BQ", "BK", "BB", "BN", "BR"]
-        for f in range(self.FILES):
-            self.squares[0][f] = self.PIECES[WHITEPIECES[f]]
-            self.squares[7][f] = self.PIECES[BLACKPIECES[f]]
+    def is_white(self, pos: Tuple[int, int]) -> bool:
+        p = self[pos]
+        return p != self.EMPTY and p.isupper()
+
+    def is_black(self, pos: Tuple[int, int]) -> bool:
+        p = self[pos]
+        return p != self.EMPTY and p.islower()
+
+    def holds(
+        self, pos: Tuple[int, int], chars: Tuple[str, ...] | frozenset
+    ) -> bool:
+        return self[pos] in chars
+
+    def init_positions(self) -> None:
+        """
+        Set up the standard starting position.
+        """
+        # clear board
+        for r in range(self.RANKS):
+            for c in range(self.FILES):
+                self.squares[r][c] = self.EMPTY
+
+        # pawns
+        for file in range(1, self.FILES + 1):
+            self[(file, 2)] = self.PIECES["WP"]
+            self[(file, 7)] = self.PIECES["BP"]
+
+        # back ranks via conventional ordering
+        order = "RNBQKBNR"
+        for file, piece_code in enumerate(order, start=1):
+            self[(file, 1)] = self.PIECES[f"W{piece_code}"]
+            self[(file, 8)] = self.PIECES[f"B{piece_code}"]
 
     def make_move(
         self,
-        from_sq: tuple[int, int],
-        to_sq: tuple[int, int],
-        promo: str | None = None,
+        from_sq: Tuple[int, int],
+        to_sq: Tuple[int, int],
+        promo: Optional[str] = None,
     ) -> None:
-
-        from_f, from_r = from_sq
-        to_f, to_r = to_sq
-
-        # Remove piece that is being captured
+        # handle en passant capture
         ep = self.en_passant_target
-        if ep is not None and to_sq == ep:
+        if ep and to_sq == ep:
             pawn = self[from_sq]
             direction = 1 if pawn.isupper() else -1
-            remove_rank = to_r - direction
-            self[(to_f, remove_rank)] = self.EMPTY
+            self[(to_sq[0], to_sq[1] - direction)] = self.EMPTY
 
-        # Move piece that is capturing
+        # move or promotion
         piece = self[from_sq]
         if promo:
-            assert piece.upper() == "P", "Promotion piece is not a pawn!"
+            assert piece.upper() == "P", "Promotion only for pawns"
             self[to_sq] = promo
         else:
             self[to_sq] = piece
         self[from_sq] = self.EMPTY
 
-        # Check if piece being moved is a pawn and update state
-        if piece.upper() == "P" and abs(to_r - from_r) == 2:
+        # update en passant state
+        if piece.upper() == "P" and abs(to_sq[1] - from_sq[1]) == 2:
             self.en_passant_target = (
-                from_f,
-                (to_r + from_r) // 2,
+                from_sq[0],
+                (from_sq[1] + to_sq[1]) // 2,
             )
         else:
             self.en_passant_target = None
