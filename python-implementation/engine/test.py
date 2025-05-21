@@ -2,6 +2,7 @@
 
 from board import Board
 from rules import in_check
+from moves.move import Move
 from moves.pawn import pawn_moves
 from moves.knight import knight_moves
 from moves.bishop import bishop_moves
@@ -100,28 +101,30 @@ def print_board(b: Board):
 
 
 # ─── Helpers to classify pawn moves ──────────────────────────────────────────
-def is_single_push(move):
-    (f0, r0), (f1, r1), promo = move
-    return promo is None and f0 == f1 and r1 == r0 + 1
+def is_single_push(move: Move) -> bool:
+    f0, r0 = move.from_sq
+    f1, r1 = move.to_sq
+    return move.promo is None and f0 == f1 and r1 == r0 + 1
 
 
-def is_double_push(move):
-    (f0, r0), (f1, r1), promo = move
-    return promo is None and f0 == f1 and r1 == r0 + 2
+def is_double_push(move: Move) -> bool:
+    f0, r0 = move.from_sq
+    f1, r1 = move.to_sq
+    return move.promo is None and f0 == f1 and r1 == r0 + 2
 
 
-def is_capture(move):
-    (f0, r0), (f1, r1), promo = move
-    return promo is None and abs(f1 - f0) == 1 and r1 == r0 + 1
+def is_capture(move: Move) -> bool:
+    f0, r0 = move.from_sq
+    f1, r1 = move.to_sq
+    return move.promo is None and abs(f1 - f0) == 1 and r1 == r0 + 1
 
 
-def is_en_passant(move, ep_target):
-    # ep_target is the square behind a double-pushed pawn
-    return is_capture(move) and move[1] == ep_target
+def is_en_passant(move: Move, ep_target: tuple[int, int]) -> bool:
+    return move.is_en_passant and move.to_sq == ep_target
 
 
-def is_promotion(move):
-    return move[2] in {"Q", "R", "B", "N"}
+def is_promotion(move: Move) -> bool:
+    return move.promo in {"Q", "R", "B", "N"}
 
 
 # ─── Pawn Tests ─────────────────────────────────────────────────────────────
@@ -160,7 +163,7 @@ def test_pawn_moves():
     # 4) promotions
     b = make_board({(7, 7): "P"})
     pr = pawn_moves(b, "white")
-    promos = {m[2] for m in pr if is_promotion(m)}
+    promos = {m.promo for m in pr if is_promotion(m)}
     assert_equal(
         promos, {"Q", "R", "B", "N"}, "Promotion must offer all four choices"
     )
@@ -176,8 +179,8 @@ def test_knight_moves():
     b = make_board({(4, 4): "N", (6, 5): "p"})
     km = knight_moves(b, "white")
     # quiet moves = jumps to empty squares
-    quiet = [(s, t, p) for (s, t, p) in km if b[t] == Board.EMPTY]
-    captures = [(s, t, p) for (s, t, p) in km if b[t].islower()]
+    quiet = [m for m in km if b[m.to_sq] == Board.EMPTY]
+    captures = [m for m in km if b[m.to_sq].islower()]
     assert_true(
         len(quiet) > 0, "Knight must have at least one non-capture jump"
     )
@@ -195,8 +198,8 @@ def test_bishop_moves():
     # 1) quiet + capture from center
     b = make_board({(4, 4): "B", (2, 2): "p"})
     bm = bishop_moves(b, "white")
-    quiet = [(s, t, p) for (s, t, p) in bm if b[t] == Board.EMPTY]
-    captures = [(s, t, p) for (s, t, p) in bm if b[t].islower()]
+    quiet = [m for m in bm if b[m.to_sq] == Board.EMPTY]
+    captures = [m for m in bm if b[m.to_sq].islower()]
     assert_true(len(quiet) > 0, "Bishop must have at least one diagonal quiet")
     assert_true(
         len(captures) > 0, "Bishop must have at least one diagonal capture"
@@ -207,7 +210,7 @@ def test_bishop_moves():
     bm = bishop_moves(b, "white")
     # should NOT include any move landing on (7,7) or beyond
     assert_true(
-        all(t != (7, 7) for (_, t, _) in bm),
+        all(m.to_sq != (7, 7) for m in bm),
         "Bishop must stop before a friendly pawn at (6,6)",
     )
 
@@ -216,7 +219,7 @@ def test_bishop_moves():
     bm = bishop_moves(b, "white")
     # only NE direction should produce moves (to 2,2 .. 8,8)
     expected = {(1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8)}
-    seen = {t for (_, t, _) in bm}
+    seen = {m.to_sq for m in bm}
     assert_equal(
         seen,
         expected - {(1, 1)},
@@ -233,8 +236,8 @@ def test_rook_moves():
     # 1) quiet + capture from center
     b = make_board({(4, 4): "R", (4, 7): "p"})
     rm = rook_moves(b, "white")
-    quiet = [(s, t, p) for (s, t, p) in rm if b[t] == Board.EMPTY]
-    captures = [(s, t, p) for (s, t, p) in rm if b[t].islower()]
+    quiet = [m for m in rm if b[m.to_sq] == Board.EMPTY]
+    captures = [m for m in rm if b[m.to_sq].islower()]
     assert_true(len(quiet) > 0, "Rook must have at least one file/rank quiet")
     assert_true(
         len(captures) > 0, "Rook must have at least one file/rank capture"
@@ -245,7 +248,7 @@ def test_rook_moves():
     rm = rook_moves(b, "white")
     # should NOT include any move to (4,1)
     assert_true(
-        all(t != (4, 1) for (_, t, _) in rm),
+        all(m.to_sq != (4, 1) for m in rm),
         "Rook must stop before a friendly pawn at (4,2)",
     )
 
@@ -254,7 +257,7 @@ def test_rook_moves():
     rm = rook_moves(b, "white")
     # only W and S directions: ranks 1–8 at file=8 and files 1–8 at rank=8
     expected = {(i, 8) for i in range(1, 9)} | {(8, i) for i in range(1, 9)}
-    seen = {t for (_, t, _) in rm}
+    seen = {m.to_sq for m in rm}
     # remove starting square:
     assert_equal(
         seen,
@@ -272,8 +275,8 @@ def test_queen_moves():
     # 1) quiet + capture from center
     b = make_board({(4, 4): "Q", (4, 7): "p", (7, 4): "p"})
     qm = queen_moves(b, "white")
-    quiet = [(s, t, p) for (s, t, p) in qm if b[t] == Board.EMPTY]
-    captures = [(s, t, p) for (s, t, p) in qm if b[t].islower()]
+    quiet = [m for m in qm if b[m.to_sq] == Board.EMPTY]
+    captures = [m for m in qm if b[m.to_sq].islower()]
     assert_true(len(quiet) > 0, "Queen must have at least one quiet slide")
     assert_true(
         len(captures) > 0, "Queen must have at least one capture slide"
@@ -284,7 +287,7 @@ def test_queen_moves():
     qm = queen_moves(b, "white")
     # only slides up to (5,5), but not (6,6) or beyond
     assert_true(
-        all(t != (7, 7) for (_, t, _) in qm),
+        all(m.to_sq != (7, 7) for m in qm),
         "Queen must stop before friendly pawn on diagonal",
     )
 
@@ -292,7 +295,7 @@ def test_queen_moves():
     b = make_board({(4, 4): "Q", (4, 2): "P"})
     qm = queen_moves(b, "white")
     # only slides down to (4,3), but not (4,2) or (4,1)
-    file_moves = [t for (orig, t, _) in qm if orig == (4, 4)]
+    file_moves = [m.to_sq for m in qm if m.from_sq == (4, 4)]
     assert_true(
         all(t != (4, 1) for t in file_moves),
         "Queen must stop before friendly pawn on file",
@@ -301,7 +304,7 @@ def test_queen_moves():
     # 4) edge-of-board no wrap
     b = make_board({(1, 8): "Q"})
     qm = queen_moves(b, "white")
-    seen = {t for (_, t, _) in qm}
+    seen = {m.to_sq for m in qm}
     assert_true(
         all(1 <= f <= 8 and 1 <= r <= 8 for (f, r) in seen),
         "All queen moves must stay on-board",
@@ -321,8 +324,8 @@ def test_king_moves():
     b.white_can_castle_queenside = False
 
     km = king_moves(b, "white")
-    quiet = [(s, t, p) for (s, t, p) in km if b[t] == Board.EMPTY]
-    captures = [(s, t, p) for (s, t, p) in km if b[t].islower()]
+    quiet = [m for m in km if b[m.to_sq] == Board.EMPTY]
+    captures = [m for m in km if b[m.to_sq].islower()]
 
     assert_true(
         len(quiet) == 7,
@@ -355,7 +358,10 @@ def test_king_castling():
     b.white_can_castle_kingside = True
     km = king_moves(b, "white")
     assert_true(
-        ((5, 1), (7, 1), None) in km,
+        any(
+            m.from_sq == (5, 1) and m.to_sq == (7, 1) and m.is_castle
+            for m in km
+        ),
         "Must allow kingside castling when all conditions met",
     )
 
@@ -364,7 +370,10 @@ def test_king_castling():
     b.white_can_castle_queenside = True
     km = king_moves(b, "white")
     assert_true(
-        ((5, 1), (3, 1), None) in km,
+        any(
+            m.from_sq == (5, 1) and m.to_sq == (3, 1) and m.is_castle
+            for m in km
+        ),
         "Must allow queenside castling when all conditions met",
     )
 
@@ -373,7 +382,10 @@ def test_king_castling():
     b.white_can_castle_kingside = True
     km = king_moves(b, "white")
     assert_true(
-        ((5, 1), (7, 1), None) not in km,
+        not any(
+            m.from_sq == (5, 1) and m.to_sq == (7, 1) and m.is_castle
+            for m in km
+        ),
         "Must NOT allow kingside castling if path blocked",
     )
 
@@ -384,7 +396,10 @@ def test_king_castling():
     b.white_can_castle_kingside = True
     km = king_moves(b, "white")
     assert_true(
-        ((5, 1), (7, 1), None) not in km,
+        not any(
+            m.from_sq == (5, 1) and m.to_sq == (7, 1) and m.is_castle
+            for m in km
+        ),
         "Must NOT allow castling while king is in check",
     )
 
@@ -393,7 +408,10 @@ def test_king_castling():
     b.white_can_castle_kingside = True
     km = king_moves(b, "white")
     assert_true(
-        ((5, 1), (7, 1), None) not in km,
+        not any(
+            m.from_sq == (5, 1) and m.to_sq == (7, 1) and m.is_castle
+            for m in km
+        ),
         "Must NOT allow castling if square passed through is attacked",
     )
 
@@ -402,7 +420,10 @@ def test_king_castling():
     b.white_can_castle_kingside = True
     km = king_moves(b, "white")
     assert_true(
-        ((4, 1), (6, 1), None) not in km,
+        not any(
+            m.from_sq == (4, 1) and m.to_sq == (6, 1) and m.is_castle
+            for m in km
+        ),
         "Must NOT allow castling if king is not on e1",
     )
 
