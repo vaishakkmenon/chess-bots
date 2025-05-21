@@ -1,6 +1,7 @@
 # engine/test_pieces.py
 
 from board import Board
+from rules import in_check
 from moves.pawn import pawn_moves
 from moves.knight import knight_moves
 from moves.bishop import bishop_moves
@@ -458,6 +459,20 @@ def test_castling_rights():
     print("✔️ Castling rights flags correctly updated.")
 
 
+def test_in_check():
+    print_section("Check Detection")
+
+    # White king in check from black queen
+    b = make_board({(5, 1): "K", (5, 8): "q"})
+    assert in_check(b, "white"), "White should be in check from e8 queen"
+
+    # Black king not in check
+    b = make_board({(5, 8): "k"})
+    assert not in_check(b, "black"), "Black king alone should not be in check"
+
+    print("✔️ in_check() correctly detects check state.")
+
+
 if __name__ == "__main__":
     test_pawn_moves()
     test_knight_moves()
@@ -468,4 +483,5 @@ if __name__ == "__main__":
     test_king_castling()
     test_all_attack_vectors()
     test_castling_rights()
+    test_in_check()
     print("\n ✔️ All tests passed!")
