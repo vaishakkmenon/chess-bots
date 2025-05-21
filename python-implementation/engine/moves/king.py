@@ -1,16 +1,17 @@
 from board import Board
+from typing import List
 from offsets import KING_OFFSETS
+
+from .move import Move
 from .helpers import check_bounds, is_square_attacked
 
 # (we’ll integrate attack‐checks and castling in a moment)
 
 
-def king_moves(
-    board: Board, color: str
-) -> list[tuple[tuple[int, int], tuple[int, int], str | None]]:
+def king_moves(board: Board, color: str) -> List[Move]:
     """
     Generate all king moves for the given color.
-    Returns a list of (from_sq, to_sq, None) triples.
+    Returns a list of Move objects.
     """
     moves = []
 
@@ -32,17 +33,19 @@ def king_moves(
             if board[file, rank] == king_char:
                 # sf = start_file, sr = start_rank
                 sf, sr = file, rank
-                for moveF, moveR in KING_OFFSETS:
-                    targetFile = file + moveF
-                    targetRank = rank + moveR
-                    target = (targetFile, targetRank)
+                from_sq = (file, rank)
+                for move_f, move_r in KING_OFFSETS:
+                    target_file = file + move_f
+                    target_rank = rank + move_r
+                    to_sq = (target_file, target_rank)
 
-                    if check_bounds(targetFile, targetRank):
-                        target_square = board[targetFile, targetRank]
-                        if target_square == board.EMPTY:
-                            moves.append(((file, rank), target, None))
-                        elif target_square.isupper() != king_char.isupper():
-                            moves.append(((file, rank), target, None))
+                    if check_bounds(target_file, target_rank):
+                        target_square = board[target_file, target_rank]
+                        if (
+                            target_square == board.EMPTY
+                            or target_square.isupper() != king_char.isupper()
+                        ):
+                            moves.append(Move(from_sq, to_sq))
                 # Castling
                 if (
                     can_castle_kingside
@@ -53,13 +56,8 @@ def king_moves(
                     and not is_square_attacked(board, (sf + 1, sr), enemy)
                     and not is_square_attacked(board, (sf + 2, sr), enemy)
                 ):
-                    moves.append(
-                        (
-                            (sf, sr),
-                            (sf + 2, sr),
-                            None,
-                        )
-                    )
+                    to_sq = (sf + 2, sr)
+                    moves.append(Move(from_sq, to_sq, is_castle=True))
 
                 if (
                     can_castle_queenside
@@ -71,11 +69,6 @@ def king_moves(
                     and not is_square_attacked(board, (sf - 1, sr), enemy)
                     and not is_square_attacked(board, (sf - 2, sr), enemy)
                 ):
-                    moves.append(
-                        (
-                            (sf, sr),
-                            (sf - 2, sr),
-                            None,
-                        )
-                    )
+                    to_sq = (sf - 2, sr)
+                    moves.append(Move(from_sq, to_sq, is_castle=True))
     return moves
