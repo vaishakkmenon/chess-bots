@@ -95,9 +95,11 @@ def pawn_moves(board: Board, color: str) -> list[Move]:
                 if en_passant:
                     ep_file, ep_rank = en_passant
                     if ep_rank == rank + move and abs(ep_file - file) == 1:
-                        Move(
-                            (file, rank),
-                            (ep_file, ep_rank),
-                            is_en_passant=True,
+                        moves.append(
+                            Move(
+                                (file, rank),
+                                (ep_file, ep_rank),
+                                is_en_passant=True,
+                            )
                         )
     return moves
