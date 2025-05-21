@@ -353,8 +353,6 @@ def test_king_castling():
     b = make_board({(5, 1): "K", (8, 1): "R"})
     b.white_can_castle_kingside = True
     km = king_moves(b, "white")
-    print_board(b)
-    print("Generated king moves:", km)
     assert_true(
         ((5, 1), (7, 1), None) in km,
         "Must allow kingside castling when all conditions met",
@@ -410,6 +408,56 @@ def test_king_castling():
     print("✔️ Castling tests passed.")
 
 
+def test_castling_rights():
+    print_section("Castling Rights Flags")
+
+    # ─── King moves: should clear both sides ───
+    b = make_board({(5, 1): "K"})
+    b.white_can_castle_kingside = True
+    b.white_can_castle_queenside = True
+    b.make_move((5, 1), (5, 2))
+    assert (
+        not b.white_can_castle_kingside
+    ), "King move must clear kingside castling"
+    assert (
+        not b.white_can_castle_queenside
+    ), "King move must clear queenside castling"
+
+    # ─── Rook move: a1 → a2 should clear queenside ───
+    b = make_board({(1, 1): "R"})
+    b.white_can_castle_queenside = True
+    b.make_move((1, 1), (1, 2))
+    assert (
+        not b.white_can_castle_queenside
+    ), "Rook move from a1 must clear queenside right"
+
+    # ─── Rook move: h1 → h2 should clear kingside ───
+    b = make_board({(8, 1): "R"})
+    b.white_can_castle_kingside = True
+    b.make_move((8, 1), (8, 2))
+    assert (
+        not b.white_can_castle_kingside
+    ), "Rook move from h1 must clear kingside right"
+
+    # ─── Rook capture: a1 rook is captured ───
+    b = make_board({(1, 1): "R", (2, 1): "p"})
+    b.white_can_castle_queenside = True
+    b.make_move((2, 1), (1, 1))
+    assert (
+        not b.white_can_castle_queenside
+    ), "Captured rook on a1 must clear queenside right"
+
+    # ─── Rook capture: h1 rook is captured ───
+    b = make_board({(8, 1): "R", (7, 1): "p"})
+    b.white_can_castle_kingside = True
+    b.make_move((7, 1), (8, 1))
+    assert (
+        not b.white_can_castle_kingside
+    ), "Captured rook on h1 must clear kingside right"
+
+    print("✔️ Castling rights flags correctly updated.")
+
+
 if __name__ == "__main__":
     test_pawn_moves()
     test_knight_moves()
@@ -419,4 +467,5 @@ if __name__ == "__main__":
     test_king_moves()
     test_king_castling()
     test_all_attack_vectors()
-    print("\n✔️ All tests passed!")
+    test_castling_rights()
+    print("\n ✔️ All tests passed!")

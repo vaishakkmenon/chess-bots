@@ -46,10 +46,10 @@ class Board:
         # en passant target square
         self.en_passant_target: Optional[Tuple[int, int]] = None
         # castling rights flags
-        self.white_can_castle_kingside = False
-        self.white_can_castle_queenside = False
-        self.black_can_castle_kingside = False
-        self.black_can_castle_queenside = False
+        self.white_can_castle_kingside = True
+        self.white_can_castle_queenside = True
+        self.black_can_castle_kingside = True
+        self.black_can_castle_queenside = True
 
     def __str__(self) -> str:
         rows = []
@@ -123,6 +123,46 @@ class Board:
 
         # move or promotion
         piece = self[from_sq]
+        # Track which piece was captured
+        captured = self[to_sq]
+
+        # If the piece captured was a rook, then castling is disabled
+        if captured == "R" and to_sq == (1, 1):
+            self.white_can_castle_queenside = False
+        elif captured == "R" and to_sq == (8, 1):
+            self.white_can_castle_kingside = False
+        elif captured == "r" and to_sq == (1, 8):
+            self.black_can_castle_queenside = False
+        elif captured == "r" and to_sq == (8, 8):
+            self.black_can_castle_kingside = False
+
+        # If the king is castling then move the rook
+        if piece.upper() == "K" and abs(to_sq[0] - from_sq[0]) == 2:
+            rank = from_sq[1]
+            if to_sq[0] > from_sq[0]:
+                self[(6, rank)] = self[(8, rank)]
+                self[(8, rank)] = self.EMPTY
+            else:
+                self[(4, rank)] = self[(1, rank)]
+                self[(1, rank)] = self.EMPTY
+
+        # Disable castling after the king moves
+        if piece == "K":
+            self.white_can_castle_kingside = False
+            self.white_can_castle_queenside = False
+        elif piece == "k":
+            self.black_can_castle_kingside = False
+            self.black_can_castle_queenside = False
+        elif piece == "R" and from_sq == (1, 1):
+            self.white_can_castle_queenside = False
+        elif piece == "R" and from_sq == (8, 1):
+            self.white_can_castle_kingside = False
+        elif piece == "r" and from_sq == (1, 8):
+            self.black_can_castle_queenside = False
+        elif piece == "r" and from_sq == (8, 8):
+            self.black_can_castle_kingside = False
+
+        # Allow Promotions
         if promo:
             assert piece.upper() == "P", "Promotion only for pawns"
             self[to_sq] = promo
