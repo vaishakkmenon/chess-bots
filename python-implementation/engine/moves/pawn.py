@@ -1,6 +1,7 @@
 from board import Board
 from .move import Move
 from .helpers import check_bounds
+from typing import Optional
 
 
 def _generate_promotions(frm, to):
@@ -17,11 +18,16 @@ def pawn_moves(board: Board, color: str) -> list[Move]:
     Returns list of moves that include from, to, and promotion or not"""
 
     # Promotion Logic in function scope to keep pawn logic centralized
-    def append_pawn_move(frm, to, promo_flag=None):
+    def append_pawn_move(
+        frm: tuple[int, int],
+        to: tuple[int, int],
+        promo_flag: Optional[str] = None,
+    ):
         """Helper to append either a normal move or the four promotions."""
         _, r2 = to
-        if promo_flag is None and (
-            r2 == Board.WHITE_PROMOTE_RANK or r2 == Board.BLACK_PROMOTE_RANK
+        if promo_flag is None and r2 in (
+            Board.WHITE_PROMOTE_RANK,
+            Board.BLACK_PROMOTE_RANK,
         ):
             moves.extend(_generate_promotions(frm, to))
         else:
@@ -50,59 +56,62 @@ def pawn_moves(board: Board, color: str) -> list[Move]:
     for file in range(1, 9):
         for rank in range(1, 9):
             # Check if board position is a pawn
-            if board[file, rank] == pawn_char:
-                # Append single move forward
-                first_target = newFile, newRank = file, rank + direction
+            if board[file, rank] != pawn_char:
+                continue
+            # Append single move forward
+            target_file, target_rank = file, rank + direction
+            first_target = (target_file, target_rank)
 
-                on_board = check_bounds(newFile, newRank)
-                is_empty = board[newFile, newRank] == empty
+            on_board = check_bounds(target_file, target_rank)
+            is_empty = board[target_file, target_rank] == empty
 
-                if on_board and is_empty:
-                    append_pawn_move((file, rank), first_target)
+            if on_board and is_empty:
+                append_pawn_move((file, rank), first_target)
 
-                # Append double move forward
-                if rank == start_rank:
-                    mid_f, mid_r = file, rank + direction
-                    double_move = end_f, end_r = file, rank + 2 * direction
-                    # Check if rank is valid
-                    # Check one move and two moves is empty
-                    if (
-                        check_bounds(end_f, end_r)
-                        and board[mid_f, mid_r] == empty
-                        and board[end_f, end_r] == empty
-                    ):
-                        append_pawn_move((file, rank), double_move)
+            # Append double move forward
+            if rank == start_rank:
+                mid_sq = (file, rank + direction)
+                end_sq = (file, rank + 2 * direction)
 
-                # Calculate capture squares
-                # Move is reused to calculate the rank
-                #   the rank is only one off
-                left_cap = left_file, left_rank = file - 1, rank + direction
-                right_cap = right_file, right_rank = file + 1, rank + direction
-
-                # Ensure you are capturing enemy piece and on the board
-                if check_bounds(left_file, left_rank) and board.holds(
-                    (left_file, left_rank), enemy_pieces
+                # Check if rank is valid
+                # Check one move and two moves is empty
+                if (
+                    check_bounds(*end_sq)
+                    and board[mid_sq] == empty
+                    and board[end_sq] == empty
                 ):
-                    append_pawn_move((file, rank), left_cap)
+                    append_pawn_move((file, rank), end_sq)
 
-                if check_bounds(right_file, right_rank) and board.holds(
-                    (right_file, right_rank), enemy_pieces
-                ):
-                    append_pawn_move((file, rank), right_cap)
+            # Calculate capture squares
+            # Move is reused to calculate the rank
+            #   the rank is only one off
+            left_file, left_rank = file - 1, rank + direction
+            right_file, right_rank = file + 1, rank + direction
 
-                # En-Passant Logic
-                en_passant = board.en_passant_target
-                if en_passant:
-                    ep_file, ep_rank = en_passant
-                    if (
-                        ep_rank == rank + direction
-                        and abs(ep_file - file) == 1
-                    ):
-                        moves.append(
-                            Move(
-                                (file, rank),
-                                (ep_file, ep_rank),
-                                is_en_passant=True,
-                            )
+            left_sq = (left_file, left_rank)
+            right_sq = (right_file, right_rank)
+
+            # Ensure you are capturing enemy piece and on the board
+            if check_bounds(left_file, left_rank) and board.holds(
+                (left_file, left_rank), enemy_pieces
+            ):
+                append_pawn_move((file, rank), left_sq)
+
+            if check_bounds(right_file, right_rank) and board.holds(
+                (right_file, right_rank), enemy_pieces
+            ):
+                append_pawn_move((file, rank), right_sq)
+
+            # En-Passant Logic
+            en_passant = board.en_passant_target
+            if en_passant:
+                ep_file, ep_rank = en_passant
+                if ep_rank == rank + direction and abs(ep_file - file) == 1:
+                    moves.append(
+                        Move(
+                            (file, rank),
+                            (ep_file, ep_rank),
+                            is_en_passant=True,
                         )
+                    )
     return moves
