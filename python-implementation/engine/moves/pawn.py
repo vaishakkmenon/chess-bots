@@ -35,12 +35,12 @@ def pawn_moves(board: Board, color: str) -> list[Move]:
     # Set up variables that will be used later
     if color == "white":
         pawn_char = "P"
-        move = 1
+        direction = 1
         start_rank = 2
         enemy_pieces = board.black_pieces
     else:
         pawn_char = "p"
-        move = -1
+        direction = -1
         start_rank = 7
         enemy_pieces = board.white_pieces
 
@@ -52,7 +52,7 @@ def pawn_moves(board: Board, color: str) -> list[Move]:
             # Check if board position is a pawn
             if board[file, rank] == pawn_char:
                 # Append single move forward
-                first_target = newFile, newRank = file, rank + move
+                first_target = newFile, newRank = file, rank + direction
 
                 on_board = check_bounds(newFile, newRank)
                 is_empty = board[newFile, newRank] == empty
@@ -62,8 +62,8 @@ def pawn_moves(board: Board, color: str) -> list[Move]:
 
                 # Append double move forward
                 if rank == start_rank:
-                    mid_f, mid_r = file, rank + move
-                    double_move = end_f, end_r = file, rank + 2 * move
+                    mid_f, mid_r = file, rank + direction
+                    double_move = end_f, end_r = file, rank + 2 * direction
                     # Check if rank is valid
                     # Check one move and two moves is empty
                     if (
@@ -76,17 +76,17 @@ def pawn_moves(board: Board, color: str) -> list[Move]:
                 # Calculate capture squares
                 # Move is reused to calculate the rank
                 #   the rank is only one off
-                left_cap = leftFile, leftRank = file - 1, rank + move
-                right_cap = rightFile, rightRank = file + 1, rank + move
+                left_cap = left_file, left_rank = file - 1, rank + direction
+                right_cap = right_file, right_rank = file + 1, rank + direction
 
                 # Ensure you are capturing enemy piece and on the board
-                if check_bounds(leftFile, leftRank) and board.holds(
-                    (leftFile, leftRank), enemy_pieces
+                if check_bounds(left_file, left_rank) and board.holds(
+                    (left_file, left_rank), enemy_pieces
                 ):
                     append_pawn_move((file, rank), left_cap)
 
-                if check_bounds(rightFile, rightRank) and board.holds(
-                    (rightFile, rightRank), enemy_pieces
+                if check_bounds(right_file, right_rank) and board.holds(
+                    (right_file, right_rank), enemy_pieces
                 ):
                     append_pawn_move((file, rank), right_cap)
 
@@ -94,7 +94,10 @@ def pawn_moves(board: Board, color: str) -> list[Move]:
                 en_passant = board.en_passant_target
                 if en_passant:
                     ep_file, ep_rank = en_passant
-                    if ep_rank == rank + move and abs(ep_file - file) == 1:
+                    if (
+                        ep_rank == rank + direction
+                        and abs(ep_file - file) == 1
+                    ):
                         moves.append(
                             Move(
                                 (file, rank),
