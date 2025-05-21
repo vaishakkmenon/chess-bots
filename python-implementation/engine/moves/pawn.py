@@ -1,4 +1,5 @@
 from board import Board
+from .move import Move
 from .helpers import check_bounds
 
 
@@ -8,12 +9,10 @@ def _generate_promotions(frm, to):
     (from_sq, to_sq, 'Q'), (from_sq, to_sq, 'R'), …
     """
     for piece in ("Q", "R", "B", "N"):
-        yield (frm, to, piece)
+        yield Move(frm, to, piece)
 
 
-def pawn_moves(
-    board: Board, color: str
-) -> list[tuple[tuple[int, int], tuple[int, int], str | None]]:
+def pawn_moves(board: Board, color: str) -> list[Move]:
     """Function to calculate all possible pawn moves
     Returns list of moves that include from, to, and promotion or not"""
 
@@ -26,7 +25,7 @@ def pawn_moves(
         ):
             moves.extend(_generate_promotions(frm, to))
         else:
-            moves.append((frm, to, promo_flag))
+            moves.append(Move(frm, to, promo_flag))
 
     # list to store moves
     moves = []
@@ -38,10 +37,12 @@ def pawn_moves(
         pawn_char = "P"
         move = 1
         start_rank = 2
+        enemy_pieces = board.black_pieces
     else:
         pawn_char = "p"
         move = -1
         start_rank = 7
+        enemy_pieces = board.white_pieces
 
     # Loops to go through the board and
     # perform checks on valid moves and captures
@@ -78,18 +79,14 @@ def pawn_moves(
                 left_cap = leftFile, leftRank = file - 1, rank + move
                 right_cap = rightFile, rightRank = file + 1, rank + move
 
-                # Ensure files and ranks are within the board dimensions
-                # Ensure the square has a piece to capture
-                if (
-                    check_bounds(leftFile, leftRank)
-                    and board[leftFile, leftRank] != empty
-                    and board[leftFile, leftRank] != pawn_char
+                # Ensure you are capturing enemy piece and on the board
+                if check_bounds(leftFile, leftRank) and board.holds(
+                    (leftFile, leftRank), enemy_pieces
                 ):
                     append_pawn_move((file, rank), left_cap)
-                if (
-                    check_bounds(rightFile, rightRank)
-                    and board[rightFile, rightRank] != empty
-                    and board[rightFile, rightRank] != pawn_char
+
+                if check_bounds(rightFile, rightRank) and board.holds(
+                    (rightFile, rightRank), enemy_pieces
                 ):
                     append_pawn_move((file, rank), right_cap)
 
@@ -98,5 +95,9 @@ def pawn_moves(
                 if en_passant:
                     ep_file, ep_rank = en_passant
                     if ep_rank == rank + move and abs(ep_file - file) == 1:
-                        append_pawn_move((file, rank), (ep_file, ep_rank))
+                        Move(
+                            (file, rank),
+                            (ep_file, ep_rank),
+                            is_en_passant=True,
+                        )
     return moves
