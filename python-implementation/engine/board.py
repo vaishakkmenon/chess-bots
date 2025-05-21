@@ -1,5 +1,5 @@
 # board.py
-
+from moves.move import Move
 from typing import Optional, Tuple
 
 
@@ -108,23 +108,25 @@ class Board:
             self[(file, 1)] = self.PIECES[f"W{piece_code}"]
             self[(file, 8)] = self.PIECES[f"B{piece_code}"]
 
-    def make_move(
-        self,
-        from_sq: Tuple[int, int],
-        to_sq: Tuple[int, int],
-        promo: Optional[str] = None,
-    ) -> None:
+    def make_move(self, move: Move) -> tuple[bool, bool, bool, bool]:
+        from_sq = move.from_sq
+        to_sq = move.to_sq
+        promo = move.promo
+
         # handle en passant capture
         ep = self.en_passant_target
         if ep and to_sq == ep:
-            pawn = self[from_sq]
-            direction = 1 if pawn.isupper() else -1
-            self[(to_sq[0], to_sq[1] - direction)] = self.EMPTY
+            move.is_en_passant = True
+            direction = 1 if self[from_sq].isupper() else -1
+            cap_sq = (to_sq[0], to_sq[1] - direction)
+            move.captured = (self[cap_sq], cap_sq)
+            self[cap_sq] = self.EMPTY
 
-        # move or promotion
         piece = self[from_sq]
-        # Track which piece was captured
+        # Regular capture
         captured = self[to_sq]
+        if not move.is_en_passant and captured != Board.EMPTY:
+            move.captured = (captured, to_sq)
 
         # If the piece captured was a rook, then castling is disabled
         if captured == "R" and to_sq == (1, 1):
@@ -138,6 +140,7 @@ class Board:
 
         # If the king is castling then move the rook
         if piece.upper() == "K" and abs(to_sq[0] - from_sq[0]) == 2:
+            move.is_castle = True
             rank = from_sq[1]
             if to_sq[0] > from_sq[0]:
                 self[(6, rank)] = self[(8, rank)]
@@ -170,6 +173,8 @@ class Board:
             self[to_sq] = piece
         self[from_sq] = self.EMPTY
 
+        move.prev_en_passant = self.en_passant_target
+
         # update en passant state
         if piece.upper() == "P" and abs(to_sq[1] - from_sq[1]) == 2:
             self.en_passant_target = (
@@ -178,3 +183,13 @@ class Board:
             )
         else:
             self.en_passant_target = None
+
+        return (
+            self.white_can_castle_kingside,
+            self.white_can_castle_queenside,
+            self.black_can_castle_kingside,
+            self.black_can_castle_queenside,
+        )
+
+    def undo_move(self, move: Move, prev_en_passant, prev_castling_rights):
+        pass

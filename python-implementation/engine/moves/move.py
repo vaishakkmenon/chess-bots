@@ -20,5 +20,8 @@ class Move:
     # True if this move is an en passant capture
     is_en_passant: bool = False
 
+    # En-passant capture square
+    prev_en_passant: Optional[Tuple[int, int]] = None
+
     # The piece that was captured on this move, if any (used for undo and eval)
     captured: Optional[Tuple[str, Tuple[int, int]]] = None
