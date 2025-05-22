@@ -1,10 +1,16 @@
-# tests/utils.py
+def assert_equal(a, b, msg=""):
+    if a != b:
+        raise AssertionError(f"{msg} — expected {b}, got {a}")
 
-from engine.board import Board
-from engine.moves.move import Move
+
+def assert_true(expr, msg=""):
+    if not expr:
+        raise AssertionError(f"{msg}")
 
 
-def make_board(pieces: dict[tuple[int, int], str]) -> Board:
+def make_board(pieces: dict[tuple[int, int], str]):
+    from engine.board import Board
+
     b = Board()
     b.squares = [[b.EMPTY for _ in range(8)] for _ in range(8)]
     for (f, r), char in pieces.items():
@@ -12,46 +18,34 @@ def make_board(pieces: dict[tuple[int, int], str]) -> Board:
     return b
 
 
-def assert_equal(a, b, msg=""):
-    assert a == b, f"{msg} — expected {b}, got {a}"
-
-
-def assert_true(expr, msg=""):
-    assert expr, msg
-
-
 def print_section(title: str):
     print(f"\n{'='*10} {title} {'='*10}")
 
 
-def print_board(b: Board):
-    print(b)
-
-
-# ─── Pawn Move Classifiers ───────────────────────────────────────────────────
-
-
-def is_single_push(move: Move) -> bool:
+def is_single_push(move, color):
     f0, r0 = move.from_sq
     f1, r1 = move.to_sq
-    return move.promo is None and f0 == f1 and r1 == r0 + 1
+    direction = 1 if color == "white" else -1
+    return move.promo is None and f0 == f1 and r1 - r0 == direction
 
 
-def is_double_push(move: Move) -> bool:
+def is_double_push(move, color):
     f0, r0 = move.from_sq
     f1, r1 = move.to_sq
-    return move.promo is None and f0 == f1 and r1 == r0 + 2
+    direction = 1 if color == "white" else -1
+    return move.promo is None and f0 == f1 and r1 - r0 == 2 * direction
 
 
-def is_capture(move: Move) -> bool:
+def is_capture(move, color):
     f0, r0 = move.from_sq
     f1, r1 = move.to_sq
-    return move.promo is None and abs(f1 - f0) == 1 and r1 == r0 + 1
+    direction = 1 if color == "white" else -1
+    return move.promo is None and abs(f1 - f0) == 1 and r1 - r0 == direction
 
 
-def is_en_passant(move: Move, ep_target: tuple[int, int]) -> bool:
+def is_en_passant(move, ep_target):
     return move.is_en_passant and move.to_sq == ep_target
 
 
-def is_promotion(move: Move) -> bool:
+def is_promotion(move):
     return move.promo in {"Q", "R", "B", "N"}
