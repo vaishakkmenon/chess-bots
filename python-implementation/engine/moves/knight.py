@@ -1,10 +1,13 @@
-from board import Board
-from offsets import KNIGHT_OFFSETS
-from .move import Move
-from .helpers import check_bounds
+from engine.board import Board
+from engine.offsets import KNIGHT_OFFSETS
+
+from engine.moves.move import Move
+from engine.moves.helpers import check_bounds
+
+from typing import List
 
 
-def knight_moves(board: Board, color: str) -> list[Move]:
+def knight_moves(board: Board, color: str) -> List[Move]:
     """
     Generate all knight jumps for the given color.
     Returns a list of Move objects.

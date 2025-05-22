@@ -1,6 +1,8 @@
-from board import Board
-from .move import Move
-from .helpers import check_bounds
+from engine.board import Board
+
+from engine.moves.move import Move
+from engine.moves.helpers import check_bounds
+
 from typing import Optional
 
 

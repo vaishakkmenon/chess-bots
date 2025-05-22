@@ -1,5 +1,5 @@
-from board import Board
-from moves.helpers import is_square_attacked
+from engine.board import Board
+from engine.moves.helpers import is_square_attacked
 
 
 def in_check(board: Board, color: str) -> bool:

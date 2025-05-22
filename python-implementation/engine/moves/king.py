@@ -1,9 +1,10 @@
-from board import Board
-from typing import List
-from offsets import KING_OFFSETS
+from engine.board import Board
+from engine.offsets import KING_OFFSETS
 
-from .move import Move
-from .helpers import check_bounds, is_square_attacked
+from engine.moves.move import Move
+from engine.moves.helpers import check_bounds, is_square_attacked
+
+from typing import List
 
 # (we’ll integrate attack‐checks and castling in a moment)
 
@@ -49,6 +50,7 @@ def king_moves(board: Board, color: str) -> List[Move]:
                 # Castling
                 if (
                     can_castle_kingside
+                    and (sf, sr) == (5, 1 if color == "white" else 8)
                     and board[sf + 1, sr] == board.EMPTY
                     and board[sf + 2, sr] == board.EMPTY
                     and board[sf + 3, sr] == rook_char
@@ -61,6 +63,7 @@ def king_moves(board: Board, color: str) -> List[Move]:
 
                 if (
                     can_castle_queenside
+                    and (sf, sr) == (5, 1 if color == "white" else 8)
                     and board[sf - 1, sr] == board.EMPTY
                     and board[sf - 2, sr] == board.EMPTY
                     and board[sf - 3, sr] == board.EMPTY

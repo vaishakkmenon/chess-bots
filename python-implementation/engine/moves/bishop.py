@@ -1,9 +1,10 @@
-from board import Board
-from typing import List
-from offsets import BISHOP_OFFSETS
+from engine.board import Board
+from engine.offsets import BISHOP_OFFSETS
 
-from .move import Move
-from .helpers import check_bounds
+from engine.moves.move import Move
+from engine.moves.helpers import check_bounds
+
+from typing import List
 
 
 def bishop_moves(board: Board, color: str) -> List[Move]:

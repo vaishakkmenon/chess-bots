@@ -1,5 +1,5 @@
 # board.py
-from moves.move import Move
+from engine.moves.move import Move
 from typing import Optional, Tuple
 
 
@@ -191,5 +191,43 @@ class Board:
             self.black_can_castle_queenside,
         )
 
-    def undo_move(self, move: Move, prev_en_passant, prev_castling_rights):
-        pass
+    def undo_move(
+        self, move: Move, castling_rights: tuple[bool, bool, bool, bool]
+    ) -> None:
+        from_sq = move.from_sq
+        to_sq = move.to_sq
+
+        # Reverse promotion: put the pawn back
+        piece = self[to_sq]
+        if move.promo:
+            piece = "P" if piece.isupper() else "p"
+
+        # Move the piece back
+        self[from_sq] = piece
+        self[to_sq] = Board.EMPTY
+
+        # Restore captured piece (including en passant target square)
+        if move.captured:
+            captured_piece, cap_sq = move.captured
+            self[cap_sq] = captured_piece
+
+        # Reverse castling: move the rook back
+        if move.is_castle:
+            rank = from_sq[1]
+            if to_sq[0] > from_sq[0]:  # kingside
+                self[(8, rank)] = self[(6, rank)]
+                self[(6, rank)] = Board.EMPTY
+            else:  # queenside
+                self[(1, rank)] = self[(4, rank)]
+                self[(4, rank)] = Board.EMPTY
+
+        # Restore previous en passant state
+        self.en_passant_target = move.prev_en_passant
+
+        # Restore previous castling rights
+        (
+            self.white_can_castle_kingside,
+            self.white_can_castle_queenside,
+            self.black_can_castle_kingside,
+            self.black_can_castle_queenside,
+        ) = castling_rights
