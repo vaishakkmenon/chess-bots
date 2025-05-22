@@ -3,25 +3,91 @@ from engine.moves.knight import knight_moves
 from tests.utils import (
     make_board,
     assert_true,
+    assert_equal,
     print_section,
 )
 
 
-# ─── Knight Tests ───────────────────────────────────────────────────────────
-def test_knight_moves():
-    print_section("Knight Moves Tests")
+def test_knight_center_moves():
+    print_section("Knight Center Quiet + Capture")
 
-    # center quiet & capture in one set
+    # Knight on d4 (4,4) with black pawn on f5 (6,5)
     b = make_board({(4, 4): "N", (6, 5): "p"})
     km = knight_moves(b, "white")
-    # quiet moves = jumps to empty squares
+
     quiet = [m for m in km if b[m.to_sq] == Board.EMPTY]
     captures = [m for m in km if b[m.to_sq].islower()]
-    assert_true(
-        len(quiet) > 0, "Knight must have at least one non-capture jump"
-    )
-    assert_true(
-        len(captures) > 0, "Knight must have at least one capture jump"
+
+    assert_true(len(quiet) > 0, "Knight must have quiet moves from center")
+    assert_true(len(captures) > 0, "Knight must have capture move on f5")
+
+
+def test_knight_edge_moves():
+    print_section("Knight Edge-of-Board Test")
+
+    # Knight on a1 (1,1), should only have 2 legal jumps: b3 and c2
+    b = make_board({(1, 1): "N"})
+    km = knight_moves(b, "white")
+    targets = {m.to_sq for m in km}
+    expected = {(2, 3), (3, 2)}  # b3 and c2
+
+    assert_equal(targets, expected, "Knight at a1 must only jump to b3 and c2")
+
+
+def test_knight_blocked_by_friends():
+    print_section("Knight Blocked By Friend Test")
+
+    # Knight at d4, friendly pawns on all 8 potential squares
+    knight_pos = (4, 4)
+    targets = [(3, 6), (5, 6), (6, 5), (6, 3), (5, 2), (3, 2), (2, 3), (2, 5)]
+    pieces = {knight_pos: "N"}
+    pieces.update({sq: "P" for sq in targets})  # all friendlies
+    b = make_board(pieces)
+    km = knight_moves(b, "white")
+    assert_equal(
+        len(km), 0, "Knight should have no legal jumps through friendly units"
     )
 
-    print("✔️ Knight moves include both quiet and capture.")
+
+def test_knight_captures_only():
+    print_section("Knight Capture Only Test")
+
+    # Knight on d4, enemy pieces only
+    knight_pos = (4, 4)
+    targets = [(3, 6), (5, 6), (6, 5), (6, 3), (5, 2), (3, 2), (2, 3), (2, 5)]
+    pieces = {knight_pos: "N"}
+    pieces.update({sq: "p" for sq in targets})  # all enemies
+    b = make_board(pieces)
+    km = knight_moves(b, "white")
+
+    assert_equal(
+        len(km),
+        8,
+        "Knight should have 8 capture moves when surrounded by enemies",
+    )
+
+
+def test_knight_mixed_moves():
+    print_section("Knight Mixed Quiet and Capture")
+
+    # Knight on d4, 4 quiets, 4 captures
+    knight_pos = (4, 4)
+    quiet_sqs = [(2, 3), (3, 2), (6, 3), (5, 2)]
+    capture_sqs = [(2, 5), (3, 6), (5, 6), (6, 5)]
+    pieces = {knight_pos: "N"}
+    pieces.update({sq: "." for sq in quiet_sqs})
+    pieces.update({sq: "p" for sq in capture_sqs})
+    b = make_board(pieces)
+    km = knight_moves(b, "white")
+
+    quiet = [m.to_sq for m in km if b[m.to_sq] == Board.EMPTY]
+    captures = [m.to_sq for m in km if b[m.to_sq].islower()]
+
+    assert_equal(
+        set(quiet), set(quiet_sqs), "Knight should have correct quiet squares"
+    )
+    assert_equal(
+        set(captures),
+        set(capture_sqs),
+        "Knight should have correct capture squares",
+    )
