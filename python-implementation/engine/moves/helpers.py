@@ -1,7 +1,7 @@
 # moves/helpers.py
 
-from board import Board
-from offsets import (
+from engine.board import Board
+from engine.offsets import (
     PAWN_ATTACK_OFFSETS,
     BISHOP_OFFSETS,
     ROOK_OFFSETS,
