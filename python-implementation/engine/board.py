@@ -108,10 +108,24 @@ class Board:
             self[(file, 1)] = self.PIECES[f"W{piece_code}"]
             self[(file, 8)] = self.PIECES[f"B{piece_code}"]
 
+    def _update_castling_from_board(self) -> None:
+        """Disable any castling right whose corner rook has disappeared."""
+        self.white_can_castle_queenside &= self[(1, 1)] == "R"
+        self.white_can_castle_kingside &= self[(8, 1)] == "R"
+        self.black_can_castle_queenside &= self[(1, 8)] == "r"
+        self.black_can_castle_kingside &= self[(8, 8)] == "r"
+
     def make_move(self, move: Move) -> tuple[bool, bool, bool, bool]:
         from_sq = move.from_sq
         to_sq = move.to_sq
         promo = move.promo
+
+        prev_rights = (
+            self.white_can_castle_kingside,
+            self.white_can_castle_queenside,
+            self.black_can_castle_kingside,
+            self.black_can_castle_queenside,
+        )
 
         # handle en passant capture
         ep = self.en_passant_target
@@ -149,21 +163,25 @@ class Board:
                 self[(4, rank)] = self[(1, rank)]
                 self[(1, rank)] = self.EMPTY
 
-        # Disable castling after the king moves
         if piece == "K":
             self.white_can_castle_kingside = False
             self.white_can_castle_queenside = False
+
         elif piece == "k":
             self.black_can_castle_kingside = False
             self.black_can_castle_queenside = False
-        elif piece == "R" and from_sq == (1, 1):
-            self.white_can_castle_queenside = False
-        elif piece == "R" and from_sq == (8, 1):
-            self.white_can_castle_kingside = False
-        elif piece == "r" and from_sq == (1, 8):
-            self.black_can_castle_queenside = False
-        elif piece == "r" and from_sq == (8, 8):
-            self.black_can_castle_kingside = False
+
+        elif piece == "R":
+            if from_sq == (1, 1) or to_sq == (1, 1):
+                self.white_can_castle_queenside = False
+            if from_sq == (8, 1) or to_sq == (8, 1):
+                self.white_can_castle_kingside = False
+
+        elif piece == "r":
+            if from_sq == (1, 8) or to_sq == (1, 8):
+                self.black_can_castle_queenside = False
+            if from_sq == (8, 8) or to_sq == (8, 8):
+                self.black_can_castle_kingside = False
 
         # Allow Promotions
         if promo:
@@ -184,12 +202,9 @@ class Board:
         else:
             self.en_passant_target = None
 
-        return (
-            self.white_can_castle_kingside,
-            self.white_can_castle_queenside,
-            self.black_can_castle_kingside,
-            self.black_can_castle_queenside,
-        )
+        self._update_castling_from_board()
+
+        return prev_rights
 
     def undo_move(
         self, move: Move, castling_rights: tuple[bool, bool, bool, bool]
