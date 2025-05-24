@@ -186,7 +186,7 @@ class Board:
         # Allow Promotions
         if promo:
             assert piece.upper() == "P", "Promotion only for pawns"
-            self[to_sq] = promo
+            self[to_sq] = promo if piece.isupper() else promo.lower()
         else:
             self[to_sq] = piece
         self[from_sq] = self.EMPTY

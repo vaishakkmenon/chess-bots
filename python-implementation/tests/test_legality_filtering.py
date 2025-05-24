@@ -6,29 +6,17 @@ from tests.utils import (
 )
 
 
-def test_legal_moves_filter():
-    print_section("Legal Moves Filter")
-
-    # Setup: white king on e1, black rook attacking from e8
-    b = make_board({(5, 1): "K", (5, 8): "r"})  # e1 and e8
+def test_king_escape_squares_exact():
+    b = make_board({(5, 1): "K", (5, 8): "r"})
     legal = legal_moves(b, "white")
+    assert {m.to_sq for m in legal} == {(4, 1), (4, 2), (6, 1), (6, 2)}
 
-    expected = {(4, 1), (4, 2), (6, 1), (6, 2)}
-    actual = {m.to_sq for m in legal}
-    assert (
-        actual == expected
-    ), f"Expected king escape squares {expected}, got {actual}"
 
-    # Now test that king has an escape
-    b = make_board({(5, 1): "K", (5, 8): "r", (4, 1): "."})  # d1 is empty
+def test_king_can_move_to_d1():
+    b = make_board({(5, 1): "K", (5, 8): "r"})
+    b[(4, 1)] = "."  # clear d1
     legal = legal_moves(b, "white")
-    squares = [m.to_sq for m in legal]
-    assert (
-        4,
-        1,
-    ) in squares, "King should be able to move to d1 to escape check"
-
-    print("✔️ Legal move filtering based on check works.")
+    assert (4, 1) in {m.to_sq for m in legal}
 
 
 def test_in_check():
@@ -43,3 +31,39 @@ def test_in_check():
     assert not in_check(b, "black"), "Black king alone should not be in check"
 
     print("✔️ in_check() correctly detects check state.")
+
+
+# En‑passant that leaves king in check must be filtered
+def test_ep_illegal_due_to_discovered_check():
+    b = make_board({(5, 5): "P", (6, 5): "p", (5, 1): "K", (5, 8): "r"})
+    b.en_passant = (6, 6)
+    legal = legal_moves(b, "white")
+    assert not any(getattr(m, "is_en_passant", False) for m in legal)
+
+
+# Pinned rook may move along pin line but not off it
+def test_rook_along_pin_only():
+    b = make_board({(5, 1): "K", (1, 1): "r", (4, 1): "R"})
+    legal = legal_moves(b, "white")
+    moves = [m for m in legal if m.from_sq == (4, 1)]
+    assert all(m.to_sq[1] == 1 for m in moves)  # must stay on rank1
+
+
+def test_blocking_check_is_legal():
+    # Queen a5 gives diagonal check: a5-b4-c3-d2-e1
+    b = make_board({(5, 1): "K", (1, 5): "q", (3, 3): "B"})  # bishop c3
+    blocking_moves = [
+        m for m in legal_moves(b, "white") if m.from_sq == (3, 3)
+    ]
+    assert (4, 2) in {
+        m.to_sq for m in blocking_moves
+    }, "Move that blocks the check must be legal"
+
+
+def test_capturing_checking_piece_is_legal():
+    # Same geometry as LF-1; bishop can also capture the queen
+    b = make_board({(5, 1): "K", (1, 5): "q", (3, 3): "B"})
+    capture_moves = [m for m in legal_moves(b, "white") if m.from_sq == (3, 3)]
+    assert (1, 5) in {
+        m.to_sq for m in capture_moves
+    }, "Capturing the checking piece should be a legal reply to check"

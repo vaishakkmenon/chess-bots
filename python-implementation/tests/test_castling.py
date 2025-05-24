@@ -83,3 +83,27 @@ def test_castling_rights_cleared_and_restored(start_sq, end_sq, flag):
     b.undo_move(m, rights)
     for f in flag:
         assert getattr(b, f)
+
+
+def test_castling_destination_attacked():
+    b = make_board({(5, 1): "K", (8, 1): "R", (7, 8): "q"})  # queen hits g1
+    b.white_can_castle_kingside = True
+    assert not has_castle_move(king_moves(b, "white"), (5, 1), (7, 1))
+
+
+def test_castling_crossed_square_attacked_queenside():
+    b = make_board({(5, 1): "K", (1, 1): "R", (4, 8): "q"})  # queen hits d1
+    b.white_can_castle_queenside = True
+    assert not has_castle_move(king_moves(b, "white"), (5, 1), (3, 1))
+
+
+def test_castling_no_rook_piece():
+    b = make_board({(5, 1): "K"})  # rook was captured
+    b.white_can_castle_kingside = True
+    assert not has_castle_move(king_moves(b, "white"), (5, 1), (7, 1))
+
+
+def test_castling_with_enemy_rook_illegal():
+    b = make_board({(5, 1): "K", (8, 1): "r"})  # black rook on h1
+    b.white_can_castle_kingside = True
+    assert not has_castle_move(king_moves(b, "white"), (5, 1), (7, 1))

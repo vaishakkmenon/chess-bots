@@ -64,3 +64,30 @@ def test_double_check_only_king_moves():
         m.from_sq == (5, 1) for m in legal
     ), "Only king may move under double check"
     print("✔️ Only king moves allowed during double check.")
+
+
+def test_pinned_rook_can_capture_pinning_piece():
+    # Pin line a1-b1-c1-d1-e1
+    b = make_board(
+        {(5, 1): "K", (4, 1): "R", (1, 1): "r"}
+    )  # king e1, white rook d1, black rook a1
+    moves = [m for m in legal_moves(b, "white") if m.from_sq == (4, 1)]
+    assert (1, 1) in {
+        m.to_sq for m in moves
+    }, "Pinned rook should be allowed to capture the pinning piece"
+
+
+def test_en_passant_allowed_when_safe():
+    # White pawn e5, black plays d7-d5
+    b = make_board({(5, 5): "P", (4, 7): "p", (5, 1): "K"})
+    double = Move((4, 7), (4, 5))  # ...d7→d5
+    b.make_move(double)
+
+    ep_moves = [
+        m
+        for m in legal_moves(b, "white")
+        if getattr(m, "is_en_passant", False)
+    ]
+    assert any(
+        m.to_sq == (4, 6) for m in ep_moves
+    ), "Safe en-passant should be allowed"

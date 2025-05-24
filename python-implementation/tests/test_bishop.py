@@ -1,5 +1,6 @@
 from engine.board import Board
 from engine.moves.bishop import bishop_moves
+from engine.moves.generator import legal_moves
 from tests.utils import (
     make_board,
     assert_true,
@@ -101,4 +102,44 @@ def test_bishop_captures_only():
     expected = {(5, 5), (5, 3), (3, 5), (3, 3)}
     assert_equal(
         targets, expected, "Bishop should capture on all adjacent diagonals"
+    )
+
+
+def test_bishop_stops_after_capture():
+    # King on e1 for legality context
+    b = make_board(
+        {
+            (5, 1): "K",
+            (3, 1): "B",  # bishop c1
+            (6, 4): "p",  # target f4
+            (7, 5): "p",  # extra piece beyond (should be unreachable)
+        }
+    )
+    bm = bishop_moves(b, "white")
+    dests = {m.to_sq for m in bm}
+    assert (6, 4) in dests, "Capture square must be included"
+    assert (7, 5) not in dests, "Squares beyond first capture must be excluded"
+
+
+def test_bishop_moves_limited_when_pinned():
+    # Pin line: a5-b4-c3-d2-e1
+    pieces = {
+        (5, 1): "K",  # king e1
+        (3, 3): "B",  # bishop c3 (pinned)
+        (1, 5): "b",  # black bishop a5, the pinning piece
+    }
+    b = make_board(pieces)
+    legal = [m for m in legal_moves(b, "white") if m.from_sq == (3, 3)]
+    targets = {m.to_sq for m in legal}
+    expected = {(2, 4), (4, 2), (1, 5)}  # along the diagonal only
+    assert targets == expected, "Pinned bishop can slide only on the pin line"
+
+
+def test_bishop_corner_h8_moves():
+    b = make_board({(8, 8): "B"})
+    bm = bishop_moves(b, "white")
+    expected = {(i, i) for i in range(1, 8)}  # (7,7) down to (1,1)
+    seen = {m.to_sq for m in bm}
+    assert_equal(
+        seen, expected, "Bishop at h8 must slide along SW diagonal only"
     )

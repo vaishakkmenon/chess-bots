@@ -1,5 +1,6 @@
 from engine.board import Board
 from engine.moves.king import king_moves
+from engine.moves.generator import legal_moves
 from tests.utils import (
     make_board,
     assert_true,
@@ -86,3 +87,46 @@ def test_king_surrounded_by_enemies():
     assert_equal(
         targets, expected, "King should capture all surrounding enemies"
     )
+
+
+def _dests(board, frm):
+    return {m.to_sq for m in legal_moves(board, "white") if m.from_sq == frm}
+
+
+def test_king_cannot_step_into_check():
+    b = make_board({(5, 4): "K", (5, 8): "r"})
+    assert (5, 5) not in _dests(b, (5, 4))
+
+
+def test_kings_not_adjacent():
+    b = make_board({(5, 4): "K", (6, 6): "k"})
+    # Square (6,5) would place the kings adjacent
+    assert (6, 5) not in _dests(b, (5, 4))
+
+
+def test_king_must_escape_check():
+    # Black rook gives check on the e-file
+    b = make_board({(5, 1): "K", (5, 8): "r"})
+    escapes = {m.to_sq for m in legal_moves(b, "white") if m.from_sq == (5, 1)}
+    expected = {(4, 1), (6, 1), (4, 2), (6, 2)}  # d1, f1, d2, f2
+    assert escapes == expected
+
+
+def test_king_cannot_capture_defended_piece():
+    b = make_board({(5, 1): "K", (4, 2): "p", (4, 8): "r"})  # pawn d2, rook d8
+    king_dests = {
+        m.to_sq for m in legal_moves(b, "white") if m.from_sq == (5, 1)
+    }
+    assert (
+        4,
+        2,
+    ) not in king_dests, "King must not capture into a checked square"
+
+
+def test_king_double_check_only_king_moves():
+    b = make_board(
+        {(5, 1): "K", (5, 8): "r", (8, 4): "b"}
+    )  # rook e8 & bishop h4
+    legal = legal_moves(b, "white")
+    non_king = [m for m in legal if b[m.from_sq] != "K"]
+    assert non_king == [], "In double check only king moves are legal"

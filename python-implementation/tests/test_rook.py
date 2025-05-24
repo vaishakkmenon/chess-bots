@@ -1,5 +1,7 @@
 from engine.board import Board
+from engine.moves.move import Move
 from engine.moves.rook import rook_moves
+from engine.moves.generator import legal_moves
 from tests.utils import (
     make_board,
     assert_equal,
@@ -104,3 +106,60 @@ def test_rook_captures_only():
         expected,
         "Rook should be able to capture in all four directions",
     )
+
+
+def _dests_from(b, frm):
+    return {m.to_sq for m in rook_moves(b, "white") if m.from_sq == frm}
+
+
+def test_rook_stops_on_first_enemy():
+    b = make_board({(5, 1): "K", (4, 4): "R", (4, 7): "p"})
+    dests = _dests_from(b, (4, 4))
+    assert (4, 7) in dests and (4, 8) not in dests
+
+
+def test_rook_move_turns_off_castling_flag():
+    b = make_board({(1, 1): "R"})
+    b.white_can_castle_queenside = True
+    m = Move((1, 1), (1, 2))
+    rights = b.make_move(m)
+    assert not b.white_can_castle_queenside
+    b.undo_move(m, rights)
+    assert b.white_can_castle_queenside
+
+
+def test_rook_vertical_pin_stays_on_file():
+    # Black rook on e8 pins white rook on e3 to the white king on e1.
+    b = make_board({(5, 1): "K", (5, 3): "R", (5, 8): "r"})
+    moves = [m for m in legal_moves(b, "white") if m.from_sq == (5, 3)]
+    # Rook may move only up or down the e‑file
+    assert moves and all(m.to_sq[0] == 5 for m in moves)
+
+
+def test_rook_horizontal_pin_stays_on_rank():
+    # Pin line a1–b1–c1–d1–e1 (king)
+    b = make_board(
+        {(5, 1): "K", (3, 1): "R", (1, 1): "r"}
+    )  # king e1, rook c1, black rook a1
+    rook_moves_only = [
+        m for m in legal_moves(b, "white") if m.from_sq == (3, 1)
+    ]
+    assert all(
+        m.to_sq[1] == 1 for m in rook_moves_only
+    ), "Pinned rook must not leave rank 1"
+
+
+def test_rook_cannot_move_when_diagonally_pinned():
+    # Pin line: c3-d2-e1
+    b = make_board(
+        {(5, 1): "K", (4, 2): "R", (3, 3): "b"}
+    )  # king e1, rook d2, bishop c3
+    assert all(m.from_sq != (4, 2) for m in legal_moves(b, "white"))
+
+
+def test_rook_stops_after_horizontal_capture():
+    b = make_board(
+        {(5, 1): "K", (4, 4): "R", (7, 4): "p"}
+    )  # rook d4, enemy pawn g4
+    dests = {m.to_sq for m in rook_moves(b, "white") if m.from_sq == (4, 4)}
+    assert (7, 4) in dests and (8, 4) not in dests

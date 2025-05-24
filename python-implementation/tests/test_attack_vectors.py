@@ -1,4 +1,5 @@
 from engine.moves.helpers import is_square_attacked
+from engine.moves.generator import legal_moves
 from tests.utils import (
     make_board,
     assert_equal,
@@ -75,3 +76,32 @@ def test_all_attack_vectors():
             result, expected, f"{desc} — expected {expected}, got {result}"
         )
     print("✔️ All attack-vector tests passed.")
+
+
+def test_attack_wrong_colour_returns_false():
+    b = make_board({(4, 4): "R"})  # white rook d4 attacks d7
+    assert not is_square_attacked(b, (4, 7), "black")
+
+
+def test_rook_attack_stops_before_second_enemy():
+    b = make_board(
+        {(4, 4): "R", (4, 6): "p", (4, 8): "p"}
+    )  # rook d4, pawns d6 & d8
+    assert is_square_attacked(b, (4, 6), "white")
+    assert not is_square_attacked(b, (4, 8), "white")
+
+
+def test_king_cannot_move_adjacent_to_enemy_king():
+    # White king e2 (5,2), Black king e4 (5,4)
+    b = make_board({(5, 2): "K", (5, 4): "k"})
+    king_moves_from_e2 = {
+        m.to_sq for m in legal_moves(b, "white") if m.from_sq == (5, 2)
+    }
+
+    # Any of these squares would leave the kings touching
+    forbidden = {(5, 3), (4, 3), (6, 3)}  # e3, d3, f3
+
+    # Engine must exclude them
+    assert forbidden.isdisjoint(
+        king_moves_from_e2
+    ), "King must not step adjacent to opposing king"

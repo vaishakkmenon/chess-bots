@@ -1,5 +1,6 @@
 from engine.board import Board
 from engine.moves.knight import knight_moves
+from engine.moves.generator import legal_moves
 from tests.utils import (
     make_board,
     assert_true,
@@ -91,3 +92,58 @@ def test_knight_mixed_moves():
         set(capture_sqs),
         "Knight should have correct capture squares",
     )
+
+
+def test_knight_stays_on_board():
+    b = make_board({(1, 2): "N", (5, 1): "K"})
+    dests = {m.to_sq for m in knight_moves(b, "white")}
+    assert all(1 <= x <= 8 and 1 <= y <= 8 for x, y in dests)
+
+
+def test_pinned_knight_no_moves():
+    b = make_board({(5, 1): "K", (5, 2): "N", (5, 8): "r"})
+    legal = legal_moves(b, "white")
+    assert all(m.from_sq != (5, 2) for m in legal)
+
+
+def test_knight_jumps_over_blockers():
+    b = make_board(
+        {
+            (5, 1): "K",  # king e1
+            (2, 1): "N",  # knight b1
+            (2, 2): "P",  # b2 blocker
+            (3, 2): "P",  # c2 blocker
+        }
+    )
+    dests = {m.to_sq for m in knight_moves(b, "white")}
+    # Knight b1 should reach a3, c3, d2
+    assert dests == {(1, 3), (3, 3), (4, 2)}
+
+
+# 2 — knight pinned _horizontally_ cannot move
+def test_knight_pinned_on_rank_no_moves():
+    b = make_board(
+        {
+            (5, 1): "K",  # king e1
+            (3, 1): "N",  # knight c1
+            (8, 1): "r",  # black rook h1 pinning along rank 1
+        }
+    )
+    legal = legal_moves(b, "white")
+    assert all(
+        m.from_sq != (3, 1) for m in legal
+    ), "Rank-pinned knight must stay put"
+
+
+def test_knight_pinned_on_diagonal_no_moves():
+    # Diagonal b4-c3-d2-e1 pins the knight
+    b = make_board(
+        {
+            (5, 1): "K",  # king e1
+            (4, 2): "N",  # knight d2
+            (2, 4): "b",  # black bishop b4
+        }
+    )
+    assert all(
+        m.from_sq != (4, 2) for m in legal_moves(b, "white")
+    ), "Diagonal-pinned knight must stay put"
