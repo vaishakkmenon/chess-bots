@@ -12,7 +12,10 @@ def make_board(pieces: dict[tuple[int, int], str]):
     from engine.board import Board
 
     b = Board()
-    b.squares = [[b.EMPTY for _ in range(8)] for _ in range(8)]
+    for r in range(1, 9):
+        for f in range(1, 9):
+            b[(f, r)] = b.EMPTY
+
     for (f, r), char in pieces.items():
         b[(f, r)] = char
     return b

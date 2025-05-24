@@ -24,11 +24,11 @@ ATTACK_TESTS = [
     ("white bishop c1→a3", {(3, 1): "B"}, (1, 3), "white", True),
     ("white bishop f4→b8", {(6, 4): "B"}, (2, 8), "white", True),
     (
-        "white bishop blocked by pawn",
-        {(4, 4): "B", (6, 6): "P"},
+        "white bishop blocked by knight",
+        {(4, 4): "B", (6, 6): "N"},
         (7, 7),
         "white",
-        True,
+        False,
     ),
     ("black queen c8→f5 diag", {(3, 8): "q"}, (6, 5), "black", True),
     (
