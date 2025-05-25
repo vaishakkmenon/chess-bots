@@ -16,10 +16,10 @@ def is_draw_by_50(board: Board):
 
 
 def get_game_status(board: Board, color: str) -> str:
+    if is_draw_by_50(board):
+        return "draw by 50 moves"
     if is_checkmate(board, color):
         return "checkmate"
     if is_stalemate(board, color):
         return "stalemate"
-    if is_draw_by_50(board):
-        return "draw by 50 moves"
     return "ongoing"
