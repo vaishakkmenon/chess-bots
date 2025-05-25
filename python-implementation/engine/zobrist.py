@@ -1,4 +1,5 @@
 import random
+from engine.board import Board
 
 PIECE_ORDER = [
     "P",
@@ -39,9 +40,36 @@ class Zobrist:
         self.side_to_move = self.rng.getrandbits(64)
 
     def piece_index(self, piece_char: str) -> int:
-        """Get index of piece in PIECE_ORDER"""
         return PIECE_ORDER.index(piece_char)
 
     def square_index(self, file: int, rank: int) -> int:
-        """Map (file, rank) to 0-based square index"""
         return (rank - 1) * 8 + (file - 1)
+
+    def compute_hash(self, board: Board, side_to_move: str) -> int:
+        hash_key = 0
+        for file in range(1, 9):
+            for rank in range(1, 9):
+                piece = board[file, rank]
+                if piece != board.EMPTY:
+                    piece_index = self.piece_index(piece)
+                    sq_index = self.square_index(file, rank)
+                    hash_key ^= self.piece_square[piece_index][sq_index]
+
+        if board.white_can_castle_kingside:
+            hash_key ^= self.castling_rights["WK"]
+        if board.white_can_castle_queenside:
+            hash_key ^= self.castling_rights["WQ"]
+        if board.black_can_castle_kingside:
+            hash_key ^= self.castling_rights["BK"]
+        if board.black_can_castle_queenside:
+            hash_key ^= self.castling_rights["BQ"]
+
+        if board.en_passant_target is not None:
+            ep_file, ep_rank = board.en_passant_target
+            if ep_rank in (3, 6) and 1 <= ep_file <= 8:
+                hash_key ^= self.en_passant[ep_file]
+
+        if side_to_move == "black":
+            hash_key ^= self.side_to_move
+
+        return hash_key

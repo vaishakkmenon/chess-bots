@@ -1,6 +1,7 @@
 # tests/test_zobrist_hash.py
 
 import pytest
+from engine.board import Board
 from engine.zobrist import (
     Zobrist,
     PIECE_ORDER,
@@ -14,6 +15,30 @@ MAX_64BIT = 2**64 - 1
 @pytest.fixture(scope="module")
 def zobrist():
     return Zobrist()
+
+
+def test_compute_hash_consistency(zobrist):
+    board = Board()
+    board.init_positions()
+
+    # Compute hash for white to move
+    hash_white_1 = zobrist.compute_hash(board, "white")
+    hash_white_2 = zobrist.compute_hash(board, "white")
+    assert (
+        hash_white_1 == hash_white_2
+    ), "Hashes for same position/side should match"
+
+    # Compute hash for black to move
+    hash_black_1 = zobrist.compute_hash(board, "black")
+    hash_black_2 = zobrist.compute_hash(board, "black")
+    assert (
+        hash_black_1 == hash_black_2
+    ), "Hashes for same position/side should match"
+
+    # Hashes for white and black to move should differ
+    assert (
+        hash_white_1 != hash_black_1
+    ), "Hashes for different side to move should differ"
 
 
 def test_piece_square_table_size(zobrist):
