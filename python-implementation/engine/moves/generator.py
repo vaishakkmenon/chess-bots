@@ -28,8 +28,8 @@ def legal_moves(board: Board, color: str) -> List[Move]:
     valid_moves = []
     moves = all_moves(board, color)
     for move in moves:
-        rights = board.make_move(move)
+        rights, prev_halfmove = board.make_move(move)
         if not in_check(board, color):
             valid_moves.append(move)
-        board.undo_move(move, rights)
+        board.undo_move(move, rights, prev_halfmove)
     return valid_moves

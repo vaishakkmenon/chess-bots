@@ -77,10 +77,10 @@ def test_castling_rights_cleared_and_restored(start_sq, end_sq, flag):
         setattr(b, f, True)
 
     m = Move(start_sq, end_sq)
-    rights = b.make_move(m)
+    rights, prev_halfmove = b.make_move(m)
     for f in flag:
         assert not getattr(b, f)
-    b.undo_move(m, rights)
+    b.undo_move(m, rights, prev_halfmove)
     for f in flag:
         assert getattr(b, f)
 

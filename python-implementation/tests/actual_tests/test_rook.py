@@ -122,9 +122,9 @@ def test_rook_move_turns_off_castling_flag():
     b = make_board({(1, 1): "R"})
     b.white_can_castle_queenside = True
     m = Move((1, 1), (1, 2))
-    rights = b.make_move(m)
+    rights, prev_halfclock = b.make_move(m)
     assert not b.white_can_castle_queenside
-    b.undo_move(m, rights)
+    b.undo_move(m, rights, prev_halfclock)
     assert b.white_can_castle_queenside
 
 

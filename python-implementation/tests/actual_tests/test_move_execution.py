@@ -12,8 +12,8 @@ def test_make_and_undo():
     b = make_board({(5, 2): "P", (5, 7): "p"})
     move = Move((5, 2), (5, 4))
     ep_before = b.en_passant_target
-    rights_before = b.make_move(move)
-    b.undo_move(move, rights_before)
+    rights_before, prev_halfclock = b.make_move(move)
+    b.undo_move(move, rights_before, prev_halfclock)
     assert b[(5, 2)] == "P"
     assert b[(5, 4)] == b.EMPTY
     assert b.en_passant_target == ep_before
@@ -25,9 +25,9 @@ def test_undo_promotion():
 
     b = make_board({(7, 7): "P"})
     move = Move((7, 7), (7, 8), promo="Q")
-    rights = b.make_move(move)
+    rights, prev_halfclock = b.make_move(move)
     assert b[(7, 8)] == "Q", "Piece must promote to Queen"
-    b.undo_move(move, rights)
+    b.undo_move(move, rights, prev_halfclock)
     assert b[(7, 7)] == "P", "Undo must restore pawn"
     assert b[(7, 8)] == Board.EMPTY, "Promotion square must be cleared"
     print("✔️ Undo promotion restores pawn correctly.")
@@ -35,8 +35,8 @@ def test_undo_promotion():
 
 # ─── Helpers ──────────────────────────────────────────────────────────────
 def _round_trip(board, move):
-    rights = board.make_move(move)
-    board.undo_move(move, rights)
+    rights, prev_halfclock = board.make_move(move)
+    board.undo_move(move, rights, prev_halfclock)
 
 
 # ─── Capture round‑trip ───────────────────────────────────────────────────
@@ -102,8 +102,8 @@ def test_promotion_round_trip(promo_piece, target_sq, capture):
 def test_undo_capture_restores_captured_piece():
     b = make_board({(5, 5): "P", (5, 6): "p"})
     m = Move((5, 5), (5, 6))
-    rights = b.make_move(m)
-    b.undo_move(m, rights)
+    rights, prev_halfclock = b.make_move(m)
+    b.undo_move(m, rights, prev_halfclock)
     assert b[(5, 5)] == "P" and b[(5, 6)] == "p"
 
 
@@ -111,8 +111,8 @@ def test_undo_capture_restores_captured_piece():
 def test_promotion_with_capture_and_underpromotion(piece):
     b = make_board({(7, 7): "P", (8, 8): "r"})
     promo = Move((7, 7), (8, 8), promo=piece)
-    rights = b.make_move(promo)
-    b.undo_move(promo, rights)
+    rights, prev_halfclock = b.make_move(promo)
+    b.undo_move(promo, rights, prev_halfclock)
     assert b[(7, 7)] == "P" and b[(8, 8)] == "r"
 
 
@@ -136,12 +136,12 @@ def test_rook_move_rights_toggle_and_restore():
     move = Move((1, 1), (1, 2))
     rights_before = (b.white_can_castle_kingside, b.white_can_castle_queenside)
 
-    undodata = b.make_move(move)
+    rights, prev_halfclock = b.make_move(move)
     assert (
         not b.white_can_castle_queenside
     ), "Rook move must clear queenside right"
 
-    b.undo_move(move, undodata)
+    b.undo_move(move, rights, prev_halfclock)
     assert (
         b.white_can_castle_kingside,
         b.white_can_castle_queenside,
@@ -156,7 +156,7 @@ def test_undo_white_en_passant_round_trip():
     b.en_passant = (5, 6)
 
     ep = Move((4, 5), (5, 6), is_en_passant=True)
-    rights = b.make_move(ep)
-    b.undo_move(ep, rights)
+    rights, prev_halfclock = b.make_move(ep)
+    b.undo_move(ep, rights, prev_halfclock)
 
     assert b[(4, 5)] == "P" and b[(5, 6)] == b.EMPTY and b[(5, 5)] == "p"

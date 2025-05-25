@@ -43,6 +43,8 @@ class Board:
         self.squares = [
             [self.EMPTY for _ in range(self.FILES)] for _ in range(self.RANKS)
         ]
+        # half-move clock
+        self.halfmove_clock = 0
         # en passant target square
         self.en_passant_target: Optional[Tuple[int, int]] = None
         # castling rights flags
@@ -115,7 +117,10 @@ class Board:
         self.black_can_castle_queenside &= self[(1, 8)] == "r"
         self.black_can_castle_kingside &= self[(8, 8)] == "r"
 
-    def make_move(self, move: Move) -> tuple[bool, bool, bool, bool]:
+    def make_move(
+        self, move: Move
+    ) -> tuple[tuple[bool, bool, bool, bool], int]:
+        reset_clock = False
         from_sq = move.from_sq
         to_sq = move.to_sq
         promo = move.promo
@@ -126,6 +131,7 @@ class Board:
             self.black_can_castle_kingside,
             self.black_can_castle_queenside,
         )
+        prev_halfmove = self.halfmove_clock
 
         # handle en passant capture
         ep = self.en_passant_target
@@ -135,12 +141,18 @@ class Board:
             cap_sq = (to_sq[0], to_sq[1] - direction)
             move.captured = (self[cap_sq], cap_sq)
             self[cap_sq] = self.EMPTY
+            reset_clock = True
 
         piece = self[from_sq]
+
+        # If it is a pawn move then reset half move clock
+        if piece.upper() == "P":
+            reset_clock = True
         # Regular capture
         captured = self[to_sq]
         if not move.is_en_passant and captured != Board.EMPTY:
             move.captured = (captured, to_sq)
+            reset_clock = True
 
         # If the piece captured was a rook, then castling is disabled
         if captured == "R" and to_sq == (1, 1):
@@ -204,11 +216,21 @@ class Board:
 
         self._update_castling_from_board()
 
-        return prev_rights
+        if reset_clock:
+            self.halfmove_clock = 0
+        else:
+            self.halfmove_clock += 1
+
+        return prev_rights, prev_halfmove
 
     def undo_move(
-        self, move: Move, castling_rights: tuple[bool, bool, bool, bool]
+        self,
+        move: Move,
+        castling_rights: tuple[bool, bool, bool, bool],
+        prev_halfmove_clock: int,
     ) -> None:
+
+        self.halfmove_clock = prev_halfmove_clock
         from_sq = move.from_sq
         to_sq = move.to_sq
 

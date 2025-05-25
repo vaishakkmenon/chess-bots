@@ -90,8 +90,8 @@ def test_promotion_gives_check():
 def test_black_pawn_promotion_round_trip(promo_piece):
     b = make_board({(2, 2): "p", (5, 1): "K", (5, 8): "k"})
     mv = Move((2, 2), (2, 1), promo=promo_piece)  # b2→b1=?
-    rights = b.make_move(mv)
-    b.undo_move(mv, rights)
+    rights, prev_halfclock = b.make_move(mv)
+    b.undo_move(mv, rights, prev_halfclock)
     assert b[(2, 2)] == "p" and b[(2, 1)] == b.EMPTY
 
 

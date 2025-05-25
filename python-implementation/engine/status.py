@@ -11,9 +11,15 @@ def is_stalemate(board: Board, color: str) -> bool:
     return not in_check(board, color) and not legal_moves(board, color)
 
 
+def is_draw_by_50(board: Board):
+    return board.halfmove_clock >= 100
+
+
 def get_game_status(board: Board, color: str) -> str:
     if is_checkmate(board, color):
         return "checkmate"
     if is_stalemate(board, color):
         return "stalemate"
+    if is_draw_by_50(board):
+        return "draw by 50 moves"
     return "ongoing"

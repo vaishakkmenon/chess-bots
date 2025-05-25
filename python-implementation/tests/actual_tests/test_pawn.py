@@ -42,13 +42,13 @@ def test_pawn_en_passant():
     print_section("En Passant Test")
     b = make_board({(5, 5): "P", (4, 7): "p"})
     move = Move((4, 7), (4, 5))  # d7→d5
-    rights = b.make_move(move)
+    rights, prev_halfclock = b.make_move(move)
     ep_moves = pawn_moves(b, "white")
     assert_true(
         any(is_en_passant(m, (4, 6)) for m in ep_moves),
         "Must include en passant",
     )
-    b.undo_move(move, rights)
+    b.undo_move(move, rights, prev_halfclock)
 
 
 def test_pawn_promotions():
@@ -89,13 +89,13 @@ def test_black_pawn_en_passant():
     print_section("Black En Passant Test")
     b = make_board({(5, 4): "p", (6, 2): "P"})
     move = Move((6, 2), (6, 4))  # f2→f4
-    rights = b.make_move(move)
+    rights, prev_halfclock = b.make_move(move)
     ep_moves = pawn_moves(b, "black")
     assert_true(
         any(is_en_passant(m, (6, 3)) for m in ep_moves),
         "Black must include en passant capture to f3",
     )
-    b.undo_move(move, rights)
+    b.undo_move(move, rights, prev_halfclock)
 
 
 def test_black_pawn_promotions():
@@ -114,16 +114,16 @@ def test_en_passant_illegal_after_delay():
     print_section("En Passant Illegal After Delay")
     b = make_board({(5, 5): "P", (4, 7): "p", (1, 1): "R"})
     move1 = Move((4, 7), (4, 5))  # Black pawn double move
-    b.make_move(move1)
+    rights1, prev_halfclock1 = b.make_move(move1)
     move2 = Move((1, 1), (1, 2))  # White rook moves
-    rights = b.make_move(move2)
+    rights2, prev_halfclock2 = b.make_move(move2)
     ep_moves = pawn_moves(b, "white")
     assert_true(
         all(not m.is_en_passant for m in ep_moves),
         "En passant should expire after a non-pawn move",
     )
-    b.undo_move(move2, rights)
-    b.undo_move(move1, rights)
+    b.undo_move(move2, rights2, prev_halfclock2)
+    b.undo_move(move1, rights1, prev_halfclock1)
 
 
 def _dests(b, frm):
@@ -173,24 +173,24 @@ def test_pawn_en_passant_right_capture():
         {(5, 1): "K", (5, 5): "P", (6, 7): "p"}
     )  # White pawn e5, Black pawn f7
     move = Move((6, 7), (6, 5))  # ...f7–f5
-    rights = b.make_move(move)
+    rights, prev_halfclock = b.make_move(move)
     ep_moves = pawn_moves(b, "white")
     assert any(
         is_en_passant(m, (6, 6)) for m in ep_moves
     )  # e5 × f6 en-passant exists
-    b.undo_move(move, rights)
+    b.undo_move(move, rights, prev_halfclock)
 
 
 def test_black_pawn_en_passant_left_capture():
     # king e1, black pawn f4, white pawn e2
     b = make_board({(5, 1): "K", (6, 4): "p", (5, 2): "P"})
     move = Move((5, 2), (5, 4))  # e2→e4
-    rights = b.make_move(move)
+    rights, prev_halfclock = b.make_move(move)
     ep_moves = pawn_moves(b, "black")
     assert any(
         is_en_passant(m, (5, 3)) for m in ep_moves
     ), "Black must include en-passant capture to e3"
-    b.undo_move(move, rights)
+    b.undo_move(move, rights, prev_halfclock)
 
 
 def test_pawn_cannot_move_when_pinned_diagonal():
