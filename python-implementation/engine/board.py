@@ -43,8 +43,12 @@ class Board:
         self.squares = [
             [self.EMPTY for _ in range(self.FILES)] for _ in range(self.RANKS)
         ]
-        # half-move clock
+
+        # Half-move clock
         self.halfmove_clock = 0
+        # Full-move clock
+        self.fullmove_number = 1
+
         # en passant target square
         self.en_passant_target: Optional[Tuple[int, int]] = None
         # castling rights flags
@@ -146,8 +150,12 @@ class Board:
         piece = self[from_sq]
 
         # If it is a pawn move then reset half move clock
+        # If the piece is a lowercase letter then increment full move clock
         if piece.upper() == "P":
             reset_clock = True
+        if piece.islower():
+            self.fullmove_number += 1
+
         # Regular capture
         captured = self[to_sq]
         if not move.is_en_passant and captured != Board.EMPTY:
@@ -236,6 +244,10 @@ class Board:
 
         # Reverse promotion: put the pawn back
         piece = self[to_sq]
+
+        if self.fullmove_number > 1 and piece.islower():
+            self.fullmove_number -= 1
+
         if move.promo:
             piece = "P" if piece.isupper() else "p"
 
