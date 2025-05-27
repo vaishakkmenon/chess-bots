@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, Tuple, List, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from engine.zobrist import Zobrist
@@ -108,6 +108,7 @@ class Board:
 
         # initial empty‑board hash
         self.zobrist_hash = self.zobrist.compute_hash(self, self.side_to_move)
+        self.history: List[int] = [self.zobrist_hash]
 
     # ──────────────────────────────────────────────────────────────
     # Pretty‑print
@@ -152,6 +153,7 @@ class Board:
         self.black_can_castle_kingside = self.black_can_castle_queenside = True
 
         self.zobrist_hash = self.zobrist.compute_hash(self, self.side_to_move)
+        self.history = [self.zobrist_hash]
 
     # ──────────────────────────────────────────────────────────────
     # Incremental Zobrist helpers – now aligned with Zobrist API
@@ -217,6 +219,7 @@ class Board:
         )
         prev_halfmove = self.halfmove_clock
         prev_en_passant = self.en_passant_target
+        move.prev_en_passant = prev_en_passant
         prev_side_to_move = self.side_to_move
 
         # ──────────────────────────────────────────────────────────
@@ -351,6 +354,8 @@ class Board:
         if piece.islower():  # Black just moved → increment fullmove counter
             self.fullmove_number += 1
 
+        self.history.append(self.zobrist_hash)
+
         return prev_rights, prev_halfmove
 
     # ------------------------------------------------------------------
@@ -364,7 +369,9 @@ class Board:
         prev_rights: tuple[bool, bool, bool, bool],
         prev_halfmove_clock: int,
     ) -> None:
+
         from_sq, to_sq = move.from_sq, move.to_sq
+        self.history.pop()
 
         # hash-out *current* side-to-move (the one that just played)
         self.zobrist_hash ^= self.zobrist.side_to_move
