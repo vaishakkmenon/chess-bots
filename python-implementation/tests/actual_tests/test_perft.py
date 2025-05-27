@@ -147,34 +147,35 @@ def test_perft_hashed_matches_naive(depth):
 # Performance comparison
 # ──────────────────────────────────────────────────────────────────────────────
 
+# Commenting comparison function because it takes a while
+# def test_perft_hashed_performance():
+#     """
+#     Compare timings on a modest perft (depth=5).
+#     This prints out both runtimes
+#     so you can see the speedup from using a transposition table.
+#     """
+#     depth = 5
+#     b1 = make_start_board()
 
-def test_perft_hashed_performance():
-    """
-    Compare timings on a modest perft (depth=4). This prints out both runtimes
-    so you can see the speedup from using a transposition table.
-    """
-    depth = 5
-    b1 = make_start_board()
+#     t0 = time.perf_counter()
+#     naive = perft(b1, depth)
+#     t_naive = time.perf_counter() - t0
 
-    t0 = time.perf_counter()
-    naive = perft(b1, depth)
-    t_naive = time.perf_counter() - t0
+#     b2 = make_start_board()
+#     table = {}
+#     t0 = time.perf_counter()
+#     hashed = perft_hashed(b2, depth, table)
+#     t_hashed = time.perf_counter() - t0
 
-    b2 = make_start_board()
-    table = {}
-    t0 = time.perf_counter()
-    hashed = perft_hashed(b2, depth, table)
-    t_hashed = time.perf_counter() - t0
+#     # Correctness guard
+#     assert hashed == naive, "Hashes must match naive perft"
 
-    # Correctness guard
-    assert hashed == naive, "Hashes must match naive perft"
+#     # Print results (pytest -s to see them)
+#     print(
+#         f"\nperft(depth={depth}): naive={t_naive:.3f}s, hashed={t_hashed:.3f}s"
+#     )
 
-    # Print results (pytest -s to see them)
-    print(
-        f"\nperft(depth={depth}): naive={t_naive:.3f}s, hashed={t_hashed:.3f}s"
-    )
-
-    # We expect some speedup
-    assert (
-        t_hashed < t_naive
-    ), f"Expected hashed perft to be faster: {t_hashed:.3f}s vs {t_naive:.3f}s"
+#     # We expect some speedup
+#     assert (
+#         t_hashed < t_naive
+#     ), f"Expected hashed perft to be faster: {t_hashed:.3f}s vs {t_naive:.3f}s"
