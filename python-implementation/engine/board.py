@@ -45,6 +45,13 @@ class Board:
             self.PIECES[c] for c in self.PIECES if c.startswith("B")
         )
 
+    @staticmethod
+    def uci(move: Move) -> str:
+        files = "abcdefgh"
+        f0, r0 = move.from_sq
+        f1, r1 = move.to_sq
+        return f"{files[f0-1]}{r0}{files[f1-1]}{r1}"
+
     # ──────────────────────────────────────────────────────────────
     # Construction helpers
     # ──────────────────────────────────────────────────────────────
@@ -152,6 +159,59 @@ class Board:
         self.white_can_castle_kingside = self.white_can_castle_queenside = True
         self.black_can_castle_kingside = self.black_can_castle_queenside = True
 
+        self.zobrist_hash = self.zobrist.compute_hash(self, self.side_to_move)
+        self.history = [self.zobrist_hash]
+
+    def set_fen(self, fen: str) -> None:
+        """
+        Load a full FEN string, parsing:
+         1) piece placement
+         2) side to move
+         3) castling rights
+         4) en passant target
+         5) halfmove clock
+         6) fullmove number
+
+        Then recompute zobrist_hash and reset history.
+        """
+        parts = fen.split()
+        # 1) Piece placement
+        rows = parts[0].split("/")
+        self.squares = [[self.EMPTY] * 8 for _ in range(8)]
+        for rank_idx, row in enumerate(rows):
+            file = 1
+            for ch in row:
+                if ch.isdigit():
+                    file += int(ch)
+                else:
+                    rank = 8 - rank_idx
+                    self[(file, rank)] = ch
+                    file += 1
+
+        # 2) Side to move
+        self.side_to_move = "white" if parts[1] == "w" else "black"
+
+        # 3) Castling rights
+        castle = parts[2]
+        self.white_can_castle_kingside = "K" in castle
+        self.white_can_castle_queenside = "Q" in castle
+        self.black_can_castle_kingside = "k" in castle
+        self.black_can_castle_queenside = "q" in castle
+
+        # 4) En passant
+        ep = parts[3]
+        if ep != "-":
+            file = "abcdefgh".index(ep[0]) + 1
+            rank = int(ep[1])
+            self.en_passant_target = (file, rank)
+        else:
+            self.en_passant_target = None
+
+        # 5) & 6) Clocks
+        self.halfmove_clock = int(parts[4])
+        self.fullmove_number = int(parts[5])
+
+        # Recompute Zobrist & history
         self.zobrist_hash = self.zobrist.compute_hash(self, self.side_to_move)
         self.history = [self.zobrist_hash]
 

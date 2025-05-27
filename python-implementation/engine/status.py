@@ -25,16 +25,57 @@ def is_draw_by_repetition(board: Board, *, count: int = 3) -> bool:
     return any(freq >= count for freq in freqs.values())
 
 
+def is_draw_by_insufficient_material(board: Board) -> bool:
+    white_minors = []
+    black_minors = []
+
+    for file in range(1, 9):
+        for rank in range(1, 9):
+            piece = board[(file, rank)]
+            if piece == board.EMPTY or piece.upper() == "K":
+                continue
+            if piece.upper() in ("B", "N"):
+                if piece.isupper():
+                    white_minors.append((piece, (file + rank) % 2))
+                else:
+                    black_minors.append((piece, (file + rank) % 2))
+            else:
+                return False
+
+    def side_insufficient(minors):
+        if not minors:
+            return True
+        if len(minors) == 1:
+            return True
+        if len(minors) == 2 and all(p.upper() == "N" for p, _ in minors):
+            return True
+        if len(minors) == 2 and all(p.upper() == "B" for p, _ in minors):
+            return minors[0][1] == minors[1][1]
+        return False
+
+    return side_insufficient(white_minors) and side_insufficient(black_minors)
+
+
 def get_game_status(board: Board, color: str) -> str:
+    # Three- and five-fold repetition
     rep_count = Counter(board.history)[board.zobrist_hash]
     if rep_count >= 5:
         return "draw by 5 fold repetition"
     if rep_count >= 3:
         return "draw by 3 fold repetition"
+
+    # Fifty-move rule
     if is_draw_by_50(board):
         return "draw by 50 moves"
+
+    # Insufficient material
+    if is_draw_by_insufficient_material(board):
+        return "draw by insufficient material"
+
+    # Terminal conditions
     if is_checkmate(board, color):
         return "checkmate"
     if is_stalemate(board, color):
         return "stalemate"
+
     return "ongoing"
