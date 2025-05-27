@@ -1,7 +1,7 @@
-# tests/actual_tests/test_stalemate.py
 import pytest
 
 from engine.board import Board
+from engine.zobrist import Zobrist
 from engine.status import is_stalemate
 
 # ---------------------------------------------------------------------------
@@ -9,16 +9,25 @@ from engine.status import is_stalemate
 # ---------------------------------------------------------------------------
 
 
-def make_board(pieces: dict[tuple[int, int], str]) -> Board:
+@pytest.fixture(scope="module")
+def zobrist():
+    return Zobrist()
+
+
+def make_board(pieces: dict[tuple[int, int], str], zobrist: Zobrist) -> Board:
     """
     Build an otherwise-empty board from a {(file, rank): "piece"} map.
     Files/ranks are 1-based (a1 == (1, 1), h8 == (8, 8)).
     Upper-case = White, lower-case = Black.
     """
-    b = Board()  # ← your constructor may differ
+    b = Board(zobrist)
     for sq, pc in pieces.items():
         b[sq] = pc
     b._update_castling_from_board()
+    # Initialize Zobrist hash after position setup
+    b.zobrist_hash = b.zobrist.compute_hash(
+        b, "white"
+    )  # or "black" depending on test case side
     return b
 
 
@@ -106,6 +115,6 @@ TEST_POSITIONS = [
 @pytest.mark.parametrize(
     "pieces, side, expect_stalemate, label", TEST_POSITIONS
 )
-def test_stalemate_variations(pieces, side, expect_stalemate, label):
-    board = make_board(pieces)
+def test_stalemate_variations(pieces, side, expect_stalemate, label, zobrist):
+    board = make_board(pieces, zobrist)
     assert is_stalemate(board, side) is expect_stalemate, label
