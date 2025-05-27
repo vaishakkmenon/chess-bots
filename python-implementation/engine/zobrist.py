@@ -1,5 +1,11 @@
+from __future__ import annotations
+
 import random
-from engine.board import Board
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from engine.board import Board
+
 
 PIECE_ORDER = [
     "P",

@@ -10,14 +10,17 @@ def assert_true(expr, msg=""):
 
 def make_board(pieces: dict[tuple[int, int], str]):
     from engine.board import Board
+    from engine.zobrist import Zobrist
 
-    b = Board()
+    b = Board(Zobrist())
     for r in range(1, 9):
         for f in range(1, 9):
             b[(f, r)] = b.EMPTY
 
     for (f, r), char in pieces.items():
         b[(f, r)] = char
+
+    b.zobrist_hash = b.zobrist.compute_hash(b, "white")
     return b
 
 
