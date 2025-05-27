@@ -9,8 +9,8 @@ def assert_true(expr, msg=""):
 
 
 def make_board(pieces: dict[tuple[int, int], str]):
-    from engine.board import Board
-    from engine.zobrist import Zobrist
+    from engine.mailbox.board import Board
+    from engine.mailbox.zobrist import Zobrist
 
     b = Board(Zobrist())
     for r in range(1, 9):
