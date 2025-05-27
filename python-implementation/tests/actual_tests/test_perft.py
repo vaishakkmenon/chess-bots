@@ -1,5 +1,6 @@
 import re
-import time
+
+# import time
 import pytest
 
 from engine.board import Board
