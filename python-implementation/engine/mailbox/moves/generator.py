@@ -1,16 +1,16 @@
 # engine/moves/all_moves.py
-from engine.board import Board
+from engine.mailbox.board import Board  # noqa: TC002
 
-from engine.rules import in_check
+from engine.mailbox.rules import in_check
 from typing import List
 
-from engine.moves.move import Move
-from engine.moves.pawn import pawn_moves
-from engine.moves.knight import knight_moves
-from engine.moves.bishop import bishop_moves
-from engine.moves.rook import rook_moves
-from engine.moves.queen import queen_moves
-from engine.moves.king import king_moves
+from engine.mailbox.moves.move import Move  # noqa: TC002
+from engine.mailbox.moves.pawn import pawn_moves
+from engine.mailbox.moves.knight import knight_moves
+from engine.mailbox.moves.bishop import bishop_moves
+from engine.mailbox.moves.rook import rook_moves
+from engine.mailbox.moves.queen import queen_moves
+from engine.mailbox.moves.king import king_moves
 
 
 def all_moves(board: Board, color: str) -> List[Move]:
