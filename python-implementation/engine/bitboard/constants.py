@@ -28,3 +28,9 @@ KNIGHT_OFFSETS = (-17, -15, -10, -6, 6, 10, 15, 17)
 
 FILE_A = 0x0101010101010101
 FILE_H = FILE_A << 7
+
+# Mask for only integers from 0 to 63
+MASK_64 = (1 << 64) - 1  # 0xFFFFFFFFFFFFFFFF
+# Rank masks
+RANK_2 = 0x000000000000FF00  # white starting pawns
+RANK_7 = 0x00FF000000000000  # black starting pawns
