@@ -1,4 +1,5 @@
 from .board import Board
+from .move import Move
 from .constants import INITIAL_MASKS
 from .constants import (
     WHITE_PAWN,
@@ -17,6 +18,7 @@ from .constants import (
 
 __all__ = [
     "Board",
+    "Move",
     "INITIAL_MASKS",
     "WHITE_PAWN",
     "WHITE_KNIGHT",
