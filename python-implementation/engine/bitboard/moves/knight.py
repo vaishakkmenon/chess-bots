@@ -1,3 +1,5 @@
+from engine.bitboard.move import Move
+from engine.bitboard.utils import pop_lsb
 from engine.bitboard.constants import FILE_A, FILE_H, KNIGHT_OFFSETS
 
 # Precompute knight attack bitboards for all 64 squares
@@ -23,3 +25,16 @@ def knight_attacks(sq: int) -> int:
     Return a bitboard of knight moves from the given square (0-63).
     """
     return KNIGHT_ATTACKS[sq]
+
+
+def generate_knight_moves(sq: int) -> list[Move]:
+    """
+    Generate knight moves from square sq as a list of Move(src, dst).
+    """
+    moves: list[Move] = []
+    bb = knight_attacks(sq)
+    while bb:
+        tgt = pop_lsb(bb)
+        moves.append(Move(sq, tgt))
+        bb &= bb - 1
+    return moves
