@@ -2,7 +2,15 @@ from typing import List
 
 from engine.bitboard.move import Move  # noqa: TC002
 from engine.bitboard.utils import pop_lsb
-from engine.bitboard.constants import MASK_64, RANK_2, RANK_7, FILE_A, FILE_H
+from engine.bitboard.constants import (
+    MASK_64,
+    RANK_2,
+    RANK_4,
+    RANK_5,
+    RANK_7,
+    FILE_A,
+    FILE_H,
+)
 
 
 def pawn_single_push_targets(
@@ -61,6 +69,29 @@ def pawn_capture_targets(pawns_bb: int, enemy_bb: int, is_white: bool) -> int:
         right = (pawns_bb & ~FILE_A) >> 7
 
     return (left | right) & enemy_bb & MASK_64
+
+
+def pawn_en_passant_targets(
+    pawns_bb: int, ep_mask: int, is_white: bool
+) -> int:
+    """
+    Return a bitboard mask of en-passant capture destinations (either empty or
+    the ep-target square), given the pawn bitboard, the ep_mask (1<<sq or 0),
+    and the side to move.
+    """
+    if ep_mask == 0:
+        return 0
+
+    if is_white:
+        base = pawns_bb & RANK_5
+        left = (base & ~FILE_A) << 7  # Diag up left
+        right = (base & ~FILE_H) << 9  # Diag up right
+    else:
+        base = pawns_bb & RANK_4
+        left = (base & ~FILE_A) >> 9  # Diag down left
+        right = (base & ~FILE_H) >> 7  # Diag down right
+
+    return (left | right) & ep_mask & MASK_64
 
 
 def generate_pawn_moves(

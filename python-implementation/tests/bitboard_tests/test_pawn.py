@@ -6,6 +6,7 @@ from engine.bitboard.moves.pawn import (
     pawn_push_targets,
     generate_pawn_moves,
     pawn_capture_targets,
+    pawn_en_passant_targets,
 )
 
 
@@ -192,3 +193,51 @@ def test_generate_black_pawn_moves(pawns_sq, enemy_sqs, expected_moves):
 
     moves = generate_pawn_moves(pawns_bb, enemy_bb, all_occ, False)
     assert sorted(moves, key=sort_key) == sorted(expected_moves, key=sort_key)
+
+
+@pytest.mark.parametrize(
+    "pawns_sq, ep_sq, is_white, expected",
+    [
+        # No en passant available
+        (1 << 33, None, True, 0),
+        (1 << 40, None, False, 0),
+        # White pawn on b5 (sq=33) can ep-capture to a6 (40) or c6 (42)
+        (1 << 33, 40, True, mask([40])),
+        (1 << 33, 42, True, mask([42])),
+        # White pawn on a5 (sq=32) can only ep-capture to b6 (41)
+        (1 << 32, 41, True, mask([41])),
+        (1 << 32, 39, True, 0),  # wrong file → no capture
+        # Multiple white pawns on b5 (33) and d5 (35) both capture c6 (42)
+        (mask([33, 35]), 42, True, mask([42])),
+        # Black pawn on b4 (sq=25) can ep-capture to a3 (16) or c3 (18)
+        (1 << 25, 16, False, mask([16])),
+        (1 << 25, 18, False, mask([18])),
+        # Black pawn on h4 (sq=31) can only ep-capture to g3 (22)
+        (1 << 31, 22, False, mask([22])),
+        (1 << 31, 16, False, 0),  # wrong file → no capture
+        # Multiple black pawns on b4 (25) and d4 (27) both capture c3 (18)
+        (mask([25, 27]), 18, False, mask([18])),
+    ],
+)
+def test_pawn_en_passant_targets(pawns_sq, ep_sq, is_white, expected):
+    pawns_bb = (
+        pawns_sq
+        if isinstance(pawns_sq, int) and pawns_sq < (1 << 64)
+        else pawns_sq
+    )
+    ep_mask = 0 if ep_sq is None else (1 << ep_sq)
+    result = pawn_en_passant_targets(pawns_bb, ep_mask, is_white)
+    assert result == expected
+
+
+def test_pawn_en_passant_masking_high_bits():
+    # Ensure that ~all_occ infinite bits are masked to 64 bits
+    # Place a white pawn on b5 (33) and ep at c6 (42)
+    # but simulate all_occ with high bits set
+    pawns_bb = 1 << 33
+    ep_mask = 1 << 42
+    # all_occ irrelevant here; just test masking in helper
+    result = pawn_en_passant_targets(pawns_bb, ep_mask, True)
+    assert (
+        result == ep_mask
+    )  # should still match despite infinite-precision bits

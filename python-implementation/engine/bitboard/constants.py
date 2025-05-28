@@ -33,4 +33,6 @@ FILE_H = FILE_A << 7
 MASK_64 = (1 << 64) - 1  # 0xFFFFFFFFFFFFFFFF
 # Rank masks
 RANK_2 = 0x000000000000FF00  # white starting pawns
+RANK_4 = 0x00000000FF000000  # (black pawns capturing en passant)
+RANK_5 = 0x000000FF00000000  # (white pawns capturing en passant)
 RANK_7 = 0x00FF000000000000  # black starting pawns
