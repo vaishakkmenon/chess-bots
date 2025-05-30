@@ -1,4 +1,7 @@
+from typing import List
+
 from engine.bitboard.move import Move  # noqa: TC002
+from engine.bitboard.undo import Undo
 from engine.bitboard.constants import (
     INITIAL_MASKS,
     WHITE_PAWN,
@@ -21,9 +24,13 @@ class Board:
         # En_passant flag/square
         self.ep_square = 0
 
+        # History of all moves
+        self.history: List[Undo] = []
+
         # Flag to see side to move
         self.side_to_move = WHITE
 
+        # Initialize starting positions
         self.init_positions()
 
     def __str__(self):
@@ -96,7 +103,11 @@ class Board:
          - self.white_occ / black_occ / all_occ
         """
         old_ep = self.ep_square
+        prev_side = self.side_to_move
         self.ep_square = 0
+        captured_idx = None
+        cap_sq = None
+
         src, dst = move.src, move.dst
 
         piece_idx = None
@@ -121,9 +132,40 @@ class Board:
 
             for idx in range(12):
                 if (self.bitboards[idx] >> cap_sq) & 1:
-                    self.bitboards[idx] ^= 1 << cap_sq
+                    captured_idx = idx
                     break
+
+        self.history.append(
+            Undo(move, old_ep, captured_idx, cap_sq, prev_side)
+        )
+
+        if captured_idx is not None:
+            self.bitboards[captured_idx] ^= 1 << cap_sq
 
         self.bitboards[piece_idx] |= 1 << dst
         self.update_occupancies()
         self.side_to_move = BLACK if self.side_to_move == WHITE else WHITE
+
+    def undo_move(self):
+        undo = self.history.pop()
+        move = undo.move
+        src, dst = move.src, move.dst
+
+        self.ep_square = undo.old_ep
+        self.side_to_move = undo.prev_side
+
+        moved_idx = None
+
+        for idx in range(12):
+            if (self.bitboards[idx] >> dst) & 1:
+                moved_idx = idx
+                break
+        assert moved_idx is not None
+
+        self.bitboards[moved_idx] ^= 1 << dst
+        self.bitboards[moved_idx] |= 1 << src
+
+        if undo.captured_idx is not None:
+            self.bitboards[undo.captured_idx] |= 1 << undo.cap_sq
+
+        self.update_occupancies()
