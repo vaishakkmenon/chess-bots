@@ -7,6 +7,8 @@ from engine.bitboard.constants import (
     BLACK_KNIGHT,
     WHITE_BISHOP,
     BLACK_BISHOP,
+    WHITE_ROOK,
+    BLACK_ROOK,
     WHITE,
 )
 
@@ -24,6 +26,9 @@ from engine.bitboard.moves.pawn import (
 from engine.bitboard.moves.bishop import (
     generate_bishop_moves,
 )
+from engine.bitboard.moves.rook import (
+    generate_rook_moves,
+)
 
 __all__ = [
     # Knight API
@@ -37,6 +42,8 @@ __all__ = [
     "generate_pawn_moves",
     # Bishop API
     "generate_bishop_moves",
+    # Bishop API
+    "generate_rook_moves",
 ]
 
 
@@ -71,6 +78,12 @@ def generate_moves(board: Board) -> list[Move]:
     # Bishop moves
     moves += generate_bishop_moves(
         board.bitboards[WHITE_BISHOP if is_white else BLACK_BISHOP],
+        board.white_occ if is_white else board.black_occ,
+        board.black_occ if is_white else board.white_occ,
+    )
+
+    moves += generate_rook_moves(
+        board.bitboards[WHITE_ROOK if is_white else BLACK_ROOK],
         board.white_occ if is_white else board.black_occ,
         board.black_occ if is_white else board.white_occ,
     )
