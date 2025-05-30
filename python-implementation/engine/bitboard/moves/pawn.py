@@ -95,7 +95,11 @@ def pawn_en_passant_targets(
 
 
 def generate_pawn_moves(
-    pawns_bb: int, enemy_bb: int, all_occ: int, is_white: bool
+    pawns_bb: int,
+    enemy_bb: int,
+    all_occ: int,
+    is_white: bool,
+    ep_mask: int = 0,
 ) -> list[Move]:
     """
     Return all legal pawn moves: single/double pushes and diagonal captures.
@@ -108,27 +112,34 @@ def generate_pawn_moves(
         bb = helper(pawns_bb, all_occ, is_white)
         tmp = bb
         while tmp:
-            dst = pop_lsb(tmp)
-            src = dst - step if is_white else dst + step
-            moves.append(Move(src, dst))
+            dest = pop_lsb(tmp)
+            src = dest - step if is_white else dest + step
+            moves.append(Move(src, dest))
             tmp &= tmp - 1
 
     # --- Captures ---
-    if is_white:
-        left = (pawns_bb & ~FILE_A) << 7
-    else:
-        left = (pawns_bb & ~FILE_H) >> 9
-
     cap_bb = pawn_capture_targets(pawns_bb, enemy_bb, is_white)
     tmp = cap_bb
     while tmp:
-        dst = pop_lsb(tmp)
-        if (1 << dst) & left:
-            src = dst - 7 if is_white else dst + 9
+        dest = pop_lsb(tmp)
+        if is_white:
+            src = dest - 7 if ((pawns_bb >> (dest - 7)) & 1) else dest - 9
         else:
-            src = dst - 9 if is_white else dst + 7
+            src = dest + 9 if ((pawns_bb >> (dest + 9)) & 1) else dest + 7
 
-        moves.append(Move(src, dst, capture=True))
+        moves.append(Move(src, dest, capture=True))
+        tmp &= tmp - 1
+
+    ep_bb = pawn_en_passant_targets(pawns_bb, ep_mask, is_white)
+    tmp = ep_bb
+    while tmp:
+        dest = pop_lsb(tmp)
+        if is_white:
+            src = dest - 7 if ((pawns_bb >> (dest - 7)) & 1) else dest - 9
+        else:
+            src = dest + 9 if ((pawns_bb >> (dest + 9)) & 1) else dest + 7
+
+        moves.append(Move(src, dest, capture=True, en_passant=True))
         tmp &= tmp - 1
 
     return moves

@@ -40,7 +40,11 @@ def test_generate_knight_moves_counts_and_contents():
     # correct count and Move objects
     for sq in [0, 7, 28, 36]:
         bitboard = KNIGHT_ATTACKS[sq]
-        moves = generate_knight_moves(sq)
+        moves = generate_knight_moves(
+            1 << sq,
+            0,
+            0,
+        )
         # Count check
         assert len(moves) == bit_count(bitboard)
         # Content check: each Move.dst corresponds to a set bit
@@ -55,4 +59,30 @@ def test_edge_cases_h8():
     # h8 (63) only moves: g6(46), f7(53)
     sq = 63
     expected_indices = [46, 53]
-    assert generate_knight_moves(sq) == [Move(sq, i) for i in expected_indices]
+    moves = generate_knight_moves(1 << sq, 0, 0)
+    assert moves == [Move(sq, i) for i in expected_indices]
+
+
+def test_generate_knight_moves_capture_flag():
+    # Setup a knight on e4 (28), with enemies on two of its attack squares
+    sq = 28
+    bb_knight = 1 << sq
+    my_occ = 0
+    their_occ = (1 << 45) | (1 << 38)  # enemies on g5(38) and f6(45)
+
+    moves = generate_knight_moves(bb_knight, my_occ, their_occ)
+
+    # Extract capture moves
+    cap_moves = [m for m in moves if m.capture]
+
+    # Check that the destinations match, regardless of order
+    cap_dsts = sorted(m.dst for m in cap_moves)
+    expected_dsts = sorted([38, 45])
+    assert cap_dsts == expected_dsts
+
+    # And verify their capture flag is True
+    assert all(m.capture for m in cap_moves)
+
+    # Check non-capture moves are present with capture=False
+    non_caps = [m for m in moves if not m.capture]
+    assert all(not m.capture for m in non_caps)
