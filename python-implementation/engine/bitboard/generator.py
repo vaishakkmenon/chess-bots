@@ -5,6 +5,8 @@ from engine.bitboard.constants import (
     BLACK_PAWN,
     WHITE_KNIGHT,
     BLACK_KNIGHT,
+    WHITE_BISHOP,
+    BLACK_BISHOP,
     WHITE,
 )
 
@@ -19,6 +21,9 @@ from engine.bitboard.moves.pawn import (
     pawn_capture_targets,
     generate_pawn_moves,
 )
+from engine.bitboard.moves.bishop import (
+    generate_bishop_moves,
+)
 
 __all__ = [
     # Knight API
@@ -30,6 +35,8 @@ __all__ = [
     "pawn_push_targets",
     "pawn_capture_targets",
     "generate_pawn_moves",
+    # Bishop API
+    "generate_bishop_moves",
 ]
 
 
@@ -40,7 +47,7 @@ def generate_moves(board: Board) -> list[Move]:
     """
     moves: list[Move] = []
 
-    # 1) Pawn moves (including en-passant)
+    # Pawn moves (including en-passant)
     if board.side_to_move == WHITE:
         pawn_bb = board.bitboards[WHITE_PAWN]
         enemy_bb = board.black_occ
@@ -54,9 +61,16 @@ def generate_moves(board: Board) -> list[Move]:
         pawn_bb, enemy_bb, board.all_occ, is_white, ep_mask=board.ep_square
     )
 
-    # 2) Knight moves (example)
+    # Knight moves
     moves += generate_knight_moves(
         board.bitboards[WHITE_KNIGHT if is_white else BLACK_KNIGHT],
+        board.white_occ if is_white else board.black_occ,
+        board.black_occ if is_white else board.white_occ,
+    )
+
+    # Bishop moves
+    moves += generate_bishop_moves(
+        board.bitboards[WHITE_BISHOP if is_white else BLACK_BISHOP],
         board.white_occ if is_white else board.black_occ,
         board.black_occ if is_white else board.white_occ,
     )
