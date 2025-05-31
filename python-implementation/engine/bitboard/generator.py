@@ -9,8 +9,14 @@ from engine.bitboard.constants import (
     BLACK_BISHOP,
     WHITE_ROOK,
     BLACK_ROOK,
+    WHITE_QUEEN,
+    BLACK_QUEEN,
     WHITE,
 )
+
+from engine.bitboard.moves.bishop import generate_bishop_moves
+from engine.bitboard.moves.rook import generate_rook_moves
+from engine.bitboard.moves.queen import generate_queen_moves
 
 from engine.bitboard.moves.knight import (
     knight_attacks,
@@ -23,12 +29,7 @@ from engine.bitboard.moves.pawn import (
     pawn_capture_targets,
     generate_pawn_moves,
 )
-from engine.bitboard.moves.bishop import (
-    generate_bishop_moves,
-)
-from engine.bitboard.moves.rook import (
-    generate_rook_moves,
-)
+
 
 __all__ = [
     # Knight API
@@ -42,8 +43,10 @@ __all__ = [
     "generate_pawn_moves",
     # Bishop API
     "generate_bishop_moves",
-    # Bishop API
+    # Rook API
     "generate_rook_moves",
+    # Queen API
+    "generate_queen_moves",
 ]
 
 
@@ -68,24 +71,33 @@ def generate_moves(board: Board) -> list[Move]:
         pawn_bb, enemy_bb, board.all_occ, is_white, ep_mask=board.ep_square
     )
 
-    # Knight moves
+    my_occ = board.white_occ if is_white else board.black_occ
+    their_occ = board.black_occ if is_white else board.white_occ
+
+    # Knight
     moves += generate_knight_moves(
         board.bitboards[WHITE_KNIGHT if is_white else BLACK_KNIGHT],
-        board.white_occ if is_white else board.black_occ,
-        board.black_occ if is_white else board.white_occ,
+        my_occ,
+        their_occ,
     )
 
-    # Bishop moves
+    # Bishop
     moves += generate_bishop_moves(
         board.bitboards[WHITE_BISHOP if is_white else BLACK_BISHOP],
-        board.white_occ if is_white else board.black_occ,
-        board.black_occ if is_white else board.white_occ,
+        my_occ,
+        their_occ,
     )
 
+    # Rook
     moves += generate_rook_moves(
         board.bitboards[WHITE_ROOK if is_white else BLACK_ROOK],
-        board.white_occ if is_white else board.black_occ,
-        board.black_occ if is_white else board.white_occ,
+        my_occ,
+        their_occ,
     )
 
+    moves += generate_queen_moves(
+        board.bitboards[WHITE_QUEEN if is_white else BLACK_QUEEN],
+        my_occ,
+        their_occ,
+    )
     return moves
