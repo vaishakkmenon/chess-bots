@@ -165,7 +165,7 @@ _Content for this roadmap is derived from the existing project README._ filec
 
 ## 🗺️ Roadmap
 
-### Phase 1: Core Engine (Data & Rules Model) fileciteturn1file0
+### Phase 1: Core Engine (Data & Rules Model)
 
 1. **Native Python Engine (Naïve Implementation)**  
    - **Representation**: Implement the board as an 8×8 two-dimensional array.  
