@@ -34,6 +34,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Set PYTHONPATH so tests can import `engine`
+        run: echo "PYTHONPATH=${{ github.workspace }}/python-implementation" >> $GITHUB_ENV
+  
       - name: Run pytest
         run: |
           pytest --maxfail=1 --disable-warnings -q
