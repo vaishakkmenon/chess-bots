@@ -48,6 +48,7 @@ _Content for this roadmap is derived from the existing project README._ filec
 - 🔄 **Multiple Implementations**  
   - Native Python: clear, easy-to-understand code using an 8×8 array.  
   - Python Bitboards: faster move generation with bitwise masks and ray tracing.  
+  - Zero-branch sliding move generation via pre-computed magic bitboards
   - Rust Port: highly optimized engine for top-tier performance.  
 
 - 🧠 **Search & Evaluation**  
