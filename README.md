@@ -351,7 +351,7 @@ This project is licensed under the **MIT License**. Refer to the `LICENSE` file 
 
 ## 🙏 Acknowledgments
 
-- **Awesome README Examples** by [Mati as Singers](https://github.com/matiassingers/awesome-readme) for styling inspiration.  
+- **Awesome README Examples** by [Matias Singers](https://github.com/matiassingers/awesome-readme) for styling inspiration.  
 - **Chess Programming Wiki** for bitboard tutorials and attack-mask explanations.  
 - **PyTorch** community for model-building resources.  
 - **AWS Documentation** for deployment best practices.  
