@@ -1,7 +1,6 @@
 # Chess Engine Project Roadmap
 
-[![Build Status](https://github.com/vaishakkmenon/chess-bots/actions/workflows/ci.yml/badge.svg)](https://github.com/vaishakkmenon/chess-bots/actions/workflows/ci.yml)
-(#)  
+[[![Build Status](https://github.com/vaishakkmenon/chess-bots/actions/workflows/ci.yml/badge.svg)](https://github.com/vaishakkmenon/chess-bots/actions/workflows/ci.yml)](#)  
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](#)  
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](#)  
 [![Rust](https://img.shields.io/badge/rust-1.60%2B-orange.svg)](#)  
