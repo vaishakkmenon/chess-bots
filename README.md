@@ -351,6 +351,7 @@ This project is licensed under the **MIT License**. Refer to the `LICENSE` file 
 
 ## 🙏 Acknowledgments
 
+- **OpenAI’s ChatGPT (o4-mini, April 2024)** for assistance in drafting this README and during code development.  
 - **Awesome README Examples** by [Matias Singers](https://github.com/matiassingers/awesome-readme) for styling inspiration.  
 - **Chess Programming Wiki** for bitboard tutorials and attack-mask explanations.  
 - **PyTorch** community for model-building resources.  
