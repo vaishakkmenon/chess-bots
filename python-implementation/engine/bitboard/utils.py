@@ -1,6 +1,28 @@
 from typing import Optional
 
 
+def expand_occupancy(subset_index: int, relevant_mask: int) -> int:
+    """
+    Given a relevant_mask (bitboard) of N squares,
+    and a subset_index in [0..2^N-1], return a bitboard (64-bit int)
+    whose bits are a subset of relevant_mask: the k-th 1-bit of
+    relevant_mask is set in the result if and only if the
+    k-th bit of subset_index is 1.
+    """
+    positions = []
+    temp = relevant_mask
+    while temp:
+        bit_sq = pop_lsb(temp)
+        positions.append(bit_sq)
+        temp &= temp - 1
+
+    occ = 0
+    for k in range(len(positions)):
+        if (subset_index >> k) & 1:
+            occ |= 1 << positions[k]
+    return occ
+
+
 def pop_lsb(bb: int) -> Optional[int]:
     """
     Remove and return the index (0-63) of the least-significant 1-bit in bb.

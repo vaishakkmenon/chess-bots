@@ -179,11 +179,17 @@ _Content for this roadmap is derived from the existing project README._ filec
 2. **Python Bitboard Engine**  
    - **Representation**: Use 64-bit integer bitboards to represent piece occupancy.  
    - **Move Generation**:  
-     - Replace nested loops with bitwise operations for knight and king moves.  
-     - For sliding pieces (rook, bishop, queen), initially use simple ray tracing per square.  
-     - Integrate helper utilities like least-significant-bit extraction for iteration.  
+     - Knights & kings: constant-time lookup via pre-computed attack masks.  
+     - **Sliding pieces (rook, bishop, queen)**:  
+       - Generate _perfect-hash_ attack tables with the `engine/bitboard/build_magics.py` script.  
+       - The script brute-forces collision-free **64-bit magic numbers** + shift values for every square, then freezes the hash-ordered attack tables into three importable modules:  
+         - `magic_constants.py` – relevant masks, magic numbers & shifts  
+         - `rook_attack_table.py` – rook hash table  
+         - `bishop_attack_table.py` – bishop hash table  
+       - Because these tables are committed to the repo and loaded at start-up, no runtime ray-tracing is required; rook/­bishop/­queen attacks now resolve in **two instructions** (`idx = (occ * magic) >> shift` → table lookup).  
+     - Integrate helper utilities like least-significant-bit extraction (`pop_lsb`) for fast iteration.  
    - **Legal-Check Integration**:  
-     - Accurately detect pin scenarios and ensure moves do not leave the king in check.  
+     - Accurately detect pins and ensure moves do not leave the king in check.   
 
 3. **Rust Engine**  
    - **Language Port**: Translate the Python bitboard logic into Rust, leveraging type safety and zero-cost abstractions.  
