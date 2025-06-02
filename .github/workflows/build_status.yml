@@ -1,19 +1,19 @@
-# .github/workflows/ci.yml
+# .github/workflows/build_status.yml
 
-name: CI
+name: Build Status
 
 # Run on every push and on every pull request
 on:
   push:
-    branches:    
-      - '**'
+    paths:
+      - 'python-implementation/**'
   pull_request:
-    branches:
-      - '**'
+    paths:
+      - 'python-implementation/**'
 
 jobs:
   test:
-    name: Run pytest
+    name: Build Status
     runs-on: ubuntu-latest
 
     strategy:
