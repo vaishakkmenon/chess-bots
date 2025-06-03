@@ -114,7 +114,13 @@ def generate_pawn_moves(
         while tmp:
             dest = pop_lsb(tmp)
             src = dest - step if is_white else dest + step
-            moves.append(Move(src, dest))
+            if step == 8 and (
+                (is_white and dest >= 56) or (not is_white and dest < 8)
+            ):
+                for promo in ("Q", "R", "B", "N"):
+                    moves.append(Move(src, dest, promotion=promo))
+            else:
+                moves.append(Move(src, dest))
             tmp &= tmp - 1
 
     # --- Captures ---
@@ -127,7 +133,11 @@ def generate_pawn_moves(
         else:
             src = dest + 9 if ((pawns_bb >> (dest + 9)) & 1) else dest + 7
 
-        moves.append(Move(src, dest, capture=True))
+        if (is_white and dest >= 56) or (not is_white and dest < 8):
+            for promo in ("Q", "R", "B", "N"):
+                moves.append(Move(src, dest, capture=True, promotion=promo))
+        else:
+            moves.append(Move(src, dest, capture=True))
         tmp &= tmp - 1
 
     ep_bb = pawn_en_passant_targets(pawns_bb, ep_mask, is_white)

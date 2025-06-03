@@ -6,9 +6,30 @@ from engine.bitboard.constants import (
     INITIAL_MASKS,
     WHITE_PAWN,
     BLACK_PAWN,
+    WHITE_KNIGHT,
+    WHITE_BISHOP,
+    WHITE_ROOK,
+    WHITE_QUEEN,
+    BLACK_KNIGHT,
+    BLACK_BISHOP,
+    BLACK_ROOK,
+    BLACK_QUEEN,
     WHITE,
     BLACK,
 )
+
+PROMO_MAP_WHITE = {
+    "N": WHITE_KNIGHT,
+    "B": WHITE_BISHOP,
+    "R": WHITE_ROOK,
+    "Q": WHITE_QUEEN,
+}
+PROMO_MAP_BLACK = {
+    "N": BLACK_KNIGHT,
+    "B": BLACK_BISHOP,
+    "R": BLACK_ROOK,
+    "Q": BLACK_QUEEN,
+}
 
 
 class Board:
@@ -142,7 +163,12 @@ class Board:
         if captured_idx is not None:
             self.bitboards[captured_idx] ^= 1 << cap_sq
 
-        self.bitboards[piece_idx] |= 1 << dst
+        target_idx = piece_idx
+        if move.promotion:
+            promo_map = PROMO_MAP_WHITE if piece_idx < 6 else PROMO_MAP_BLACK
+            target_idx = promo_map[move.promotion]
+
+        self.bitboards[target_idx] |= 1 << dst
         self.update_occupancies()
         self.side_to_move = BLACK if self.side_to_move == WHITE else WHITE
 
@@ -163,9 +189,14 @@ class Board:
         assert moved_idx is not None
 
         self.bitboards[moved_idx] ^= 1 << dst
-        self.bitboards[moved_idx] |= 1 << src
+        if move.promotion:
+            pawn_idx = WHITE_PAWN if moved_idx < 6 else BLACK_PAWN
+            self.bitboards[pawn_idx] |= 1 << src
+        else:
+            self.bitboards[moved_idx] |= 1 << src
 
         if undo.captured_idx is not None:
             self.bitboards[undo.captured_idx] |= 1 << undo.cap_sq
 
         self.update_occupancies()
+

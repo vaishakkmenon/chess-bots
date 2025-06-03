@@ -9,6 +9,7 @@ from engine.bitboard.constants import (
     WHITE,
     BLACK,
     WHITE_KNIGHT,
+    WHITE_QUEEN,
 )
 
 
@@ -141,3 +142,19 @@ def test_undo_without_history_raises():
     board = Board()
     with pytest.raises(IndexError):
         board.undo_move()
+
+
+def test_pawn_promotion_round_trip():
+    board = Board()
+    board.bitboards = [0] * 12
+    board.bitboards[WHITE_PAWN] = 1 << 48  # a7
+    board.update_occupancies()
+    board.side_to_move = WHITE
+
+    before = snapshot(board)
+    mv = Move(src=48, dst=56, capture=False, promotion="Q")
+    board.make_move(mv)
+    assert board.bitboards[WHITE_PAWN] == 0
+    assert (board.bitboards[WHITE_QUEEN] & (1 << 56)) != 0
+    board.undo_move()
+    restore_ok(board, before)
