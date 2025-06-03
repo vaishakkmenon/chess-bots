@@ -2,7 +2,7 @@
 """Generate magic numbers, shifts, and attack tables for sliding pieces.
 
 Running this script _once_ populates three source modules that the engine
-imports at run‑time:
+imports at run-time:
 
 * ``engine/bitboard/magic_constants.py``
 * ``engine/bitboard/rook_attack_table.py``
@@ -10,7 +10,7 @@ imports at run‑time:
 
 After those files exist you normally **do not** run this script again.
 Use the ``--force`` flag only when you deliberately change the
-relevant‑mask definition or discover a bug in the reference attack
+relevant-mask definition or discover a bug in the reference attack
 generator.
 """
 
@@ -38,15 +38,15 @@ from engine.bitboard.constants import (  # noqa: E402
 )
 
 # ---------------------------------------------------------------------------
-# Helper: atomic write to avoid half‑written files if the process is killed
+# Helper: atomic write to avoid half-written files if the process is killed
 # ---------------------------------------------------------------------------
 
 
 def _atomic_write(target: Path, text: str) -> None:
-    """Write *text* to *target* atomically (POSIX‑safe)."""
+    """Write *text* to *target* atomically (POSIX-safe)."""
     target.parent.mkdir(parents=True, exist_ok=True)
     with NamedTemporaryFile(
-        "w", encoding="utf‑8", delete=False, dir=target.parent
+        "w", encoding="utf-8", delete=False, dir=target.parent
     ) as tmp:
         tmp.write(text)
         tmp_path = Path(tmp.name)
@@ -54,7 +54,7 @@ def _atomic_write(target: Path, text: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Reference mask builders (rim‑free, as agreed)
+# Reference mask builders (rim-free, as agreed)
 # ---------------------------------------------------------------------------
 
 
@@ -158,7 +158,7 @@ MASK64 = 0xFFFF_FFFF_FFFF_FFFF
 def build_runtime_table(
     mask: int, magic: int, shift: int, subset_table: list[int]
 ) -> list[int]:
-    """Reorder *subset_table* into hash‑order using *magic* and *shift*."""
+    """Reorder *subset_table* into hash-order using *magic* and *shift*."""
     N = bit_count(mask)
     table_size = 1 << N
     runtime = [0] * table_size
@@ -177,10 +177,10 @@ def find_magic(
     window: int,
     max_tries: int = 10_000_000,
 ) -> Tuple[int, int]:
-    """Search for a collision‑free (magic, shift) pair for *sq*.
+    """Search for a collision-free (magic, shift) pair for *sq*.
 
     *window* specifies how many shift candidates to try: we test
-    ``64‑N … 64‑N+window‑1``.
+    ``64-N … 64-N+window-1``.
     """
     N = bit_count(relevant_mask)
     table_size = 1 << N
@@ -203,11 +203,6 @@ def find_magic(
             else:
                 return magic, shift  # success!
     raise RuntimeError(f"No magic found for square {sq} within search bounds")
-
-
-# ---------------------------------------------------------------------------
-# Main build entry point
-# ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
 # Main generator
@@ -255,7 +250,7 @@ def main(argv: list[str] | None = None) -> None:
     rel_bish = [reference_bishop_mask(sq) for sq in range(64)]
 
     # --------------------------------------------------------------------
-    # Step B: subset‑order attack tables
+    # Step B: subset-order attack tables
     # --------------------------------------------------------------------
     rook_subset: list[list[int]] = []
     bishop_subset: list[list[int]] = []
