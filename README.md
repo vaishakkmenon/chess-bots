@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/vaishakkmenon/chess-bots/actions/workflows/build_status.yml/badge.svg)](https://github.com/vaishakkmenon/chess-bots/actions)  
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](#)  
-[![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](#)  
+[![Python](https://img.shields.io/badge/python-3.13%2B-blue.svg)](#)  
 [![Rust](https://img.shields.io/badge/rust-1.60%2B-orange.svg)](#)  
 
 
@@ -76,7 +76,7 @@ _Content for this roadmap is derived from the existing project README._ filec
 ## 📦 Installation
 
 **Prerequisites**  
-- Python 3.8 or higher  
+- Python 3.13 or higher  
 - Rust 1.60 or higher (for the Rust port and beyond)  
 - (Optional) CUDA-enabled GPU for Phase 3 training  
 
