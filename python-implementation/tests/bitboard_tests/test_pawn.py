@@ -241,3 +241,17 @@ def test_pawn_en_passant_masking_high_bits():
     assert (
         result == ep_mask
     )  # should still match despite infinite-precision bits
+
+
+def test_generate_white_pawn_promotion_moves():
+    pawns = 1 << 48  # a7
+    moves = generate_pawn_moves(pawns, 0, pawns, True)
+    promos = {m.promotion for m in moves}
+    assert promos == {"Q", "R", "B", "N"}
+
+
+def test_generate_black_pawn_promotion_moves():
+    pawns = 1 << 15  # h2
+    moves = generate_pawn_moves(pawns, 0, pawns, False)
+    promos = {m.promotion for m in moves}
+    assert promos == {"Q", "R", "B", "N"}
