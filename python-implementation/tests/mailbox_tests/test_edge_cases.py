@@ -33,7 +33,7 @@ def test_en_passant_exposes_check():
     b = make_board(
         {
             (5, 5): "P",  # e5
-            (6, 5): "p",  # f5
+            (6, 7): "p",  # f7
             (5, 1): "K",  # e1
             (5, 8): "r",  # e8 (attacking down the file if e5 is cleared)
         }
