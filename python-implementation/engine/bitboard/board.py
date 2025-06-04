@@ -199,4 +199,3 @@ class Board:
             self.bitboards[undo.captured_idx] |= 1 << undo.cap_sq
 
         self.update_occupancies()
-
