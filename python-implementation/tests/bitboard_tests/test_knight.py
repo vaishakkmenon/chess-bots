@@ -86,3 +86,11 @@ def test_generate_knight_moves_capture_flag():
     # Check non-capture moves are present with capture=False
     non_caps = [m for m in moves if not m.capture]
     assert all(not m.capture for m in non_caps)
+
+
+def test_knight_moves_ignore_friendly():
+    sq = 28  # e4
+    knights = 1 << sq
+    my_occ = knights | (1 << 38)  # friendly piece on g5
+    moves = generate_knight_moves(knights, my_occ, 0)
+    assert all(m.dst != 38 for m in moves)

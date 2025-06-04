@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""
-Verify that saved magic tables reproduce the reference attack generator.
-Run after `python -m engine.bitboard.build_magics`.
-"""
+"""Tests for correctness of saved magic tables."""
+
+import pytest
 
 from engine.bitboard.magic_constants import (
     RELEVANT_ROOK_MASKS,
@@ -68,6 +67,32 @@ def verify(piece: str):
                     f"!= ref 0x{attack_ref:016x}"
                 )
     print(f"All {piece} magics verified.")
+
+
+@pytest.mark.parametrize("sq", [0, 27, 63])
+def test_rook_magic_subset(sq):
+    mask = RELEVANT_ROOK_MASKS[sq]
+    magic = ROOK_MAGICS[sq]
+    shift = ROOK_SHIFTS[sq]
+    table = ROOK_ATTACK_TABLE[sq]
+    for subset in [0, 1, (1 << bit_count(mask)) - 1]:
+        occ = expand_occupancy(subset, mask)
+        idx = ((occ * magic) & MASK64) >> shift
+        ref = compute_rook_attacks_with_blockers(sq, occ)
+        assert table[idx] == ref
+
+
+@pytest.mark.parametrize("sq", [0, 27, 63])
+def test_bishop_magic_subset(sq):
+    mask = RELEVANT_BISHOP_MASKS[sq]
+    magic = BISHOP_MAGICS[sq]
+    shift = BISHOP_SHIFTS[sq]
+    table = BISHOP_ATTACK_TABLE[sq]
+    for subset in [0, 1, (1 << bit_count(mask)) - 1]:
+        occ = expand_occupancy(subset, mask)
+        idx = ((occ * magic) & MASK64) >> shift
+        ref = compute_bishop_attacks_with_blockers(sq, occ)
+        assert table[idx] == ref
 
 
 def main():

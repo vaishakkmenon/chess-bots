@@ -95,6 +95,48 @@ def test_black_double_push(sq, expected):
     assert result == expected
 
 
+def test_white_single_push_blocked():
+    pawns = 1 << 12  # e2
+    blocker = 1 << 20  # e3
+    occ = pawns | blocker
+    assert pawn_single_push_targets(pawns, occ, True) == 0
+
+
+def test_white_double_push_blocked_first_step():
+    pawns = 1 << 12  # e2
+    blocker = 1 << 20  # e3
+    occ = pawns | blocker
+    assert pawn_double_push_targets(pawns, occ, True) == 0
+
+
+def test_white_double_push_blocked_landing():
+    pawns = 1 << 12  # e2
+    blocker = 1 << 28  # e4
+    occ = pawns | blocker
+    assert pawn_double_push_targets(pawns, occ, True) == 0
+
+
+def test_black_single_push_blocked():
+    pawns = 1 << 52  # e7
+    blocker = 1 << 44  # e6
+    occ = pawns | blocker
+    assert pawn_single_push_targets(pawns, occ, False) == 0
+
+
+def test_black_double_push_blocked_first_step():
+    pawns = 1 << 52  # e7
+    blocker = 1 << 44  # e6
+    occ = pawns | blocker
+    assert pawn_double_push_targets(pawns, occ, False) == 0
+
+
+def test_black_double_push_blocked_landing():
+    pawns = 1 << 52  # e7
+    blocker = 1 << 36  # e5
+    occ = pawns | blocker
+    assert pawn_double_push_targets(pawns, occ, False) == 0
+
+
 # Combined black push targets
 def test_black_push_targets_union():
     sq = 52  # e7
@@ -255,3 +297,23 @@ def test_generate_black_pawn_promotion_moves():
     moves = generate_pawn_moves(pawns, 0, pawns, False)
     promos = {m.promotion for m in moves}
     assert promos == {"Q", "R", "B", "N"}
+
+
+def test_white_capture_promotion_moves():
+    pawns = 1 << 54  # g7
+    enemy = 1 << 63  # h8
+    all_occ = pawns | enemy
+    moves = generate_pawn_moves(pawns, enemy, all_occ, True)
+    promos = {m.promotion for m in moves if m.dst == 63 and m.capture}
+    assert promos == {"Q", "R", "B", "N"}
+    assert len([m for m in moves if m.dst == 63]) == 4
+
+
+def test_black_capture_promotion_moves():
+    pawns = 1 << 9  # b2
+    enemy = 1 << 0  # a1
+    all_occ = pawns | enemy
+    moves = generate_pawn_moves(pawns, enemy, all_occ, False)
+    promos = {m.promotion for m in moves if m.dst == 0 and m.capture}
+    assert promos == {"Q", "R", "B", "N"}
+    assert len([m for m in moves if m.dst == 0]) == 4

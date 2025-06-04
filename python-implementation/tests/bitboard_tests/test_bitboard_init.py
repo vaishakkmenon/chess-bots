@@ -29,3 +29,18 @@ def test_initial_bitboards(board):
         assert (
             board.bitboards[idx] == expected
         ), f"bitboards[{idx}] mismatch: got {hex(board.bitboards[idx])}, expected {hex(expected)}"  # noqa: E501
+
+
+def test_initial_occupancies(board):
+    """Verify white, black and overall occupancy after initialization."""
+    expected_white = 0
+    for i in range(6):
+        expected_white |= INITIAL_MASKS[i]
+    expected_black = 0
+    for i in range(6, 12):
+        expected_black |= INITIAL_MASKS[i]
+    expected_all = expected_white | expected_black
+
+    assert board.white_occ == expected_white
+    assert board.black_occ == expected_black
+    assert board.all_occ == expected_all
