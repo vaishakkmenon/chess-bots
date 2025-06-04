@@ -11,7 +11,7 @@ from engine.bitboard.constants import (
     WHITE_QUEEN,
     WHITE_KING,
 )
-from engine.bitboard.generator import generate_moves
+from engine.bitboard.generator import generate_legal_moves
 
 
 def sort_moves(moves):
@@ -45,7 +45,7 @@ def test_generate_moves_white_pawn_pushes_and_captures():
     board.bitboards[BLACK_PAWN] = enemy_bb
     board.update_occupancies()
 
-    moves = generate_moves(board)
+    moves = generate_legal_moves(board)
     expected = [
         Move(12, 19, capture=True),
         Move(12, 21, capture=True),
@@ -66,7 +66,7 @@ def test_generate_moves_black_pawn_pushes_and_captures():
     board.bitboards[WHITE_PAWN] = enemy_bb
     board.update_occupancies()
 
-    moves = generate_moves(board)
+    moves = generate_legal_moves(board)
     expected = [
         Move(52, 43, capture=True),
         Move(52, 45, capture=True),
@@ -85,7 +85,7 @@ def test_generate_moves_knight():
     board.bitboards[WHITE_KNIGHT] = 1 << 6
     board.update_occupancies()
 
-    moves = generate_moves(board)
+    moves = generate_legal_moves(board)
     # g1 -> {e2(12), f3(21), h3(23)}
     expected_dsts = {12, 21, 23}
     got_dsts = {m.dst for m in moves if m.src == 6}
@@ -111,7 +111,7 @@ def test_generate_moves_en_passant_flow():
     board.bitboards[WHITE_PAWN] = 1 << 35
     board.update_occupancies()
 
-    moves = generate_moves(board)
+    moves = generate_legal_moves(board)
     ep_moves = [m for m in moves if getattr(m, "en_passant", False)]
     assert ep_moves == [Move(35, 44, capture=True, en_passant=True)]
 
@@ -129,7 +129,7 @@ def test_generate_moves_bishop_simple_and_capture():
     board.bitboards[WHITE_BISHOP] = bb_of(2)  # c1
     board.update_occupancies()
 
-    all_moves = generate_moves(board)
+    all_moves = generate_legal_moves(board)
     bishop_moves = [m for m in all_moves if m.src == 2]
     got = move_set(bishop_moves)
     expected_quiet = {
@@ -152,7 +152,7 @@ def test_generate_moves_bishop_simple_and_capture():
     board.bitboards[BLACK_PAWN] = bb_of(29)  # f4
     board.update_occupancies()
 
-    all_moves = generate_moves(board)
+    all_moves = generate_legal_moves(board)
     bishop_moves = [m for m in all_moves if m.src == 2]
     got = move_set(bishop_moves)
     expected_with_capture = {
@@ -178,7 +178,7 @@ def test_generate_moves_rook_simple_and_capture():
     board.bitboards[WHITE_ROOK] = bb_of(27)  # d4
     board.update_occupancies()
 
-    all_moves = generate_moves(board)
+    all_moves = generate_legal_moves(board)
     rook_moves = [m for m in all_moves if m.src == 27]
     got = move_set(rook_moves)
     expected_quiet = {
@@ -213,7 +213,7 @@ def test_generate_moves_rook_simple_and_capture():
     board.bitboards[BLACK_PAWN] |= bb_of(25)  # b4
     board.update_occupancies()
 
-    all_moves = generate_moves(board)
+    all_moves = generate_legal_moves(board)
     rook_moves = [m for m in all_moves if m.src == 27]
     got = move_set(rook_moves)
     expected_with_capture = {
@@ -249,7 +249,7 @@ def test_generate_moves_queen_simple_and_capture():
     board.bitboards[WHITE_QUEEN] = bb_of(27)  # d4
     board.update_occupancies()
 
-    all_moves = generate_moves(board)
+    all_moves = generate_legal_moves(board)
     queen_moves = [m for m in all_moves if m.src == 27]
     got = move_set(queen_moves)
 
@@ -297,7 +297,7 @@ def test_generate_moves_queen_simple_and_capture():
     board.bitboards[BLACK_PAWN] |= bb_of(45)  # f6
     board.update_occupancies()
 
-    all_moves = generate_moves(board)
+    all_moves = generate_legal_moves(board)
     queen_moves = [m for m in all_moves if m.src == 27]
     got = move_set(queen_moves)
 
@@ -357,7 +357,7 @@ def test_generate_moves_king_simple_and_capture():
     board.bitboards[WHITE_KING] = bb_of(4)  # e1
     board.update_occupancies()
 
-    all_moves = generate_moves(board)
+    all_moves = generate_legal_moves(board)
     king_moves = [m for m in all_moves if m.src == 4]
     got = move_set(king_moves)
     expected_quiet = {
@@ -379,7 +379,7 @@ def test_generate_moves_king_simple_and_capture():
     board.bitboards[BLACK_PAWN] |= bb_of(13)  # f2
     board.update_occupancies()
 
-    all_moves = generate_moves(board)
+    all_moves = generate_legal_moves(board)
     king_moves = [m for m in all_moves if m.src == 4]
     got = move_set(king_moves)
     expected_with_capture = {
