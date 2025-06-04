@@ -1,5 +1,6 @@
-from engine.bitboard.board import Board  # noqa: TC002
+from typing import List
 from engine.bitboard.move import Move  # noqa: TC002
+from engine.bitboard.board import Board  # noqa: TC002
 from engine.bitboard.constants import (
     WHITE_PAWN,
     BLACK_PAWN,
@@ -54,12 +55,12 @@ __all__ = [
 ]
 
 
-def generate_moves(board: Board) -> list[Move]:
+def generate_moves(board: Board) -> List[Move]:
     """
     Master move generator for the side to move.
     Calls each piece-type generator and collects all legal moves.
     """
-    moves: list[Move] = []
+    moves: List[Move] = []
 
     # Pawn moves (including en-passant)
     if board.side_to_move == WHITE:
@@ -112,3 +113,22 @@ def generate_moves(board: Board) -> list[Move]:
         their_occ,
     )
     return moves
+
+
+def generate_legal_moves(board: Board) -> List[Move]:
+    """
+    Wraps generate_moves(board) and returns only those moves
+    that do not leave the side-to-move's king in check.
+    """
+    legal_moves: List[Move] = []
+    side = board.side_to_move
+
+    pseudo_moves = generate_moves(board)
+
+    for move in pseudo_moves:
+        board.make_move(move)
+        if not board.in_check(side):
+            legal_moves.append(move)
+        board.undo_move()
+
+    return legal_moves
