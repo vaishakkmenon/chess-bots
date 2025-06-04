@@ -128,6 +128,20 @@ class Board:
         """Return ``True`` if ``square`` is attacked by ``attacker_side``."""
         return _is_square_attacked(self, square, attacker_side)
 
+    def in_check(self, side: int) -> bool:
+        """Return True if `side`'s king is attacked on this board."""
+        if side == WHITE:
+            king_bb = self.bitboards[WHITE_KING]
+        else:
+            king_bb = self.bitboards[BLACK_KING]
+
+        if king_bb == 0:
+            return False
+
+        king_sq = king_bb.bit_length() - 1
+        attacker = BLACK if side == WHITE else WHITE
+        return _is_square_attacked(king_sq, attacker)
+
     def make_move(self, move: Move):
         """
         Execute a move on the board, updating:
