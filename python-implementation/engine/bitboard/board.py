@@ -15,6 +15,8 @@ from engine.bitboard.constants import (
     BLACK_ROOK,
     WHITE_QUEEN,
     BLACK_QUEEN,
+    WHITE_KING,
+    BLACK_KING,
     WHITE,
     BLACK,
 )
@@ -139,7 +141,7 @@ class Board:
         self.ep_square = 0
         captured_idx = None
         cap_sq = None
-
+        old_castling_rights = self.castling_rights
         src, dst = move.src, move.dst
 
         piece_idx = None
@@ -147,6 +149,37 @@ class Board:
             if (self.bitboards[idx] & (1 << src)) != 0:
                 piece_idx = idx
                 break
+
+        # Update castling rights if king or rook moves out of original position
+        if piece_idx == WHITE_KING:
+            self.castling_rights &= ~0b0011
+        elif piece_idx == BLACK_KING:
+            self.castling_rights &= ~0b1100
+        elif piece_idx == WHITE_ROOK:
+            if src == 0:
+                self.castling_rights &= ~0b0010
+            elif src == 7:
+                self.castling_rights &= ~0b0001
+        elif piece_idx == BLACK_ROOK:
+            if src == 56:
+                self.castling_rights &= ~0b1000
+            elif src == 63:
+                self.castling_rights &= ~0b0100
+
+        # If this is a castling move, also move the rook
+        if move.castling:
+            if piece_idx == WHITE_KING and src == 4 and dst == 6:
+                self.bitboards[WHITE_ROOK] ^= 1 << 7
+                self.bitboards[WHITE_ROOK] |= 1 << 5
+            elif piece_idx == WHITE_KING and src == 4 and dst == 2:
+                self.bitboards[WHITE_ROOK] ^= 1 << 0
+                self.bitboards[WHITE_ROOK] |= 1 << 3
+            elif piece_idx == BLACK_KING and src == 60 and dst == 62:
+                self.bitboards[BLACK_ROOK] ^= 1 << 63
+                self.bitboards[BLACK_ROOK] |= 1 << 61
+            elif piece_idx == BLACK_KING and src == 60 and dst == 58:
+                self.bitboards[BLACK_ROOK] ^= 1 << 56
+                self.bitboards[BLACK_ROOK] |= 1 << 59
 
         if piece_idx in (WHITE_PAWN, BLACK_PAWN):
             # Check if the move is on the same file as well as a double push
@@ -168,7 +201,14 @@ class Board:
                     break
 
         self.history.append(
-            Undo(move, old_ep, captured_idx, cap_sq, prev_side)
+            Undo(
+                move,
+                old_ep,
+                captured_idx,
+                cap_sq,
+                prev_side,
+                old_castling_rights,
+            )
         )
 
         if captured_idx is not None:
@@ -190,6 +230,21 @@ class Board:
 
         self.ep_square = undo.old_ep
         self.side_to_move = undo.prev_side
+        self.castling_rights = undo.old_castling_rights
+
+        if move.castling:
+            if src == 4 and dst == 6:
+                self.bitboards[WHITE_ROOK] ^= 1 << 5
+                self.bitboards[WHITE_ROOK] |= 1 << 7
+            elif src == 4 and dst == 2:
+                self.bitboards[WHITE_ROOK] ^= 1 << 3
+                self.bitboards[WHITE_ROOK] |= 1 << 0
+            elif src == 60 and dst == 62:
+                self.bitboards[BLACK_ROOK] ^= 1 << 61
+                self.bitboards[BLACK_ROOK] |= 1 << 63
+            elif src == 60 and dst == 58:
+                self.bitboards[BLACK_ROOK] ^= 1 << 59
+                self.bitboards[BLACK_ROOK] |= 1 << 56
 
         moved_idx = None
 

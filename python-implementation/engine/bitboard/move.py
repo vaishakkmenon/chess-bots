@@ -3,6 +3,7 @@ __all__ = ["Move"]
 
 
 class Move:
+
     def __init__(
         self,
         src: int,
@@ -10,18 +11,21 @@ class Move:
         capture: bool = False,
         promotion: str | None = None,
         en_passant: bool = False,
+        castling: bool = False,
     ):
         self.src = src
         self.dst = dst
         self.capture = capture
         self.promotion = promotion
         self.en_passant = en_passant
+        self.castling = castling
 
     def __repr__(self):
         promo = f"={self.promotion}" if self.promotion else ""
         cap = "x" if self.capture else ""
         ep = " e.p." if self.en_passant else ""
-        return f"Move({self.src}{cap}->{self.dst}{promo}{ep})"
+        cas = "cas" if self.castling else ""
+        return f"Move({self.src}{cap}->{self.dst}{promo}{ep}{cas})"
 
     def __eq__(self, other):
         return (
@@ -31,4 +35,5 @@ class Move:
             and self.capture == other.capture
             and self.promotion == other.promotion
             and self.en_passant == other.en_passant
+            and self.castling == other.castling
         )
