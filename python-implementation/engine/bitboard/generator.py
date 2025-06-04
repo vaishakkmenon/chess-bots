@@ -106,6 +106,7 @@ def generate_moves(board: Board) -> list[Move]:
     )
 
     moves += generate_king_moves(
+        board,
         board.bitboards[WHITE_KING if is_white else BLACK_KING],
         my_occ,
         their_occ,

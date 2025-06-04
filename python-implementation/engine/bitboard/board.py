@@ -2,10 +2,7 @@ from typing import List
 
 from engine.bitboard.move import Move  # noqa: TC002
 from engine.bitboard.undo import Undo
-from engine.bitboard.moves.king import KING_ATTACKS
-from engine.bitboard.moves.knight import KNIGHT_ATTACKS
-from engine.bitboard.moves.rook import rook_attacks
-from engine.bitboard.moves.bishop import bishop_attacks
+from .attack_utils import is_square_attacked as _is_square_attacked
 from engine.bitboard.constants import (
     INITIAL_MASKS,
     WHITE_PAWN,
@@ -128,74 +125,8 @@ class Board:
         self.all_occ = self.white_occ | self.black_occ
 
     def is_square_attacked(self, square: int, attacker_side: int) -> bool:
-        """
-        Return True if `square` (0..63) is attacked by any piece
-        of color `attacker_side` (WHITE or BLACK).
-        """
-        all_occ = self.white_occ | self.black_occ
-
-        # 1. Pawn attacks:
-        if attacker_side == WHITE:
-            pawn_bb = self.bitboards[WHITE_PAWN]
-            mask = 0
-            if square >= 9 and (square % 8) != 7:
-                mask |= 1 << (square - 9)
-            if square >= 7 and (square % 8) != 0:
-                mask |= 1 << (square - 7)
-            if pawn_bb & mask:
-                return True
-        else:
-            pawn_bb = self.bitboards[BLACK_PAWN]
-            mask = 0
-            if square <= 56 and (square % 8) != 7:
-                mask |= 1 << (square + 7)
-            if square <= 55 and (square % 8) != 0:
-                mask |= 1 << (square + 9)
-            if pawn_bb & mask:
-                return True
-
-        # 2. Knight attacks
-        if attacker_side == WHITE:
-            knight_bb = self.bitboards[WHITE_KNIGHT]
-        else:
-            knight_bb = self.bitboards[BLACK_KNIGHT]
-        if KNIGHT_ATTACKS[square] & knight_bb:
-            return True
-
-        # 3. Bishop/Queen diagonal attacks
-        if attacker_side == WHITE:
-            diagonal_attackers = (
-                self.bitboards[WHITE_BISHOP] | self.bitboards[WHITE_QUEEN]
-            )
-        else:
-            diagonal_attackers = (
-                self.bitboards[BLACK_BISHOP] | self.bitboards[BLACK_QUEEN]
-            )
-
-        if bishop_attacks(square, all_occ) & diagonal_attackers:
-            return True
-
-        # 4. Rook/Queen orthogonal attacks
-        if attacker_side == WHITE:
-            orthogonal_attackers = (
-                self.bitboards[WHITE_ROOK] | self.bitboards[WHITE_QUEEN]
-            )
-        else:
-            orthogonal_attackers = (
-                self.bitboards[BLACK_ROOK] | self.bitboards[BLACK_QUEEN]
-            )
-        if rook_attacks(square, all_occ) & orthogonal_attackers:
-            return True
-
-        # 5. King attacks (adjacent)
-        if attacker_side == WHITE:
-            king_bb = self.bitboards[WHITE_KING]
-        else:
-            king_bb = self.bitboards[BLACK_KING]
-        if KING_ATTACKS[square] & king_bb:
-            return True
-
-        return False
+        """Return ``True`` if ``square`` is attacked by ``attacker_side``."""
+        return _is_square_attacked(self, square, attacker_side)
 
     def make_move(self, move: Move):
         """
