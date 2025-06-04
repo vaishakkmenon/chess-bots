@@ -15,8 +15,6 @@ from engine.bitboard.constants import (
     BLACK_ROOK,
     WHITE_QUEEN,
     BLACK_QUEEN,
-    WHITE_KING,
-    BLACK_KING,
     WHITE,
     BLACK,
 )

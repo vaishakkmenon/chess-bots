@@ -19,14 +19,15 @@ from engine.bitboard.constants import (
     WHITE_KING,
     BLACK_KING,
     WHITE,
-    BLACK,
 )
 
 if TYPE_CHECKING:  # pragma: no cover - used for type hints only
     from .board import Board
 
 
-def is_square_attacked(board: "Board", square: int, attacker_side: int) -> bool:
+def is_square_attacked(
+    board: "Board", square: int, attacker_side: int
+) -> bool:
     """Return True if ``square`` is attacked by ``attacker_side``."""
     all_occ = board.white_occ | board.black_occ
 
