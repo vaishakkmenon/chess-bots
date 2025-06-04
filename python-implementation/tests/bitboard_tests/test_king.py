@@ -23,6 +23,9 @@ def test_king_moves_open_board():
     board.white_occ = board.bitboards[WHITE_KING]
     board.black_occ = board.all_occ = 0
     moves = generate_king_moves(
-        board.bitboards[WHITE_KING], board.white_occ, board.black_occ
+        board,
+        board.bitboards[WHITE_KING],
+        board.white_occ,
+        board.black_occ,
     )
     assert len(moves) == 8
