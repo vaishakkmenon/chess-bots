@@ -1,4 +1,10 @@
-from engine.bitboard.utils import pop_lsb, bit_count, lsb, msb, expand_occupancy
+from engine.bitboard.utils import (
+    pop_lsb,
+    bit_count,
+    lsb,
+    msb,
+    expand_occupancy,
+)
 
 
 def test_pop_lsb_nonzero():
@@ -43,6 +49,6 @@ def test_expand_occupancy_larger_mask():
     bits = [0, 3, 8, 12]
     for b in bits:
         mask |= 1 << b
-    subset = 0b1010  # select bits at indices 1 and 3 -> squares bits[1]=3, bits[3]=12
+    subset = 0b1010  # indices 1 and 3 -> squares bits[1]=3, bits[3]=12
     expected = (1 << bits[1]) | (1 << bits[3])
     assert expand_occupancy(subset, mask) == expected

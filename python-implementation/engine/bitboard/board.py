@@ -140,7 +140,7 @@ class Board:
 
         king_sq = king_bb.bit_length() - 1
         attacker = BLACK if side == WHITE else WHITE
-        return _is_square_attacked(king_sq, attacker)
+        return _is_square_attacked(self, king_sq, attacker)
 
     def make_move(self, move: Move):
         """

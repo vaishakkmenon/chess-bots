@@ -173,10 +173,10 @@ def test_perft_hashed_matches_naive(depth):
 
 #     # Print results (pytest -s to see them)
 #     print(
-#         f"\nperft(depth={depth}): naive={t_naive:.3f}s, hashed={t_hashed:.3f}s"
+#         f"\nperft(depth={depth}): naive={t_naive:.3f}s, hashed={t_hashed:.3f}s"  # noqa: E501
 #     )
 
 #     # We expect some speedup
 #     assert (
 #         t_hashed < t_naive
-#     ), f"Expected hashed perft to be faster: {t_hashed:.3f}s vs {t_naive:.3f}s"
+#     ), f"Expected hashed perft to be faster: {t_hashed:.3f}s vs {t_naive:.3f}s"  # noqa: E501
