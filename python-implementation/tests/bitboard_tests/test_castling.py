@@ -108,11 +108,13 @@ def test_castling_king_not_home() -> None:
         (sq(5, 1), sq(5, 2), 0b0011),
         (sq(1, 1), sq(1, 2), 0b0010),
         (sq(8, 1), sq(8, 2), 0b0001),
-        (sq(2, 1), sq(1, 1), 0b0010),
-        (sq(7, 1), sq(8, 1), 0b0001),
+        (sq(1, 1), sq(2, 1), 0b0010),
+        (sq(8, 1), sq(7, 1), 0b0001),
     ],
 )
-def test_castling_rights_cleared_and_restored(start: int, end: int, mask: int) -> None:
+def test_castling_rights_cleared_and_restored(
+    start: int, end: int, mask: int
+) -> None:
     piece = "K" if start == sq(5, 1) else "R"
     board = make_board({start: piece})
     board.castling_rights = mask

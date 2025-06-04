@@ -1,5 +1,6 @@
-from typing import Optional
-from typing import TYPE_CHECKING
+from __future__ import annotations
+
+from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover - type hints only
     from engine.bitboard.move import Move
