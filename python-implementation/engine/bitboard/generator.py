@@ -11,14 +11,15 @@ from engine.bitboard.constants import (
     BLACK_ROOK,
     WHITE_QUEEN,
     BLACK_QUEEN,
+    WHITE_KING,
+    BLACK_KING,
     WHITE,
 )
 
+from engine.bitboard.moves.king import generate_king_moves
 from engine.bitboard.moves.rook import generate_rook_moves
 from engine.bitboard.moves.queen import generate_queen_moves
 from engine.bitboard.moves.bishop import generate_bishop_moves
-
-
 from engine.bitboard.moves.knight import (
     knight_attacks,
     generate_knight_moves,
@@ -48,6 +49,8 @@ __all__ = [
     "generate_rook_moves",
     # Queen API
     "generate_queen_moves",
+    # King API
+    "generate_king_moves",
 ]
 
 
@@ -98,6 +101,12 @@ def generate_moves(board: Board) -> list[Move]:
 
     moves += generate_queen_moves(
         board.bitboards[WHITE_QUEEN if is_white else BLACK_QUEEN],
+        my_occ,
+        their_occ,
+    )
+
+    moves += generate_king_moves(
+        board.bitboards[WHITE_KING if is_white else BLACK_KING],
         my_occ,
         their_occ,
     )

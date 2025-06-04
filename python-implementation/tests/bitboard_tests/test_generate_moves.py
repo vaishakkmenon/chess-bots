@@ -1,11 +1,15 @@
 from engine.bitboard.board import Board
 from engine.bitboard.move import Move
 from engine.bitboard.constants import (
-    WHITE_PAWN,
-    BLACK_PAWN,
-    WHITE_KNIGHT,
     WHITE,
     BLACK,
+    WHITE_KNIGHT,
+    WHITE_BISHOP,
+    WHITE_PAWN,
+    BLACK_PAWN,
+    WHITE_ROOK,
+    WHITE_QUEEN,
+    WHITE_KING,
 )
 from engine.bitboard.generator import generate_moves
 
@@ -22,24 +26,26 @@ def sort_moves(moves):
     )
 
 
+def bb_of(idx: int) -> int:
+    return 1 << idx
+
+
+def move_set(moves):
+    return {(m.src, m.dst, m.capture) for m in moves}
+
+
 def test_generate_moves_white_pawn_pushes_and_captures():
     board = Board()
     board.bitboards = [0] * 12
-    # White to move
     board.side_to_move = WHITE
 
-    # pawn on e2 (12), enemy pawns on d3 (19) and f3 (21)
+    # White pawn on e2 (12), black pawns on d3 (19) and f3 (21)
     board.bitboards[WHITE_PAWN] = 1 << 12
     enemy_bb = (1 << 19) | (1 << 21)
-    board.bitboards[6] = enemy_bb  # place them as black pawns
+    board.bitboards[BLACK_PAWN] = enemy_bb
     board.update_occupancies()
 
     moves = generate_moves(board)
-    # should have:
-    #  - single push e2->e3 (12->20)
-    #  - double push e2->e4 (12->28)
-    #  - capture d3 (12->19)
-    #  - capture f3 (12->21)
     expected = [
         Move(12, 19, capture=True),
         Move(12, 21, capture=True),
@@ -54,18 +60,13 @@ def test_generate_moves_black_pawn_pushes_and_captures():
     board.bitboards = [0] * 12
     board.side_to_move = BLACK
 
-    # pawn on e7 (52), white pawns on d6 (43) and f6 (45)
+    # Black pawn on e7 (52), white pawns on d6 (43) and f6 (45)
     board.bitboards[BLACK_PAWN] = 1 << 52
     enemy_bb = (1 << 43) | (1 << 45)
-    board.bitboards[0] = enemy_bb  # place them as white pawns
+    board.bitboards[WHITE_PAWN] = enemy_bb
     board.update_occupancies()
 
     moves = generate_moves(board)
-    # should have:
-    #  - single push e7->e6 (52->44)
-    #  - double push e7->e5 (52->36)
-    #  - capture d6 (52->43)
-    #  - capture f6 (52->45)
     expected = [
         Move(52, 43, capture=True),
         Move(52, 45, capture=True),
@@ -80,7 +81,7 @@ def test_generate_moves_knight():
     board.bitboards = [0] * 12
     board.side_to_move = WHITE
 
-    # white knight on g1 (sq=6)
+    # White knight on g1 (6)
     board.bitboards[WHITE_KNIGHT] = 1 << 6
     board.update_occupancies()
 
@@ -89,7 +90,7 @@ def test_generate_moves_knight():
     expected_dsts = {12, 21, 23}
     got_dsts = {m.dst for m in moves if m.src == 6}
     assert got_dsts == expected_dsts
-    # none of these should be captures or en-passant
+    # None of these should be captures or en passant
     assert all(
         not m.capture and not getattr(m, "en_passant", False) for m in moves
     )
@@ -100,18 +101,292 @@ def test_generate_moves_en_passant_flow():
     board.bitboards = [0] * 12
     board.side_to_move = BLACK
 
-    # Set up for black double-push e7->e5
+    # Black pawn double-push e7->e5
     board.bitboards[BLACK_PAWN] = 1 << 52
     board.update_occupancies()
     board.make_move(Move(src=52, dst=36, capture=False))
-    # now side_to_move flipped to WHITE inside make_move
     assert board.side_to_move == WHITE
 
-    # place white pawn on d5 (35) so it can capture ep
+    # Place white pawn on d5 (35) to capture en passant
     board.bitboards[WHITE_PAWN] = 1 << 35
     board.update_occupancies()
 
     moves = generate_moves(board)
-    # find the en-passant move d5->e6 (35->44)
     ep_moves = [m for m in moves if getattr(m, "en_passant", False)]
     assert ep_moves == [Move(35, 44, capture=True, en_passant=True)]
+
+
+def test_generate_moves_bishop_simple_and_capture():
+    """
+    1) Bishop on c1 (2), no blockers ⇒ all quiet diagonals.
+    2) Add black pawn on f4 (29) ⇒ bishop can capture at 29 and stops.
+    """
+    # 1) No-blocker case
+    board = Board()
+    board.bitboards = [0] * 12
+    board.side_to_move = WHITE
+
+    board.bitboards[WHITE_BISHOP] = bb_of(2)  # c1
+    board.update_occupancies()
+
+    all_moves = generate_moves(board)
+    bishop_moves = [m for m in all_moves if m.src == 2]
+    got = move_set(bishop_moves)
+    expected_quiet = {
+        (2, 9, False),  # b2
+        (2, 16, False),  # a3
+        (2, 11, False),  # d2
+        (2, 20, False),  # e3
+        (2, 29, False),  # f4
+        (2, 38, False),  # g5
+        (2, 47, False),  # h6
+    }
+    assert got == expected_quiet
+
+    # 2) Capture case: add black pawn on f4 (29)
+    board = Board()
+    board.bitboards = [0] * 12
+    board.side_to_move = WHITE
+
+    board.bitboards[WHITE_BISHOP] = bb_of(2)  # c1
+    board.bitboards[BLACK_PAWN] = bb_of(29)  # f4
+    board.update_occupancies()
+
+    all_moves = generate_moves(board)
+    bishop_moves = [m for m in all_moves if m.src == 2]
+    got = move_set(bishop_moves)
+    expected_with_capture = {
+        (2, 9, False),
+        (2, 16, False),
+        (2, 11, False),
+        (2, 20, False),
+        (2, 29, True),
+    }
+    assert got == expected_with_capture
+
+
+def test_generate_moves_rook_simple_and_capture():
+    """
+    1) Rook on d4 (27), no blockers ⇒ all quiet rank+file moves.
+    2) Add black pawns on d6 (43) and b4 (25) ⇒ captures there and rays stop.
+    """
+    # 1) No-blocker case
+    board = Board()
+    board.bitboards = [0] * 12
+    board.side_to_move = WHITE
+
+    board.bitboards[WHITE_ROOK] = bb_of(27)  # d4
+    board.update_occupancies()
+
+    all_moves = generate_moves(board)
+    rook_moves = [m for m in all_moves if m.src == 27]
+    got = move_set(rook_moves)
+    expected_quiet = {
+        # left
+        (27, 26, False),  # c4
+        (27, 25, False),  # b4
+        (27, 24, False),  # a4
+        # right
+        (27, 28, False),
+        (27, 29, False),
+        (27, 30, False),
+        (27, 31, False),
+        # up
+        (27, 35, False),
+        (27, 43, False),
+        (27, 51, False),
+        (27, 59, False),
+        # down
+        (27, 19, False),
+        (27, 11, False),
+        (27, 3, False),
+    }
+    assert got == expected_quiet
+
+    # 2) Capture case: black pawns on d6 (43) and b4 (25)
+    board = Board()
+    board.bitboards = [0] * 12
+    board.side_to_move = WHITE
+
+    board.bitboards[WHITE_ROOK] = bb_of(27)  # d4
+    board.bitboards[BLACK_PAWN] = bb_of(43)  # d6
+    board.bitboards[BLACK_PAWN] |= bb_of(25)  # b4
+    board.update_occupancies()
+
+    all_moves = generate_moves(board)
+    rook_moves = [m for m in all_moves if m.src == 27]
+    got = move_set(rook_moves)
+    expected_with_capture = {
+        # up
+        (27, 35, False),
+        (27, 43, True),
+        # down
+        (27, 19, False),
+        (27, 11, False),
+        (27, 3, False),
+        # left
+        (27, 26, False),
+        (27, 25, True),
+        # right
+        (27, 28, False),
+        (27, 29, False),
+        (27, 30, False),
+        (27, 31, False),
+    }
+    assert got == expected_with_capture
+
+
+def test_generate_moves_queen_simple_and_capture():
+    """
+    1) Queen on d4 (27), no blockers ⇒ all quiet rook+bishop rays.
+    2) Add black pawns on b4 (25) and f6 (45) ⇒ captures and stops correctly.
+    """
+    # 1) No-blocker case
+    board = Board()
+    board.bitboards = [0] * 12
+    board.side_to_move = WHITE
+
+    board.bitboards[WHITE_QUEEN] = bb_of(27)  # d4
+    board.update_occupancies()
+
+    all_moves = generate_moves(board)
+    queen_moves = [m for m in all_moves if m.src == 27]
+    got = move_set(queen_moves)
+
+    rook_part = {
+        (27, 26, False),
+        (27, 25, False),
+        (27, 24, False),
+        (27, 28, False),
+        (27, 29, False),
+        (27, 30, False),
+        (27, 31, False),
+        (27, 35, False),
+        (27, 43, False),
+        (27, 51, False),
+        (27, 59, False),
+        (27, 19, False),
+        (27, 11, False),
+        (27, 3, False),
+    }
+    bishop_part = {
+        (27, 34, False),
+        (27, 41, False),
+        (27, 48, False),
+        (27, 36, False),
+        (27, 45, False),
+        (27, 54, False),
+        (27, 63, False),
+        (27, 18, False),
+        (27, 9, False),
+        (27, 0, False),
+        (27, 20, False),
+        (27, 13, False),
+        (27, 6, False),
+    }
+    expected_quiet = rook_part.union(bishop_part)
+    assert got == expected_quiet
+
+    # 2) Capture case: black pawns on b4 (25) and f6 (45)
+    board = Board()
+    board.bitboards = [0] * 12
+    board.side_to_move = WHITE
+
+    board.bitboards[WHITE_QUEEN] = bb_of(27)  # d4
+    board.bitboards[BLACK_PAWN] = bb_of(25)  # b4
+    board.bitboards[BLACK_PAWN] |= bb_of(45)  # f6
+    board.update_occupancies()
+
+    all_moves = generate_moves(board)
+    queen_moves = [m for m in all_moves if m.src == 27]
+    got = move_set(queen_moves)
+
+    expected_with_capture = set()
+
+    # horizontal left: c4(26 quiet), b4(25 capture) stop
+    expected_with_capture |= {(27, 26, False), (27, 25, True)}
+
+    # diagonal up-left: c5(34), b6(41), a7(48) all quiet
+    expected_with_capture |= {
+        (27, 34, False),
+        (27, 41, False),
+        (27, 48, False),
+    }
+
+    # diagonal up-right: e5(36 quiet), f6(45 capture) stop
+    expected_with_capture |= {(27, 36, False), (27, 45, True)}
+
+    # horizontal right: e4(28), f4(29), g4(30), h4(31)
+    expected_with_capture |= {
+        (27, 28, False),
+        (27, 29, False),
+        (27, 30, False),
+        (27, 31, False),
+    }
+
+    # vertical up: d5(35), d6(43), d7(51), d8(59)
+    expected_with_capture |= {
+        (27, 35, False),
+        (27, 43, False),
+        (27, 51, False),
+        (27, 59, False),
+    }
+
+    # vertical down: d3(19), d2(11), d1(3)
+    expected_with_capture |= {(27, 19, False), (27, 11, False), (27, 3, False)}
+
+    # diagonal down-left: c3(18), b2(9), a1(0)
+    expected_with_capture |= {(27, 18, False), (27, 9, False), (27, 0, False)}
+
+    # diagonal down-right: e3(20), f2(13), g1(6)
+    expected_with_capture |= {(27, 20, False), (27, 13, False), (27, 6, False)}
+
+    assert got == expected_with_capture
+
+
+def test_generate_moves_king_simple_and_capture():
+    """
+    1) King on e1 (4), no blockers ⇒ quiet king moves.
+    2) Add black pawns on d1 (3) and f2 (13) ⇒ captures at those squares.
+    """
+    # 1) No-blocker case
+    board = Board()
+    board.bitboards = [0] * 12
+    board.side_to_move = WHITE
+
+    board.bitboards[WHITE_KING] = bb_of(4)  # e1
+    board.update_occupancies()
+
+    all_moves = generate_moves(board)
+    king_moves = [m for m in all_moves if m.src == 4]
+    got = move_set(king_moves)
+    expected_quiet = {
+        (4, 3, False),  # d1
+        (4, 5, False),  # f1
+        (4, 11, False),  # d2
+        (4, 12, False),  # e2
+        (4, 13, False),  # f2
+    }
+    assert got == expected_quiet
+
+    # 2) Capture case: black pawns on d1 (3) and f2 (13)
+    board = Board()
+    board.bitboards = [0] * 12
+    board.side_to_move = WHITE
+
+    board.bitboards[WHITE_KING] = bb_of(4)  # e1
+    board.bitboards[BLACK_PAWN] = bb_of(3)  # d1
+    board.bitboards[BLACK_PAWN] |= bb_of(13)  # f2
+    board.update_occupancies()
+
+    all_moves = generate_moves(board)
+    king_moves = [m for m in all_moves if m.src == 4]
+    got = move_set(king_moves)
+    expected_with_capture = {
+        (4, 3, True),
+        (4, 5, False),
+        (4, 11, False),
+        (4, 12, False),
+        (4, 13, True),
+    }
+    assert got == expected_with_capture
