@@ -10,6 +10,7 @@ from engine.bitboard.constants import (
     BLACK,
     WHITE_KNIGHT,
     WHITE_QUEEN,
+    BLACK_ROOK,
 )
 
 
@@ -156,5 +157,24 @@ def test_pawn_promotion_round_trip():
     board.make_move(mv)
     assert board.bitboards[WHITE_PAWN] == 0
     assert (board.bitboards[WHITE_QUEEN] & (1 << 56)) != 0
+    board.undo_move()
+    restore_ok(board, before)
+
+
+def test_capture_promotion_round_trip():
+    board = Board()
+    board.bitboards = [0] * 12
+    board.bitboards[WHITE_PAWN] = 1 << 54  # g7
+    board.bitboards[BLACK_ROOK] = 1 << 63  # h8
+    board.update_occupancies()
+    board.side_to_move = WHITE
+
+    before = snapshot(board)
+    mv = Move(src=54, dst=63, capture=True, promotion="Q")
+    board.make_move(mv)
+    assert board.bitboards[WHITE_PAWN] == 0
+    assert (board.bitboards[WHITE_QUEEN] & (1 << 63)) != 0
+    assert (board.bitboards[BLACK_ROOK] & (1 << 63)) == 0
+
     board.undo_move()
     restore_ok(board, before)
