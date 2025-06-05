@@ -4,8 +4,11 @@ from engine.bitboard.constants import (
     WHITE_KING,
     WHITE_ROOK,
     WHITE_PAWN,
+    WHITE_BISHOP,
+    WHITE_KNIGHT,
     BLACK_ROOK,
     BLACK_BISHOP,
+    BLACK_KNIGHT,
     BLACK_QUEEN,
 )
 from engine.bitboard.generator import generate_legal_moves
@@ -14,8 +17,11 @@ PIECE_INDEX = {
     "K": WHITE_KING,
     "R": WHITE_ROOK,
     "P": WHITE_PAWN,
+    "B": WHITE_BISHOP,
+    "N": WHITE_KNIGHT,
     "r": BLACK_ROOK,
     "b": BLACK_BISHOP,
+    "n": BLACK_KNIGHT,
     "q": BLACK_QUEEN,
 }
 
@@ -66,3 +72,26 @@ def test_pinned_pieces_only_move_along_pin() -> None:
     promo_moves = [m for m in moves if m.src == sq(7, 7)]
     assert len(promo_moves) == 4
     assert all(m.dst == sq(7, 8) for m in promo_moves)
+
+
+def test_pinned_bishop_moves_along_pin() -> None:
+    board = make_board(
+        {
+            sq(5, 1): "K",  # king e1
+            sq(3, 3): "B",  # bishop c3 pinned on diagonal
+            sq(1, 5): "b",  # black bishop a5 pinning piece
+        }
+    )
+
+    moves = [m for m in generate_legal_moves(board) if m.src == sq(3, 3)]
+    targets = {m.dst for m in moves}
+
+    expected = {sq(2, 4), sq(4, 2), sq(1, 5)}
+    assert targets == expected
+
+
+def test_pinned_knight_no_moves() -> None:
+    board = make_board({sq(5, 1): "K", sq(5, 2): "N", sq(5, 8): "r"})
+
+    moves = generate_legal_moves(board)
+    assert all(m.src != sq(5, 2) for m in moves)
