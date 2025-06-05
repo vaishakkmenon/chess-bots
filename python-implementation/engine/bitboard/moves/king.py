@@ -1,6 +1,7 @@
 # engine/bitboard/moves/king.py
 
-from typing import List, TYPE_CHECKING
+from typing import List, Union, Tuple, TYPE_CHECKING
+from engine.bitboard.config import USE_RAW_MOVES
 
 from engine.bitboard.move import Move  # noqa: TC002
 from engine.bitboard.utils import pop_lsb
@@ -55,7 +56,7 @@ def generate_king_moves(
     king_bb: int,
     my_occ: int,
     their_occ: int,
-) -> List[Move]:
+) -> List[Union[Move, Tuple[int, int, bool, None, bool, bool]]]:
     """
     Generate all *legal* king moves
     (one-square steps and castling) for the side to move.
@@ -63,7 +64,7 @@ def generate_king_moves(
     Castling moves are also fully validated
         (empty squares + no attacked squares).
     """
-    moves: List[Move] = []
+    moves: List[Union[Move, Tuple[int, int, bool, None, bool, bool]]] = []
 
     # No king bit found → no moves
     if king_bb == 0:
@@ -84,13 +85,15 @@ def generate_king_moves(
         # If destination is not attacked, it is legal
         if not board.is_square_attacked(dst, opponent):
             is_capture = bool((1 << dst) & their_occ)
-            moves.append(Move(src, dst, capture=is_capture))
+            if USE_RAW_MOVES:
+                moves.append((src, dst, is_capture, None, False, False))
+            else:
+                moves.append(Move(src, dst, capture=is_capture))
 
     # Phase 2: Castling (fully validated as before)
-    side = WHITE if board.side_to_move == WHITE else BLACK
     rights = board.castling_rights
 
-    if side == WHITE:
+    if board.side_to_move == WHITE:
         # King must be on e1 (4) to castle
         if src == 4:
             # White kingside (bit 0)
@@ -105,7 +108,12 @@ def generate_king_moves(
                             and not is_square_attacked(board, 5, BLACK)
                             and not is_square_attacked(board, 6, BLACK)
                         ):
-                            moves.append(Move(src, 6, castling=True))
+                            if USE_RAW_MOVES:
+                                moves.append(
+                                    (src, 6, False, None, False, True)
+                                )
+                            else:
+                                moves.append(Move(src, 6, castling=True))
 
             # White queenside (bit 1)
             if rights & 0b0010:
@@ -119,7 +127,12 @@ def generate_king_moves(
                             and not is_square_attacked(board, 3, BLACK)
                             and not is_square_attacked(board, 2, BLACK)
                         ):
-                            moves.append(Move(src, 2, castling=True))
+                            if USE_RAW_MOVES:
+                                moves.append(
+                                    (src, 2, False, None, False, True)
+                                )
+                            else:
+                                moves.append(Move(src, 2, castling=True))
     else:
         # Black to move; king must be on e8 (60)
         if src == 60:
@@ -132,7 +145,12 @@ def generate_king_moves(
                             and not is_square_attacked(board, 61, WHITE)
                             and not is_square_attacked(board, 62, WHITE)
                         ):
-                            moves.append(Move(src, 62, castling=True))
+                            if USE_RAW_MOVES:
+                                moves.append(
+                                    (src, 62, False, None, False, True)
+                                )
+                            else:
+                                moves.append(Move(src, 62, castling=True))
 
             # Black queenside (bit 3)
             if rights & 0b1000:
@@ -143,6 +161,11 @@ def generate_king_moves(
                             and not is_square_attacked(board, 59, WHITE)
                             and not is_square_attacked(board, 58, WHITE)
                         ):
-                            moves.append(Move(src, 58, castling=True))
+                            if USE_RAW_MOVES:
+                                moves.append(
+                                    (src, 58, False, None, False, True)
+                                )
+                            else:
+                                moves.append(Move(src, 58, castling=True))
 
     return moves

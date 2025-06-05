@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Union, Tuple
+from engine.bitboard.config import USE_RAW_MOVES
 from engine.bitboard.move import Move
 from engine.bitboard.utils import pop_lsb
 from engine.bitboard.constants import MASK_64
@@ -28,8 +29,9 @@ def rook_attacks(sq: int, all_occ: int) -> int:
 
 def generate_rook_moves(
     rook_bb: int, my_occ: int, their_occ: int
-) -> List[Move]:
-    moves = []
+) -> List[Union[Move, Tuple[int, int, bool, None, bool, bool]]]:
+
+    moves: List[Union[Move, Tuple[int, int, bool, None, bool, bool]]] = []
     full_occ = my_occ | their_occ
     tmp = rook_bb
     while tmp:
@@ -40,7 +42,10 @@ def generate_rook_moves(
         while legal_temp:
             dst = pop_lsb(legal_temp)
             is_capture = bool(their_occ & (1 << dst))
-            moves.append(Move(src, dst, capture=is_capture))
+            if USE_RAW_MOVES:
+                moves.append((src, dst, is_capture, None, False, False))
+            else:
+                moves.append(Move(src, dst, capture=is_capture))
             legal_temp &= legal_temp - 1
         tmp &= tmp - 1
     return moves

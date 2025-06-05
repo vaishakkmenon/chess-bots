@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Union, Tuple
+from engine.bitboard.config import USE_RAW_MOVES
 from engine.bitboard.move import Move  # noqa: TC002
 from engine.bitboard.utils import pop_lsb
 from engine.bitboard.moves.rook import rook_attacks
@@ -15,12 +16,12 @@ def queen_attacks(sq: int, full_occ: int) -> int:
 
 def generate_queen_moves(
     queen_bb: int, my_occ: int, their_occ: int
-) -> List[Move]:
+) -> List[Union[Move, Tuple[int, int, bool, None, bool, bool]]]:
     """
     Given a bitboard of all queens for side-to-move, plus my_occ and their_occ,
     generate all legal queen moves.
     """
-    moves = []
+    moves: List[Union[Move, Tuple[int, int, bool, None, bool, bool]]] = []
     full_occ = my_occ | their_occ
     temp = queen_bb
 
@@ -35,6 +36,9 @@ def generate_queen_moves(
         while legal_temp:
             dst = pop_lsb(legal_temp)
             legal_temp &= legal_temp - 1
-            capture = bool(their_occ & (1 << dst))
-            moves.append(Move(src, dst, capture=capture))
+            is_capture = bool(their_occ & (1 << dst))
+            if USE_RAW_MOVES:
+                moves.append((src, dst, is_capture, None, False, False))
+            else:
+                moves.append(Move(src, dst, capture=is_capture))
     return moves

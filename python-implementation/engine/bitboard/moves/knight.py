@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Union, Tuple, Optional
+from engine.bitboard.config import USE_RAW_MOVES
 from engine.bitboard.move import Move
 from engine.bitboard.utils import pop_lsb
 from engine.bitboard.constants import KNIGHT_OFFSETS
@@ -26,12 +27,14 @@ def knight_attacks(sq: int) -> int:
 
 def generate_knight_moves(
     knights_bb: int, my_occ: int, their_occ: int
-) -> List[Move]:
+) -> List[Union[Move, Tuple[int, int, bool, Optional[str], bool, bool]]]:
     """
     Generate knight moves from square sq as a list of Move(src, dst).
     """
 
-    moves: List[Move] = []
+    moves: List[
+        Union[Move, Tuple[int, int, bool, Optional[str], bool, bool]]
+    ] = []
     tmp_knights = knights_bb
     while tmp_knights:
         src = pop_lsb(tmp_knights)
@@ -41,7 +44,10 @@ def generate_knight_moves(
         while tmp:
             dest = pop_lsb(tmp)
             is_capture = bool(their_occ & (1 << dest))
-            moves.append(Move(src, dest, capture=is_capture))
+            if USE_RAW_MOVES:
+                moves.append((src, dest, is_capture, None, False, False))
+            else:
+                moves.append(Move(src, dest, capture=is_capture))
             tmp &= tmp - 1
         tmp_knights &= tmp_knights - 1
     return moves

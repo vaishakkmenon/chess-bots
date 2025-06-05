@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Union, Tuple, Optional
 
+from engine.bitboard.config import USE_RAW_MOVES
 from engine.bitboard.move import Move
 from engine.bitboard.utils import pop_lsb
 from engine.bitboard.constants import (
@@ -84,11 +85,13 @@ def generate_pawn_moves(
     all_occ: int,
     is_white: bool,
     ep_mask: int = 0,
-) -> List[Move]:
+) -> List[Union[Move, Tuple[int, int, bool, Optional[str], bool, bool]]]:
     """
     Return all legal pawn moves: single/double pushes and diagonal captures.
     """
-    moves: List[Move] = []
+    moves: List[
+        Union[Move, Tuple[int, int, bool, Optional[str], bool, bool]]
+    ] = []
 
     # --- Pushes (single and double) ---
     for step, helper in [
@@ -105,9 +108,15 @@ def generate_pawn_moves(
                 (is_white and dest >= 56) or (not is_white and dest < 8)
             ):
                 for promo in ("Q", "R", "B", "N"):
-                    moves.append(Move(src, dest, promotion=promo))
+                    if USE_RAW_MOVES:
+                        moves.append((src, dest, False, promo, False, False))
+                    else:
+                        moves.append(Move(src, dest, promotion=promo))
             else:
-                moves.append(Move(src, dest))
+                if USE_RAW_MOVES:
+                    moves.append((src, dest, False, None, False, False))
+                else:
+                    moves.append(Move(src, dest))
             tmp &= tmp - 1
 
     # --- Captures (fix: only if files are adjacent) ---
@@ -128,11 +137,26 @@ def generate_pawn_moves(
             if df < 7 and 0 <= src_left < 64 and ((pawns_bb >> src_left) & 1):
                 if dest >= 56:  # promotion rank
                     for promo in ("Q", "R", "B", "N"):
-                        moves.append(
-                            Move(src_left, dest, capture=True, promotion=promo)
-                        )
+                        if USE_RAW_MOVES:
+                            moves.append(
+                                (src_left, dest, True, promo, False, False)
+                            )
+                        else:
+                            moves.append(
+                                Move(
+                                    src_left,
+                                    dest,
+                                    capture=True,
+                                    promotion=promo,
+                                )
+                            )
                 else:
-                    moves.append(Move(src_left, dest, capture=True))
+                    if USE_RAW_MOVES:
+                        moves.append(
+                            (src_left, dest, True, None, False, False)
+                        )
+                    else:
+                        moves.append(Move(src_left, dest, capture=True))
 
             #  - right capture is valid only if dest’s file > 0
             # (so src_right’s file = df−1 ≥0)
@@ -143,13 +167,26 @@ def generate_pawn_moves(
             ):
                 if dest >= 56:
                     for promo in ("Q", "R", "B", "N"):
-                        moves.append(
-                            Move(
-                                src_right, dest, capture=True, promotion=promo
+                        if USE_RAW_MOVES:
+                            moves.append(
+                                (src_right, dest, True, promo, False, False)
                             )
-                        )
+                        else:
+                            moves.append(
+                                Move(
+                                    src_right,
+                                    dest,
+                                    capture=True,
+                                    promotion=promo,
+                                )
+                            )
                 else:
-                    moves.append(Move(src_right, dest, capture=True))
+                    if USE_RAW_MOVES:
+                        moves.append(
+                            (src_right, dest, True, None, False, False)
+                        )
+                    else:
+                        moves.append(Move(src_right, dest, capture=True))
 
         else:
             # Black’s turn: downward captures
@@ -159,11 +196,26 @@ def generate_pawn_moves(
             if df < 7 and 0 <= src_left < 64 and ((pawns_bb >> src_left) & 1):
                 if dest < 8:  # promotion rank for Black
                     for promo in ("Q", "R", "B", "N"):
-                        moves.append(
-                            Move(src_left, dest, capture=True, promotion=promo)
-                        )
+                        if USE_RAW_MOVES:
+                            moves.append(
+                                (src_left, dest, True, promo, False, False)
+                            )
+                        else:
+                            moves.append(
+                                Move(
+                                    src_left,
+                                    dest,
+                                    capture=True,
+                                    promotion=promo,
+                                )
+                            )
                 else:
-                    moves.append(Move(src_left, dest, capture=True))
+                    if USE_RAW_MOVES:
+                        moves.append(
+                            (src_left, dest, True, None, False, False)
+                        )
+                    else:
+                        moves.append(Move(src_left, dest, capture=True))
 
             if (
                 df > 0
@@ -172,13 +224,26 @@ def generate_pawn_moves(
             ):
                 if dest < 8:
                     for promo in ("Q", "R", "B", "N"):
-                        moves.append(
-                            Move(
-                                src_right, dest, capture=True, promotion=promo
+                        if USE_RAW_MOVES:
+                            moves.append(
+                                (src_right, dest, True, promo, False, False)
                             )
-                        )
+                        else:
+                            moves.append(
+                                Move(
+                                    src_right,
+                                    dest,
+                                    capture=True,
+                                    promotion=promo,
+                                )
+                            )
                 else:
-                    moves.append(Move(src_right, dest, capture=True))
+                    if USE_RAW_MOVES:
+                        moves.append(
+                            (src_right, dest, True, None, False, False)
+                        )
+                    else:
+                        moves.append(Move(src_right, dest, capture=True))
 
         tmp &= tmp - 1
 
@@ -192,7 +257,11 @@ def generate_pawn_moves(
         else:
             src = dest + 9 if ((pawns_bb >> (dest + 9)) & 1) else dest + 7
 
-        moves.append(Move(src, dest, capture=True, en_passant=True))
+        if USE_RAW_MOVES:
+            moves.append((src, dest, True, None, True, False))
+        else:
+            moves.append(Move(src, dest, capture=True, en_passant=True))
+
         tmp &= tmp - 1
 
     return moves
