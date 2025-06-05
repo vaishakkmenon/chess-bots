@@ -8,7 +8,6 @@ def perft(board: Board, depth: int) -> int:
 
     if depth == 0:
         return 1
-
     nodes = 0
     for move in generate_legal_moves(board):
         board.make_move(move)

@@ -7,8 +7,6 @@ from engine.bitboard.constants import KNIGHT_OFFSETS
 KNIGHT_ATTACKS = [0] * 64
 for sq in range(64):
     attacks = 0
-    src_mask = 1 << sq
-    file = sq & 7
     for offset in KNIGHT_OFFSETS:
         tgt = sq + offset
         if 0 <= tgt < 64:

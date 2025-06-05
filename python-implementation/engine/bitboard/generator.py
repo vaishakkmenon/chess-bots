@@ -28,7 +28,7 @@ from engine.bitboard.moves.knight import (
 from engine.bitboard.moves.pawn import (
     pawn_single_push_targets,
     pawn_double_push_targets,
-    pawn_push_targets,
+    pawn_en_passant_targets,
     pawn_capture_targets,
     generate_pawn_moves,
 )
@@ -41,7 +41,7 @@ __all__ = [
     # Pawn API
     "pawn_single_push_targets",
     "pawn_double_push_targets",
-    "pawn_push_targets",
+    "pawn_en_passant_targets",
     "pawn_capture_targets",
     "generate_pawn_moves",
     # Bishop API
@@ -72,8 +72,14 @@ def generate_moves(board: Board) -> List[Move]:
         enemy_bb = board.white_occ
         is_white = False
 
+    ep_mask = (1 << board.ep_square) if board.ep_square else 0
+
     moves += generate_pawn_moves(
-        pawn_bb, enemy_bb, board.all_occ, is_white, ep_mask=board.ep_square
+        pawn_bb,
+        enemy_bb,
+        board.all_occ,
+        is_white,
+        ep_mask=ep_mask,
     )
 
     my_occ = board.white_occ if is_white else board.black_occ
