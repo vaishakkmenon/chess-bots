@@ -16,9 +16,7 @@ def test_en_passant_execution():
     board.make_move(move1)
 
     # ep_square should now be d3 (sq=19)
-    assert board.ep_square == (
-        1 << 19
-    ), f"expected d3(1<<19), got {hex(board.ep_square)}"
+    assert board.ep_square == 19, f"expected d3 (sq=19), got {board.ep_square}"
 
     # --- 2) Place a black pawn on e4 (sq=28) for the capture
     board.bitboards[BLACK_PAWN] = 1 << 28
@@ -36,7 +34,7 @@ def test_en_passant_execution():
     assert (board.bitboards[BLACK_PAWN] & (1 << 19)) != 0
 
     #  - ep_square must be cleared after the capture
-    assert board.ep_square == 0
+    assert board.ep_square is None
 
     #  - overall occupancy should match the one black pawn on d3
     assert board.white_occ == 0
@@ -52,7 +50,7 @@ def test_ep_cleared_on_non_double_push():
     board.update_occupancies()
     m1 = Move(src=11, dst=19, capture=False)  # d2->d3
     board.make_move(m1)
-    assert board.ep_square == 0
+    assert board.ep_square is None
 
     # Now do a knight move (or any other piece) and ensure ep stays zero
     # (pretend a knight on g1->f3)
@@ -62,7 +60,7 @@ def test_ep_cleared_on_non_double_push():
     board.update_occupancies()
     m2 = Move(src=6, dst=21, capture=False)  # g1->f3
     board.make_move(m2)
-    assert board.ep_square == 0
+    assert board.ep_square is None
 
 
 def test_black_double_push_sets_ep():
@@ -72,7 +70,7 @@ def test_black_double_push_sets_ep():
     board.update_occupancies()
     m = Move(src=52, dst=36, capture=False)  # e7->e5
     board.make_move(m)
-    assert board.ep_square == (1 << 44)  # e6 is square 44
+    assert board.ep_square == 44  # e6 is square 44
 
 
 def test_black_ep_capture_execution():
@@ -86,7 +84,7 @@ def test_black_ep_capture_execution():
     # Black double-push to e5
     m1 = Move(src=52, dst=36, capture=False)
     board.make_move(m1)
-    assert board.ep_square == (1 << 44)  # e6
+    assert board.ep_square == 44  # e6
 
     # White does d5×e6 ep
     m2 = Move(src=27, dst=44, capture=True)
@@ -96,4 +94,4 @@ def test_black_ep_capture_execution():
     # white pawn now on e6 (44)
     assert (board.bitboards[WHITE_PAWN] & (1 << 44)) != 0
     # ep cleared
-    assert board.ep_square == 0
+    assert board.ep_square is None

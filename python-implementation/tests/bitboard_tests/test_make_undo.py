@@ -93,7 +93,7 @@ def test_en_passant_undo():
     before1 = snapshot(board)
     mv1 = Move(src=52, dst=36, capture=False)
     board.make_move(mv1)
-    assert board.ep_square == (1 << 44)  # e6
+    assert board.ep_square == 44  # e6
 
     # White en-passant d5->e6
     before2 = snapshot(board)
@@ -122,7 +122,7 @@ def test_ep_cleared_on_non_double_push_and_undo():
     before = snapshot(board)
     mv = Move(src=12, dst=20, capture=False)  # e2->e3
     board.make_move(mv)
-    assert board.ep_square == 0
+    assert board.ep_square is None
     board.undo_move()
     restore_ok(board, before)
 
@@ -134,7 +134,7 @@ def test_ep_cleared_on_non_double_push_and_undo():
     before2 = snapshot(board)
     mv2 = Move(src=1, dst=18, capture=False)  # b1->c3
     board.make_move(mv2)
-    assert board.ep_square == 0
+    assert board.ep_square is None
     board.undo_move()
     restore_ok(board, before2)
 

@@ -179,7 +179,7 @@ def test_castling_move_execution_and_undo() -> None:
     move = Move(src=sq(5, 1), dst=sq(7, 1), castling=True)
     board.make_move(move)
     assert (board.bitboards[WHITE_KING] & (1 << sq(7, 1))) != 0
-    assert (board.bitboards[WHITE_ROOK] & (1 << sq(6, 1))) != 0
+    assert (board.bitboards[WHITE_ROOK] & (1 << sq(8, 1))) != 0
     assert board.castling_rights == 0
     board.undo_move()
     assert (board.bitboards[WHITE_KING] & (1 << sq(5, 1))) != 0
