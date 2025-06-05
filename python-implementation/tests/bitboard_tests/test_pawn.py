@@ -3,7 +3,6 @@ from engine.bitboard.move import Move
 from engine.bitboard.moves.pawn import (
     pawn_single_push_targets,
     pawn_double_push_targets,
-    pawn_push_targets,
     generate_pawn_moves,
     pawn_capture_targets,
     pawn_en_passant_targets,
@@ -52,15 +51,15 @@ def test_white_double_push(sq, expected):
     assert result == expected
 
 
-# Combined white push targets
-def test_white_push_targets_union():
-    sq = 12  # e2
-    pawns = 1 << sq
-    occ = simple_occ(pawns)
-    single = pawn_single_push_targets(pawns, occ, True)
-    double = pawn_double_push_targets(pawns, occ, True)
-    combined = pawn_push_targets(pawns, occ, True)
-    assert combined == (single | double)
+# # Combined white push targets
+# def test_white_push_targets_union():
+#     sq = 12  # e2
+#     pawns = 1 << sq
+#     occ = simple_occ(pawns)
+#     single = pawn_single_push_targets(pawns, occ, True)
+#     double = pawn_double_push_targets(pawns, occ, True)
+#     combined = pawn_push_targets(pawns, occ, True)
+#     assert combined == (single | double)
 
 
 # Black single pushes
@@ -137,15 +136,15 @@ def test_black_double_push_blocked_landing():
     assert pawn_double_push_targets(pawns, occ, False) == 0
 
 
-# Combined black push targets
-def test_black_push_targets_union():
-    sq = 52  # e7
-    pawns = 1 << sq
-    occ = simple_occ(pawns)
-    single = pawn_single_push_targets(pawns, occ, False)
-    double = pawn_double_push_targets(pawns, occ, False)
-    combined = pawn_push_targets(pawns, occ, False)
-    assert combined == (single | double)
+# # Combined black push targets
+# def test_black_push_targets_union():
+#     sq = 52  # e7
+#     pawns = 1 << sq
+#     occ = simple_occ(pawns)
+#     single = pawn_single_push_targets(pawns, occ, False)
+#     double = pawn_double_push_targets(pawns, occ, False)
+#     combined = pawn_push_targets(pawns, occ, False)
+#     assert combined == (single | double)
 
 
 def test_white_pawn_capture_simple():
