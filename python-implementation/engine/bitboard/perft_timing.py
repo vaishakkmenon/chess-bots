@@ -95,7 +95,7 @@ def run_perft_profile_with_progress(root_board, max_depth):
 
     # --- 3) Iterate top‐moves with raw vs. object branching ---
     for idx, move in enumerate(top_moves, start=1):
-        print(f"⟩⟩ Processing top‐move {idx}/{total_top} …", end="\r")
+        print(f">> Processing top‐move {idx}/{total_top} …", end="\n")
         t1 = time.perf_counter()
         root_board.make_move_raw(move)
         nodes_from_subtree = perft_profile(root_board, max_depth - 1, 2)
@@ -111,7 +111,7 @@ def run_perft_profile_with_progress(root_board, max_depth):
         header = (
             f"\nPerft Profile (max_depth = {max_depth})\n"
             "Depth │ Positions │   Gen Time (s)   │  Move+Recurse Time (s)  │ Total Time (s)\n"  # noqa: E501
-            "──────┼────────────┼──────────────────┼────────────────────────┼───────────────\n"  # noqa: E501
+            "──────┼───────────┼──────────────────┼─────────────────────────┼───────────────\n"  # noqa: E501
         )
         print(header, end="")
         logfile.write(header)
@@ -122,7 +122,7 @@ def run_perft_profile_with_progress(root_board, max_depth):
             mt = move_time.get(d, 0.0)
             tot_t = gt + mt
 
-            line = f"{d:>5} │ {pos:>9,} │ {gt:>14.6f} │ {mt:>22.6f} │ {tot_t:>13.6f}\n"  # noqa: E501
+            line = f"{d:>5} │ {pos:>9,} │ {gt:>16.6f} │ {mt:>23.6f} │ {tot_t:>13.6f}\n"  # noqa: E501
             print(line, end="")
             logfile.write(line)
 
