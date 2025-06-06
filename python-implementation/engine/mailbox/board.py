@@ -302,8 +302,13 @@ class Board:
         # ──────────────────────────────────────────────────────────
         # Captures (including en‑passant)
         # ──────────────────────────────────────────────────────────
-        if self.en_passant_target and to_sq == self.en_passant_target:
-            # en‑passant capture
+        if (
+            piece.upper() == "P"
+            and self.en_passant_target
+            and to_sq == self.en_passant_target
+            and abs(to_sq[0] - from_sq[0]) == 1
+        ):
+            # en‑passant capture (only for pawn diagonals)
             move.is_en_passant = True
             direction = 1 if piece.isupper() else -1
             cap_sq = (to_sq[0], to_sq[1] - direction)

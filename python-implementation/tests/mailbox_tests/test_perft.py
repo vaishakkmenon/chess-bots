@@ -47,7 +47,12 @@ def test_perft_depth_one_equals_legal_moves():
 
 @pytest.mark.parametrize(
     "depth,expected",
-    [(1, 20), (2, 400), (3, 8902)],
+    [
+        (1, 20),
+        (2, 400),
+        (3, 8902),
+        (4, 197281),
+    ],
 )
 def test_perft_starting_position(depth, expected):
     b = make_start_board()
