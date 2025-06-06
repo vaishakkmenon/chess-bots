@@ -79,6 +79,7 @@ def is_square_attacked(
         return True
 
     # 5. King attacks (adjacent)
+    # King attack import done only at runtime to avoid circular import
     from engine.bitboard.moves.king import KING_ATTACKS
 
     king_bb = (

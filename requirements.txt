@@ -9,3 +9,4 @@ pluggy==1.6.0
 pycodestyle==2.13.0
 pyflakes==3.3.2
 pytest==8.3.5
+tqdm==4.67.1

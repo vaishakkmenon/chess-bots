@@ -78,7 +78,7 @@ def test_queen_attacks_match_reference(sq):
 #     not exact set equality, since Order is not guaranteed.)
 # ──────────────────────────────────────────────────────────────────────────────
 def dsts_and_caps(moves):
-    return sorted((m.dst, m.capture) for m in moves)
+    return sorted((m[1], m[2]) for m in moves)
 
 
 def test_queen_open_board_from_d4():
@@ -189,7 +189,7 @@ def test_queen_from_a1_full_traverse():
     src = 0
     queen_bb = 1 << src
     moves = generate_queen_moves(queen_bb, my_occ=0, their_occ=0)
-    dsts = set(m.dst for m in moves)
+    dsts = set(m[1] for m in moves)
 
     expected = set(
         [
@@ -265,12 +265,12 @@ def test_queen_long_ray_with_mixed_blockers():
     assert all(dst not in (38, 45, 54, 63) for dst, cap in dst_caps)
 
     # SW: e3→d2(11) quiet, then c1(2) capture
-    sw = [(m.dst, m.capture) for m in moves if m.dst in (11, 2)]
+    sw = [(m[1], m[2]) for m in moves if m[1] in (11, 2)]
     assert set(sw) == {(11, False), (2, True)}
 
     # Up file: e3→e4(28), e5(36), e6(44), e7(52), then capture e8(60)
     file_up = [
-        (m.dst, m.capture) for m in moves if m.dst in (28, 36, 44, 52, 60)
+        (m[1], m[2]) for m in moves if m[1] in (28, 36, 44, 52, 60)
     ]
     assert (60, True) in file_up
     # Ensure no e2(12) or e1(4) (blocked by friend at e2)

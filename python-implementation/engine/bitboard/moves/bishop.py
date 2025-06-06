@@ -1,5 +1,5 @@
 from typing import List
-from engine.bitboard.move import Move
+from engine.bitboard.config import RawMove  # noqa: TC002
 from engine.bitboard.utils import pop_lsb
 from engine.bitboard.constants import MASK_64
 from engine.bitboard.bishop_attack_table import BISHOP_ATTACK_TABLE
@@ -28,13 +28,12 @@ def bishop_attacks(sq: int, all_occ: int) -> int:
 
 def generate_bishop_moves(
     bishop_bb: int, my_occ: int, their_occ: int
-) -> List[Move]:
+) -> List[RawMove]:
     """
     Given a bitboard of all bishops for side-to-move,
-    plus my_occ and their_occ,
-    return Move objects for all legal bishop moves.
+    plus my_occ and their_occ, return RawMove moves for all legal bishop moves.
     """
-    moves = []
+    moves: List[RawMove] = []
     full_occ = my_occ | their_occ
     temp = bishop_bb
 
@@ -49,8 +48,8 @@ def generate_bishop_moves(
         while legal_temp:
             dst = pop_lsb(legal_temp)
             legal_temp &= legal_temp - 1
-            capture = bool(their_occ & (1 << dst))
-            moves.append(Move(src, dst, capture=capture))
+            is_capture = bool(their_occ & (1 << dst))
+            moves.append((src, dst, is_capture, None, False, False))
     return moves
 
 

@@ -1,4 +1,5 @@
 from engine.bitboard.move import Move
+from engine.bitboard.utils import move_to_tuple
 from engine.bitboard.utils import bit_count
 from engine.bitboard.moves.knight import (
     KNIGHT_ATTACKS,
@@ -47,12 +48,12 @@ def test_generate_knight_moves_counts_and_contents():
         )
         # Count check
         assert len(moves) == bit_count(bitboard)
-        # Content check: each Move.dst corresponds to a set bit
-        dsts = sorted(move.dst for move in moves)
+        # Content check: each Move[1] corresponds to a set bit
+        dsts = sorted(move[1] for move in moves)
         expected = sorted([i for i in range(64) if (bitboard >> i) & 1])
         assert dsts == expected
         # src field check
-        assert all(move.src == sq for move in moves)
+        assert all(move[0] == sq for move in moves)
 
 
 def test_edge_cases_h8():
@@ -60,7 +61,7 @@ def test_edge_cases_h8():
     sq = 63
     expected_indices = [46, 53]
     moves = generate_knight_moves(1 << sq, 0, 0)
-    assert moves == [Move(sq, i) for i in expected_indices]
+    assert moves == [move_to_tuple(Move(sq, i)) for i in expected_indices]
 
 
 def test_generate_knight_moves_capture_flag():
@@ -73,19 +74,19 @@ def test_generate_knight_moves_capture_flag():
     moves = generate_knight_moves(bb_knight, my_occ, their_occ)
 
     # Extract capture moves
-    cap_moves = [m for m in moves if m.capture]
+    cap_moves = [m for m in moves if m[2]]
 
     # Check that the destinations match, regardless of order
-    cap_dsts = sorted(m.dst for m in cap_moves)
+    cap_dsts = sorted(m[1] for m in cap_moves)
     expected_dsts = sorted([38, 45])
     assert cap_dsts == expected_dsts
 
     # And verify their capture flag is True
-    assert all(m.capture for m in cap_moves)
+    assert all(m[2] for m in cap_moves)
 
     # Check non-capture moves are present with capture=False
-    non_caps = [m for m in moves if not m.capture]
-    assert all(not m.capture for m in non_caps)
+    non_caps = [m for m in moves if not m[2]]
+    assert all(not m[2] for m in non_caps)
 
 
 def test_knight_moves_ignore_friendly():
@@ -93,4 +94,4 @@ def test_knight_moves_ignore_friendly():
     knights = 1 << sq
     my_occ = knights | (1 << 38)  # friendly piece on g5
     moves = generate_knight_moves(knights, my_occ, 0)
-    assert all(m.dst != 38 for m in moves)
+    assert all(m[1] != 38 for m in moves)

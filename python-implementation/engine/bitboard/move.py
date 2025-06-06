@@ -37,3 +37,16 @@ class Move:
             and self.en_passant == other.en_passant
             and self.castling == other.castling
         )
+
+    def __hash__(self) -> int:  # noqa: D401 - trivial hashing
+        """Return a hash based on move attributes."""
+        return hash(
+            (
+                self.src,
+                self.dst,
+                self.capture,
+                self.promotion,
+                self.en_passant,
+                self.castling,
+            )
+        )

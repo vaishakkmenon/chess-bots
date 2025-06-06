@@ -1,5 +1,5 @@
 from typing import List
-from engine.bitboard.move import Move  # noqa: TC002
+from engine.bitboard.config import RawMove  # noqa: TC002
 from engine.bitboard.board import Board  # noqa: TC002
 from engine.bitboard.constants import (
     WHITE_PAWN,
@@ -28,7 +28,7 @@ from engine.bitboard.moves.knight import (
 from engine.bitboard.moves.pawn import (
     pawn_single_push_targets,
     pawn_double_push_targets,
-    pawn_push_targets,
+    pawn_en_passant_targets,
     pawn_capture_targets,
     generate_pawn_moves,
 )
@@ -41,7 +41,7 @@ __all__ = [
     # Pawn API
     "pawn_single_push_targets",
     "pawn_double_push_targets",
-    "pawn_push_targets",
+    "pawn_en_passant_targets",
     "pawn_capture_targets",
     "generate_pawn_moves",
     # Bishop API
@@ -55,12 +55,14 @@ __all__ = [
 ]
 
 
-def generate_moves(board: Board) -> List[Move]:
+def generate_moves(
+    board: Board,
+) -> List[RawMove]:
     """
     Master move generator for the side to move.
     Calls each piece-type generator and collects all legal moves.
     """
-    moves: List[Move] = []
+    moves: List[RawMove] = []
 
     # Pawn moves (including en-passant)
     if board.side_to_move == WHITE:
@@ -72,8 +74,14 @@ def generate_moves(board: Board) -> List[Move]:
         enemy_bb = board.white_occ
         is_white = False
 
+    ep_mask = (1 << board.ep_square) if board.ep_square else 0
+
     moves += generate_pawn_moves(
-        pawn_bb, enemy_bb, board.all_occ, is_white, ep_mask=board.ep_square
+        pawn_bb,
+        enemy_bb,
+        board.all_occ,
+        is_white,
+        ep_mask=ep_mask,
     )
 
     my_occ = board.white_occ if is_white else board.black_occ
@@ -115,20 +123,20 @@ def generate_moves(board: Board) -> List[Move]:
     return moves
 
 
-def generate_legal_moves(board: Board) -> List[Move]:
+def generate_legal_moves(
+    board: Board,
+) -> List[RawMove]:
     """
     Wraps generate_moves(board) and returns only those moves
     that do not leave the side-to-move's king in check.
     """
-    legal_moves: List[Move] = []
+    legal_moves: List[RawMove] = []
     side = board.side_to_move
 
     pseudo_moves = generate_moves(board)
-
     for move in pseudo_moves:
-        board.make_move(move)
+        board.make_move_raw(move)
         if not board.in_check(side):
             legal_moves.append(move)
-        board.undo_move()
-
+        board.undo_move_raw()
     return legal_moves

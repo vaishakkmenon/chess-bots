@@ -14,7 +14,7 @@ from engine.bitboard.build_magics import compute_rook_attacks_with_blockers
 
 # Helper to get sorted (dst, capture) tuples
 def dsts_and_caps(moves):
-    return sorted((m.dst, m.capture) for m in moves)
+    return sorted((m[1], m[2]) for m in moves)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -82,7 +82,7 @@ def test_rook_open_board_from_d4():
     expected_dsts = sorted(
         [35, 43, 51, 59, 19, 11, 3, 26, 25, 24, 28, 29, 30, 31]
     )
-    got_dsts = sorted(m.dst for m in moves)
+    got_dsts = sorted(m[1] for m in moves)
     assert expected_dsts == got_dsts
 
 
@@ -152,7 +152,7 @@ def test_rook_from_h1_full_sw_traverse():
     src = 7
     rook_bb = 1 << src
     moves = generate_rook_moves(rook_bb, my_occ=0, their_occ=0)
-    dsts = sorted(m.dst for m in moves)
+    dsts = sorted(m[1] for m in moves)
 
     # These are the 7 “left” squares:
     expected_left = [6, 5, 4, 3, 2, 1, 0]
@@ -176,7 +176,7 @@ def test_rook_adjacent_capture_and_block():
 
     # Should only capture b3=17, not allow a3=16 or beyond
     assert (17, True) in dst_caps
-    assert all(m.dst != 16 for m in moves)
+    assert all(m[1] != 16 for m in moves)
 
 
 def test_rook_fully_blocked_by_friends():
@@ -188,6 +188,6 @@ def test_rook_fully_blocked_by_friends():
 
     # None of those blocked‐squares should appear
     for blocked_sq in (35, 19, 28, 26):
-        assert all(m.dst != blocked_sq for m in moves)
+        assert all(m[1] != blocked_sq for m in moves)
     # And since every ray is blocked at distance 1, moves list must be empty
     assert moves == []
