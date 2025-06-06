@@ -1,6 +1,5 @@
+# from engine.bitboard.config import RawMove  # noqa: TC002
 from typing import List, Tuple, Optional
-
-from engine.bitboard.move import Move  # noqa: TC002
 from engine.bitboard.undo import Undo
 from .attack_utils import is_square_attacked as _is_square_attacked
 from engine.bitboard.constants import (
@@ -145,182 +144,6 @@ class Board:
         attacker = BLACK if side == WHITE else WHITE
         return _is_square_attacked(self, king_sq, attacker)
 
-    def make_move(self, move: Move) -> None:
-        """
-        Execute `move` on the board. Steps are grouped into three phases:
-          1) Remove all old bits
-            (moving piece, captured piece, castling-rook if any)
-          2) Update non-bitboard state
-            (en passant, castling rights, push history)
-          3) Place new bits (moved or promoted piece)
-            and refresh occupancy/side
-        """
-        # ————— Phase 2a: Snapshot old state —————
-        old_ep = self.ep_square
-        prev_side = self.side_to_move
-        old_castling = self.castling_rights
-        # Clear en passant by default—only double-push can set a new one
-        self.ep_square = None
-
-        src, dst = move.src, move.dst
-
-        # ————— Phase 2b: Identify which piece sits on src —————
-        piece_idx = None
-        for idx in range(12):
-            if (self.bitboards[idx] & (1 << src)) != 0:
-                piece_idx = idx
-                break
-        if piece_idx is None:
-            raise ValueError(
-                f"make_move: no piece found on source square {src}"
-            )
-
-        # ————— Phase 1b: Detect double‐pawn push → set new ep_square —————
-        if piece_idx in (WHITE_PAWN, BLACK_PAWN):
-            # Same file and two‐rank difference?
-            if (dst % 8) == (src % 8) and abs((dst // 8) - (src // 8)) == 2:
-                self.ep_square = (src + dst) // 2
-
-        # ————— Phase 1c: Remove the moving piece from src —————
-        self.bitboards[piece_idx] ^= 1 << src
-
-        # ————— Phase 1d: Handle any capture (normal or en passant) —————
-        captured_idx = None
-        cap_sq: Optional[int] = None
-        if move.capture:
-            # If en passant capture, captured pawn is “behind” dst
-            if (
-                piece_idx in (WHITE_PAWN, BLACK_PAWN)
-                and old_ep is not None
-                and dst == old_ep
-            ):
-                cap_sq = dst - 8 if piece_idx == WHITE_PAWN else dst + 8
-            else:
-                cap_sq = dst
-
-            # Find which piece‐type was on cap_sq
-            for idx in range(12):
-                if (self.bitboards[idx] >> cap_sq) & 1:
-                    captured_idx = idx
-                    break
-            if captured_idx is None:
-                raise ValueError(
-                    f"make_move: no captured piece found on {cap_sq}"
-                )
-
-            # Remove that captured piece
-            self.bitboards[captured_idx] ^= 1 << cap_sq
-
-        # ———— Phase 2c: Update castling rights if
-        # king/rook moved or rook captured ————
-        if piece_idx == WHITE_KING:
-            # King moved → White loses both castling rights
-            self.castling_rights &= ~0b0011
-        elif piece_idx == BLACK_KING:
-            # King moved → Black loses both castling rights
-            self.castling_rights &= ~0b1100
-
-        # If a rook moved off a corner square, clear that side’s right
-        if piece_idx in (WHITE_ROOK, BLACK_ROOK) and src in _CORNER_BIT:
-            self.castling_rights &= ~(1 << _CORNER_BIT[src])
-
-        # If a corner‐rook was captured, clear that side’s right
-        if captured_idx in (WHITE_ROOK, BLACK_ROOK) and cap_sq in _CORNER_BIT:
-            self.castling_rights &= ~(1 << _CORNER_BIT[cap_sq])
-
-        # ————— Phase 2d: Record Undo object —————
-        self.history.append(
-            Undo(move, old_ep, captured_idx, cap_sq, prev_side, old_castling)
-        )
-
-        # ————— Phase 3a: Place the moved (or promoted) piece onto dst —————
-        target_idx = piece_idx
-        if move.promotion:
-            promo_map = PROMO_MAP_WHITE if piece_idx < 6 else PROMO_MAP_BLACK
-            target_idx = promo_map[move.promotion]
-            # Ensure promotion is to a valid piece index
-            assert target_idx in (
-                WHITE_ROOK,
-                BLACK_ROOK,
-                WHITE_KNIGHT,
-                BLACK_KNIGHT,
-                WHITE_BISHOP,
-                BLACK_BISHOP,
-                WHITE_QUEEN,
-                BLACK_QUEEN,
-            )
-        self.bitboards[target_idx] |= 1 << dst
-
-        # ————— Phase 3b: Recompute occupancies and flip side to move —————
-        self.update_occupancies()
-        self.side_to_move = BLACK if self.side_to_move == WHITE else WHITE
-
-    def undo_move(self) -> None:
-        """
-        Undo the last move. Steps are grouped in reverse:
-          1) Restore flags (en passant, side, castling rights)
-          2) Move castling rook back (if castling)
-          3) Remove the moved or promoted piece from dst
-          4) Restore pawn or move piece back to src
-          5) Restore any captured piece
-          6) Recompute occupancies
-        """
-        undo = self.history.pop()
-        move = undo.move
-        src, dst = move.src, move.dst
-
-        # ————— Phase 1: Restore board‐state flags —————
-        self.ep_square = undo.old_ep
-        self.side_to_move = undo.prev_side
-        self.castling_rights = undo.old_castling_rights
-
-        # ————— Phase 2: Undo castling’s rook (if castling) —————
-        if move.castling:
-            if src == 4 and dst == 6:
-                # White kingside: move rook f1→h1
-                self.bitboards[WHITE_ROOK] ^= 1 << 5
-                self.bitboards[WHITE_ROOK] |= 1 << 7
-            elif src == 4 and dst == 2:
-                # White queenside: move rook d1→a1
-                self.bitboards[WHITE_ROOK] ^= 1 << 3
-                self.bitboards[WHITE_ROOK] |= 1 << 0
-            elif src == 60 and dst == 62:
-                # Black kingside: move rook f8→h8
-                self.bitboards[BLACK_ROOK] ^= 1 << 61
-                self.bitboards[BLACK_ROOK] |= 1 << 63
-            elif src == 60 and dst == 58:
-                # Black queenside: move rook d8→a8
-                self.bitboards[BLACK_ROOK] ^= 1 << 59
-                self.bitboards[BLACK_ROOK] |= 1 << 56
-
-        # ————— Phase 3: Remove the moved/promoted piece from dst —————
-        moved_idx: Optional[int] = None
-        for idx in range(12):
-            if (self.bitboards[idx] >> dst) & 1:
-                moved_idx = idx
-                break
-        if moved_idx is None:
-            raise ValueError(
-                f"undo_move: no piece found on destination square {dst}"
-            )
-        self.bitboards[moved_idx] ^= 1 << dst
-
-        # ————— Phase 4: Restore pawn (if promo) or move piece back to src ————— # noqa:E501
-        if move.promotion:
-            # If promoted, restore a pawn on src
-            pawn_idx = WHITE_PAWN if moved_idx < 6 else BLACK_PAWN
-            self.bitboards[pawn_idx] |= 1 << src
-        else:
-            # Otherwise, move the same piece back to src
-            self.bitboards[moved_idx] |= 1 << src
-
-        # ——— Phase 5: Restore any captured piece at cap_sq —————
-        if undo.captured_idx is not None:
-            self.bitboards[undo.captured_idx] |= 1 << undo.cap_sq
-
-        # ————— Phase 6: Recompute occupancies —————
-        self.update_occupancies()
-
     def make_move_raw(
         self, raw_move: tuple[int, int, bool, Optional[str], bool, bool]
     ) -> None:
@@ -336,7 +159,7 @@ class Board:
         old_ep = self.ep_square
         prev_side = self.side_to_move
         old_castling = self.castling_rights
-        self.ep_square = 0
+        self.ep_square = None
 
         # 2) Figure out which piece is on src
         piece_idx = None

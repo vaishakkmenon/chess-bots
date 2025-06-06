@@ -1,4 +1,29 @@
 from typing import Optional
+from engine.bitboard.move import Move
+from engine.bitboard.config import RawMove  # noqa: TC002
+
+
+def tuple_to_move(raw: RawMove) -> Move:
+    src, dst, capture, promotion, en_passant, castling = raw
+    return Move(
+        src,
+        dst,
+        capture=capture,
+        promotion=promotion,
+        en_passant=en_passant,
+        castling=castling,
+    )
+
+
+def move_to_tuple(move: Move) -> RawMove:
+    return (
+        move.src,
+        move.dst,
+        move.capture,
+        move.promotion,
+        move.en_passant,
+        move.castling,
+    )
 
 
 def expand_occupancy(subset_index: int, relevant_mask: int) -> int:

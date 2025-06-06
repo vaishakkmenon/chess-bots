@@ -1,7 +1,8 @@
 import time
 from collections import defaultdict
 from engine.bitboard.board import Board
-import engine.bitboard.config as config
+
+# from engine.bitboard.config import RawMove
 
 from engine.bitboard.generator import generate_legal_moves
 
@@ -36,8 +37,6 @@ positions_count = defaultdict(
     int
 )  # positions_count[d] = number of nodes visited at depth d
 
-config.USE_RAW_MOVES = True  # toggle “raw mode” on/off here
-
 
 def perft_profile(board, depth, cur_depth):
     """
@@ -63,18 +62,9 @@ def perft_profile(board, depth, cur_depth):
     # 2) Time each make + recursive call + undo
     for move in moves:
         t1 = time.perf_counter()
-        if config.USE_RAW_MOVES:
-            board.make_move_raw(move)
-        else:
-            board.make_move(move)
-
+        board.make_move_raw(move)
         nodes += perft_profile(board, depth - 1, cur_depth + 1)
-
-        if config.USE_RAW_MOVES:
-            board.undo_move_raw()
-        else:
-            board.undo_move()
-
+        board.undo_move_raw()
         move_time[cur_depth] += time.perf_counter() - t1
 
     return nodes
@@ -106,20 +96,10 @@ def run_perft_profile_with_progress(root_board, max_depth):
     # --- 3) Iterate top‐moves with raw vs. object branching ---
     for idx, move in enumerate(top_moves, start=1):
         print(f"⟩⟩ Processing top‐move {idx}/{total_top} …", end="\r")
-
         t1 = time.perf_counter()
-        if config.USE_RAW_MOVES:
-            root_board.make_move_raw(move)
-        else:
-            root_board.make_move(move)
-
+        root_board.make_move_raw(move)
         nodes_from_subtree = perft_profile(root_board, max_depth - 1, 2)
-
-        if config.USE_RAW_MOVES:
-            root_board.undo_move_raw()
-        else:
-            root_board.undo_move()
-
+        root_board.undo_move_raw()
         move_time[1] += time.perf_counter() - t1
         total_nodes += nodes_from_subtree
 
