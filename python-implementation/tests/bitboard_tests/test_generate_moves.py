@@ -16,6 +16,18 @@ from engine.bitboard.constants import (
 from engine.bitboard.generator import generate_legal_moves
 
 
+def _rebuild_lookup(board: Board):
+    # Rebuild square_to_piece so move-generation + make_move_raw() works
+    board.square_to_piece = [None] * 64
+    for idx, bb in enumerate(board.bitboards):
+        b = bb
+        while b:
+            lsb = b & -b
+            sq = lsb.bit_length() - 1
+            board.square_to_piece[sq] = idx
+            b ^= lsb
+
+
 def sort_moves(moves):
     return sorted(
         moves,
@@ -41,6 +53,7 @@ def test_generate_moves_white_pawn_pushes_and_captures():
     enemy_bb = (1 << 19) | (1 << 21)
     board.bitboards[BLACK_PAWN] = enemy_bb
     board.update_occupancies()
+    _rebuild_lookup(board)
 
     moves = generate_legal_moves(board)
     expected = [
@@ -62,6 +75,7 @@ def test_generate_moves_black_pawn_pushes_and_captures():
     enemy_bb = (1 << 43) | (1 << 45)
     board.bitboards[WHITE_PAWN] = enemy_bb
     board.update_occupancies()
+    _rebuild_lookup(board)
 
     moves = generate_legal_moves(board)
     expected = [
@@ -81,6 +95,7 @@ def test_generate_moves_knight():
     # White knight on g1 (6)
     board.bitboards[WHITE_KNIGHT] = 1 << 6
     board.update_occupancies()
+    _rebuild_lookup(board)
 
     moves = generate_legal_moves(board)
     # g1 -> {e2(12), f3(21), h3(23)}
@@ -99,12 +114,15 @@ def test_generate_moves_en_passant_flow():
     # Black pawn double-push e7->e5
     board.bitboards[BLACK_PAWN] = 1 << 52
     board.update_occupancies()
+    _rebuild_lookup(board)
+
     board.make_move_raw(move_to_tuple(Move(src=52, dst=36, capture=False)))
     assert board.side_to_move == WHITE
 
     # Place white pawn on d5 (35) to capture en passant
     board.bitboards[WHITE_PAWN] = 1 << 35
     board.update_occupancies()
+    _rebuild_lookup(board)
 
     moves = generate_legal_moves(board)
     ep_moves = [m for m in moves if m[4]]
@@ -125,6 +143,7 @@ def test_generate_moves_bishop_simple_and_capture():
 
     board.bitboards[WHITE_BISHOP] = bb_of(2)  # c1
     board.update_occupancies()
+    _rebuild_lookup(board)
 
     all_moves = generate_legal_moves(board)
     bishop_moves = [m for m in all_moves if m[0] == 2]
@@ -148,6 +167,7 @@ def test_generate_moves_bishop_simple_and_capture():
     board.bitboards[WHITE_BISHOP] = bb_of(2)  # c1
     board.bitboards[BLACK_PAWN] = bb_of(29)  # f4
     board.update_occupancies()
+    _rebuild_lookup(board)
 
     all_moves = generate_legal_moves(board)
     bishop_moves = [m for m in all_moves if m[0] == 2]
@@ -174,6 +194,7 @@ def test_generate_moves_rook_simple_and_capture():
 
     board.bitboards[WHITE_ROOK] = bb_of(27)  # d4
     board.update_occupancies()
+    _rebuild_lookup(board)
 
     all_moves = generate_legal_moves(board)
     rook_moves = [m for m in all_moves if m[0] == 27]
@@ -206,9 +227,11 @@ def test_generate_moves_rook_simple_and_capture():
     board.side_to_move = WHITE
 
     board.bitboards[WHITE_ROOK] = bb_of(27)  # d4
+    # place two black pawns
     board.bitboards[BLACK_PAWN] = bb_of(43)  # d6
     board.bitboards[BLACK_PAWN] |= bb_of(25)  # b4
     board.update_occupancies()
+    _rebuild_lookup(board)
 
     all_moves = generate_legal_moves(board)
     rook_moves = [m for m in all_moves if m[0] == 27]
@@ -245,6 +268,7 @@ def test_generate_moves_queen_simple_and_capture():
 
     board.bitboards[WHITE_QUEEN] = bb_of(27)  # d4
     board.update_occupancies()
+    _rebuild_lookup(board)
 
     all_moves = generate_legal_moves(board)
     queen_moves = [m for m in all_moves if m[0] == 27]
@@ -293,6 +317,7 @@ def test_generate_moves_queen_simple_and_capture():
     board.bitboards[BLACK_PAWN] = bb_of(25)  # b4
     board.bitboards[BLACK_PAWN] |= bb_of(45)  # f6
     board.update_occupancies()
+    _rebuild_lookup(board)
 
     all_moves = generate_legal_moves(board)
     queen_moves = [m for m in all_moves if m[0] == 27]
@@ -353,6 +378,7 @@ def test_generate_moves_king_simple_and_capture():
 
     board.bitboards[WHITE_KING] = bb_of(4)  # e1
     board.update_occupancies()
+    _rebuild_lookup(board)
 
     all_moves = generate_legal_moves(board)
     king_moves = [m for m in all_moves if m[0] == 4]
@@ -375,6 +401,7 @@ def test_generate_moves_king_simple_and_capture():
     board.bitboards[BLACK_PAWN] = bb_of(3)  # d1
     board.bitboards[BLACK_PAWN] |= bb_of(13)  # f2
     board.update_occupancies()
+    _rebuild_lookup(board)
 
     all_moves = generate_legal_moves(board)
     king_moves = [m for m in all_moves if m[0] == 4]

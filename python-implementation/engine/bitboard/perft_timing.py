@@ -59,13 +59,14 @@ def perft_profile(board, depth, cur_depth):
     gen_time[cur_depth] += time.perf_counter() - t0
 
     nodes = 0
-    # 2) Time each make + recursive call + undo
+    # 2) Bulk‐time all make+recurse+undo calls at this depth
+    t_start = time.perf_counter()
     for move in moves:
-        t1 = time.perf_counter()
         board.make_move_raw(move)
         nodes += perft_profile(board, depth - 1, cur_depth + 1)
         board.undo_move_raw()
-        move_time[cur_depth] += time.perf_counter() - t1
+    t_end = time.perf_counter()
+    move_time[cur_depth] += t_end - t_start
 
     return nodes
 

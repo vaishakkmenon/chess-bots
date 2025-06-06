@@ -26,6 +26,18 @@ PIECE_INDEX = {
 }
 
 
+def _rebuild_lookup(board: Board):
+    # Rebuild square_to_piece so move-generation + make_move_raw() works
+    board.square_to_piece = [None] * 64
+    for idx, bb in enumerate(board.bitboards):
+        b = bb
+        while b:
+            lsb = b & -b
+            sq = lsb.bit_length() - 1
+            board.square_to_piece[sq] = idx
+            b ^= lsb
+
+
 def sq(file: int, rank: int) -> int:
     return (rank - 1) * 8 + (file - 1)
 
@@ -36,6 +48,7 @@ def make_board(pieces: dict[int, str]) -> Board:
     for square, char in pieces.items():
         board.bitboards[PIECE_INDEX[char]] |= 1 << square
     board.update_occupancies()
+    _rebuild_lookup(board)
     board.side_to_move = WHITE
     return board
 

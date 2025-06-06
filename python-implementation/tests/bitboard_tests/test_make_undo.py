@@ -16,6 +16,18 @@ from engine.bitboard.constants import (
 )
 
 
+def _rebuild_lookup(board: Board):
+    # Rebuild square_to_piece so make_move_raw()/undo_move_raw() work
+    board.square_to_piece = [None] * 64
+    for idx, bb in enumerate(board.bitboards):
+        b = bb
+        while b:
+            lsb = b & -b
+            sq = lsb.bit_length() - 1
+            board.square_to_piece[sq] = idx
+            b ^= lsb
+
+
 def snapshot(board):
     return {
         "bitboards": deepcopy(board.bitboards),
@@ -41,6 +53,7 @@ def test_simple_move_undo():
     board.bitboards = [0] * 12
     board.bitboards[WHITE_PAWN] = 1 << 12  # e2
     board.update_occupancies()
+    _rebuild_lookup(board)
     board.side_to_move = WHITE
 
     before = snapshot(board)
@@ -55,6 +68,7 @@ def test_non_capture_knight_move_undo():
     board.bitboards = [0] * 12
     board.bitboards[WHITE_KNIGHT] = 1 << 6  # g1
     board.update_occupancies()
+    _rebuild_lookup(board)
     board.side_to_move = WHITE
 
     before = snapshot(board)
@@ -70,6 +84,7 @@ def test_capture_move_undo():
     board.bitboards[WHITE_PAWN] = 1 << 27  # d4
     board.bitboards[BLACK_PAWN] = 1 << 36  # e5
     board.update_occupancies()
+    _rebuild_lookup(board)
     board.side_to_move = WHITE
 
     before = snapshot(board)
@@ -89,6 +104,7 @@ def test_en_passant_undo():
     board.bitboards[BLACK_PAWN] = 1 << 52  # e7
     board.bitboards[WHITE_PAWN] = 1 << 35  # d5
     board.update_occupancies()
+    _rebuild_lookup(board)
     board.side_to_move = BLACK
 
     # Black double-push e7->e5
@@ -118,6 +134,7 @@ def test_ep_cleared_on_non_double_push_and_undo():
     board.bitboards = [0] * 12
     board.bitboards[WHITE_PAWN] = 1 << 12  # e2
     board.update_occupancies()
+    _rebuild_lookup(board)
     board.side_to_move = WHITE
 
     # Single push clears ep_square
@@ -132,6 +149,7 @@ def test_ep_cleared_on_non_double_push_and_undo():
     board.bitboards = [0] * 12
     board.bitboards[WHITE_KNIGHT] = 1 << 1  # b1
     board.update_occupancies()
+    _rebuild_lookup(board)
     board.side_to_move = WHITE
     before2 = snapshot(board)
     mv2 = move_to_tuple(Move(src=1, dst=18, capture=False))  # b1->c3
@@ -152,6 +170,7 @@ def test_pawn_promotion_round_trip():
     board.bitboards = [0] * 12
     board.bitboards[WHITE_PAWN] = 1 << 48  # a7
     board.update_occupancies()
+    _rebuild_lookup(board)
     board.side_to_move = WHITE
 
     before = snapshot(board)
@@ -169,6 +188,7 @@ def test_capture_promotion_round_trip():
     board.bitboards[WHITE_PAWN] = 1 << 54  # g7
     board.bitboards[BLACK_ROOK] = 1 << 63  # h8
     board.update_occupancies()
+    _rebuild_lookup(board)
     board.side_to_move = WHITE
 
     before = snapshot(board)

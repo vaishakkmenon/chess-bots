@@ -4,6 +4,18 @@ from engine.bitboard.utils import move_to_tuple
 from engine.bitboard.constants import WHITE_PAWN, BLACK_PAWN
 
 
+def _rebuild_lookup(board: Board):
+    # Rebuild square_to_piece so make_move_raw() works correctly:
+    board.square_to_piece = [None] * 64
+    for idx, bb in enumerate(board.bitboards):
+        b = bb
+        while b:
+            lsb = b & -b
+            sq = lsb.bit_length() - 1
+            board.square_to_piece[sq] = idx
+            b ^= lsb
+
+
 def test_en_passant_execution():
     board = Board()
 
@@ -11,8 +23,9 @@ def test_en_passant_execution():
     board.bitboards = [0] * 12
     board.bitboards[WHITE_PAWN] = 1 << 11
     board.update_occupancies()
+    _rebuild_lookup(board)
 
-    # --- 1) Double‐push d2->d4 (11->27)
+    # --- 1) Double-push d2->d4 (11->27)
     move1 = move_to_tuple(Move(src=11, dst=27, capture=False))
     board.make_move_raw(move1)
 
@@ -22,6 +35,7 @@ def test_en_passant_execution():
     # --- 2) Place a black pawn on e4 (sq=28) for the capture
     board.bitboards[BLACK_PAWN] = 1 << 28
     board.update_occupancies()
+    _rebuild_lookup(board)
 
     # --- 3) En-passant capture e4xd3
     move2 = move_to_tuple(Move(src=28, dst=19, capture=True))
@@ -49,6 +63,8 @@ def test_ep_cleared_on_non_double_push():
     board.bitboards = [0] * 12
     board.bitboards[WHITE_PAWN] = 1 << 11
     board.update_occupancies()
+    _rebuild_lookup(board)
+
     m1 = move_to_tuple(Move(src=11, dst=19, capture=False))  # d2->d3
     board.make_move_raw(m1)
     assert board.ep_square is None
@@ -59,6 +75,8 @@ def test_ep_cleared_on_non_double_push():
     KNIGHT = 1  # or use your WHITE_KNIGHT constant
     board.bitboards[KNIGHT] = 1 << 6  # g1
     board.update_occupancies()
+    _rebuild_lookup(board)
+
     m2 = move_to_tuple(Move(src=6, dst=21, capture=False))  # g1->f3
     board.make_move_raw(m2)
     assert board.ep_square is None
@@ -69,6 +87,8 @@ def test_black_double_push_sets_ep():
     board.bitboards = [0] * 12
     board.bitboards[BLACK_PAWN] = 1 << 52  # e7 is square 52
     board.update_occupancies()
+    _rebuild_lookup(board)
+
     m = move_to_tuple(Move(src=52, dst=36, capture=False))  # e7->e5
     board.make_move_raw(m)
     assert board.ep_square == 44  # e6 is square 44
@@ -81,6 +101,7 @@ def test_black_ep_capture_execution():
     board.bitboards[WHITE_PAWN] = 1 << 27
     board.bitboards[BLACK_PAWN] = 1 << 52
     board.update_occupancies()
+    _rebuild_lookup(board)
 
     # Black double-push to e5
     m1 = move_to_tuple(Move(src=52, dst=36, capture=False))
