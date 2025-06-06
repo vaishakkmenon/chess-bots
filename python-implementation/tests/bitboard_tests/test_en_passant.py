@@ -1,5 +1,6 @@
-from engine.bitboard.board import Board
 from engine.bitboard.move import Move
+from engine.bitboard.board import Board
+from engine.bitboard.utils import move_to_tuple
 from engine.bitboard.constants import WHITE_PAWN, BLACK_PAWN
 
 
@@ -12,8 +13,8 @@ def test_en_passant_execution():
     board.update_occupancies()
 
     # --- 1) Double‐push d2->d4 (11->27)
-    move1 = Move(src=11, dst=27, capture=False)
-    board.make_move(move1)
+    move1 = move_to_tuple(Move(src=11, dst=27, capture=False))
+    board.make_move_raw(move1)
 
     # ep_square should now be d3 (sq=19)
     assert board.ep_square == 19, f"expected d3 (sq=19), got {board.ep_square}"
@@ -23,8 +24,8 @@ def test_en_passant_execution():
     board.update_occupancies()
 
     # --- 3) En-passant capture e4xd3
-    move2 = Move(src=28, dst=19, capture=True)
-    board.make_move(move2)
+    move2 = move_to_tuple(Move(src=28, dst=19, capture=True))
+    board.make_move_raw(move2)
 
     # After the capture:
     #  - white pawn at d4 (sq=27) should be gone
@@ -48,8 +49,8 @@ def test_ep_cleared_on_non_double_push():
     board.bitboards = [0] * 12
     board.bitboards[WHITE_PAWN] = 1 << 11
     board.update_occupancies()
-    m1 = Move(src=11, dst=19, capture=False)  # d2->d3
-    board.make_move(m1)
+    m1 = move_to_tuple(Move(src=11, dst=19, capture=False))  # d2->d3
+    board.make_move_raw(m1)
     assert board.ep_square is None
 
     # Now do a knight move (or any other piece) and ensure ep stays zero
@@ -58,8 +59,8 @@ def test_ep_cleared_on_non_double_push():
     KNIGHT = 1  # or use your WHITE_KNIGHT constant
     board.bitboards[KNIGHT] = 1 << 6  # g1
     board.update_occupancies()
-    m2 = Move(src=6, dst=21, capture=False)  # g1->f3
-    board.make_move(m2)
+    m2 = move_to_tuple(Move(src=6, dst=21, capture=False))  # g1->f3
+    board.make_move_raw(m2)
     assert board.ep_square is None
 
 
@@ -68,8 +69,8 @@ def test_black_double_push_sets_ep():
     board.bitboards = [0] * 12
     board.bitboards[BLACK_PAWN] = 1 << 52  # e7 is square 52
     board.update_occupancies()
-    m = Move(src=52, dst=36, capture=False)  # e7->e5
-    board.make_move(m)
+    m = move_to_tuple(Move(src=52, dst=36, capture=False))  # e7->e5
+    board.make_move_raw(m)
     assert board.ep_square == 44  # e6 is square 44
 
 
@@ -82,13 +83,13 @@ def test_black_ep_capture_execution():
     board.update_occupancies()
 
     # Black double-push to e5
-    m1 = Move(src=52, dst=36, capture=False)
-    board.make_move(m1)
+    m1 = move_to_tuple(Move(src=52, dst=36, capture=False))
+    board.make_move_raw(m1)
     assert board.ep_square == 44  # e6
 
     # White does d5×e6 ep
-    m2 = Move(src=27, dst=44, capture=True)
-    board.make_move(m2)
+    m2 = move_to_tuple(Move(src=27, dst=44, capture=True))
+    board.make_move_raw(m2)
     # black pawn on e5 (36) should be removed
     assert (board.bitboards[BLACK_PAWN] & (1 << 36)) == 0
     # white pawn now on e6 (44)

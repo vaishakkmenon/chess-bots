@@ -1,5 +1,6 @@
 import pytest
 from engine.bitboard.move import Move
+from engine.bitboard.utils import move_to_tuple
 from engine.bitboard.moves.pawn import (
     pawn_single_push_targets,
     pawn_double_push_targets,
@@ -49,17 +50,6 @@ def test_white_double_push(sq, expected):
     occ = simple_occ(pawns)
     result = pawn_double_push_targets(pawns, occ, True)
     assert result == expected
-
-
-# # Combined white push targets
-# def test_white_push_targets_union():
-#     sq = 12  # e2
-#     pawns = 1 << sq
-#     occ = simple_occ(pawns)
-#     single = pawn_single_push_targets(pawns, occ, True)
-#     double = pawn_double_push_targets(pawns, occ, True)
-#     combined = pawn_push_targets(pawns, occ, True)
-#     assert combined == (single | double)
 
 
 # Black single pushes
@@ -136,36 +126,20 @@ def test_black_double_push_blocked_landing():
     assert pawn_double_push_targets(pawns, occ, False) == 0
 
 
-# # Combined black push targets
-# def test_black_push_targets_union():
-#     sq = 52  # e7
-#     pawns = 1 << sq
-#     occ = simple_occ(pawns)
-#     single = pawn_single_push_targets(pawns, occ, False)
-#     double = pawn_double_push_targets(pawns, occ, False)
-#     combined = pawn_push_targets(pawns, occ, False)
-#     assert combined == (single | double)
-
-
 def test_white_pawn_capture_simple():
     # Place a white pawn on b2 (sq=9) and an enemy on a3 (sq=16) and c3 (sq=18)
     pawns = 1 << 9
     enemies = (1 << 16) | (1 << 18)
-    mask = pawn_capture_targets(pawns, enemies, True)
-    assert mask == ((1 << 16) | (1 << 18))
+    mask_bb = pawn_capture_targets(pawns, enemies, True)
+    assert mask_bb == ((1 << 16) | (1 << 18))
 
 
 def test_black_pawn_capture_simple():
     # Black pawn on b7 (sq=49), enemies on a6 (sq=40) and c6 (sq=42)
     pawns = 1 << 49
     enemies = (1 << 40) | (1 << 42)
-    mask = pawn_capture_targets(pawns, enemies, False)
-    assert mask == ((1 << 40) | (1 << 42))
-
-
-# helper to sort moves consistently
-def sort_key(m: Move):
-    return (m.src, m.dst, m.capture, m.promotion)
+    mask_bb = pawn_capture_targets(pawns, enemies, False)
+    assert mask_bb == ((1 << 40) | (1 << 42))
 
 
 @pytest.mark.parametrize(
@@ -198,8 +172,11 @@ def test_generate_white_pawn_moves(pawns_sq, enemy_sqs, expected_moves):
     enemy_bb = sum(1 << sq for sq in enemy_sqs)
     all_occ = pawns_bb | enemy_bb
 
-    moves = generate_pawn_moves(pawns_bb, enemy_bb, all_occ, True)
-    assert sorted(moves, key=sort_key) == sorted(expected_moves, key=sort_key)
+    raw_moves = generate_pawn_moves(pawns_bb, enemy_bb, all_occ, True)
+    # Convert each expected Move to its raw‐tuple form
+    expected_tuples = [move_to_tuple(m) for m in expected_moves]
+    # Sort both lists of tuples for a consistent comparison
+    assert sorted(raw_moves) == sorted(expected_tuples)
 
 
 @pytest.mark.parametrize(
@@ -232,8 +209,9 @@ def test_generate_black_pawn_moves(pawns_sq, enemy_sqs, expected_moves):
     enemy_bb = sum(1 << sq for sq in enemy_sqs)
     all_occ = pawns_bb | enemy_bb
 
-    moves = generate_pawn_moves(pawns_bb, enemy_bb, all_occ, False)
-    assert sorted(moves, key=sort_key) == sorted(expected_moves, key=sort_key)
+    raw_moves = generate_pawn_moves(pawns_bb, enemy_bb, all_occ, False)
+    expected_tuples = [move_to_tuple(m) for m in expected_moves]
+    assert sorted(raw_moves) == sorted(expected_tuples)
 
 
 @pytest.mark.parametrize(
@@ -286,23 +264,30 @@ def test_pawn_en_passant_masking_high_bits():
 
 def test_generate_white_pawn_promotion_moves():
     pawns = 1 << 48  # a7
-    moves = generate_pawn_moves(pawns, 0, pawns, True)
-    promos = {m.promotion for m in moves}
-    assert promos == {"Q", "R", "B", "N"}
+    raw_moves = generate_pawn_moves(pawns, 0, pawns, True)
+    # Filter down to only promotion moves
+    promotions = {
+        m.promotion for m in [Move(*m) for m in raw_moves] if m.promotion
+    }
+    assert promotions == {"Q", "R", "B", "N"}
 
 
 def test_generate_black_pawn_promotion_moves():
     pawns = 1 << 15  # h2
-    moves = generate_pawn_moves(pawns, 0, pawns, False)
-    promos = {m.promotion for m in moves}
-    assert promos == {"Q", "R", "B", "N"}
+    raw_moves = generate_pawn_moves(pawns, 0, pawns, False)
+    promotions = {
+        m.promotion for m in [Move(*m) for m in raw_moves] if m.promotion
+    }
+    assert promotions == {"Q", "R", "B", "N"}
 
 
 def test_white_capture_promotion_moves():
     pawns = 1 << 54  # g7
     enemy = 1 << 63  # h8
     all_occ = pawns | enemy
-    moves = generate_pawn_moves(pawns, enemy, all_occ, True)
+    raw_moves = generate_pawn_moves(pawns, enemy, all_occ, True)
+    # Convert to Move(...) to inspect promotion and capture flags
+    moves = [Move(*m) for m in raw_moves]
     promos = {m.promotion for m in moves if m.dst == 63 and m.capture}
     assert promos == {"Q", "R", "B", "N"}
     assert len([m for m in moves if m.dst == 63]) == 4
@@ -312,7 +297,8 @@ def test_black_capture_promotion_moves():
     pawns = 1 << 9  # b2
     enemy = 1 << 0  # a1
     all_occ = pawns | enemy
-    moves = generate_pawn_moves(pawns, enemy, all_occ, False)
+    raw_moves = generate_pawn_moves(pawns, enemy, all_occ, False)
+    moves = [Move(*m) for m in raw_moves]
     promos = {m.promotion for m in moves if m.dst == 0 and m.capture}
     assert promos == {"Q", "R", "B", "N"}
     assert len([m for m in moves if m.dst == 0]) == 4

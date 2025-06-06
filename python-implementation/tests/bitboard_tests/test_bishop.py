@@ -4,7 +4,7 @@ import pytest
 import random
 
 from engine.bitboard.move import Move
-from engine.bitboard.utils import expand_occupancy, bit_count
+from engine.bitboard.utils import expand_occupancy, bit_count, move_to_tuple
 from engine.bitboard.magic_constants import RELEVANT_BISHOP_MASKS
 from engine.bitboard.build_magics import compute_bishop_attacks_with_blockers
 from engine.bitboard.moves.bishop import generate_bishop_moves, bishop_attacks
@@ -59,7 +59,7 @@ def test_bishop_attacks_match_reference(sq):
 
 # Helper to extract destinations and capture flags
 def dsts_and_caps(moves):
-    return sorted([(m.dst, m.capture) for m in moves])
+    return sorted([(m[1], m[2]) for m in moves])
 
 
 def test_bishop_open_board_from_d4():
@@ -92,9 +92,10 @@ def test_bishop_open_board_from_d4():
             6,
         ]
     )
-    got = sorted(m.dst for m in moves)
+    print(moves)
+    got = sorted(m[1] for m in moves)
     assert got == expected_dsts
-    assert all(not m.capture for m in moves)
+    assert all(not m[2] for m in moves)
 
 
 def test_bishop_blocked_by_friend_on_b6():
@@ -119,8 +120,8 @@ def test_bishop_capture_enemy_on_f6():
 
     moves = generate_bishop_moves(bishops_bb, my_occ, their_occ)
     # Along NE: should have quiet e5 (36) then capture f6 (45) and stop
-    seq = [m for m in moves if m.src == src]
-    ne_moves = [m for m in seq if m.dst in (36, 45)]
+    seq = [m for m in moves if m[0] == src]
+    ne_moves = [m for m in seq if m[1] in (36, 45)]
     assert dsts_and_caps(ne_moves) == [(36, False), (45, True)]
     # Should not include g7(54) or h8(63)
     assert all(dst not in (54, 63) for dst, _ in dsts_and_caps(seq))
@@ -134,8 +135,8 @@ def test_bishop_multiple_pieces():
     my_occ = 1 << 11
     their_occ = 1 << 36
     moves = generate_bishop_moves(bishops_bb, my_occ, their_occ)
-    assert all(not (m.src == 2 and m.dst == 11) for m in moves)
-    assert Move(29, 36, capture=True) in moves
+    assert all(not (m[0] == 2 and m[1] == 11) for m in moves)
+    assert move_to_tuple(Move(29, 36, capture=True)) in moves
 
 
 def test_no_bishops_no_moves():
@@ -148,9 +149,9 @@ def test_bishop_from_a1_full_ne_traverse():
     bishops_bb = 1 << src
     moves = generate_bishop_moves(bishops_bb, my_occ=0, their_occ=0)
     expected_dsts = [9, 18, 27, 36, 45, 54, 63]
-    got = sorted(m.dst for m in moves)
+    got = sorted(m[1] for m in moves)
     assert got == expected_dsts
-    assert all(not m.capture for m in moves)
+    assert all(not m[2] for m in moves)
 
 
 def test_bishop_from_h8_full_sw_traverse():
@@ -159,9 +160,9 @@ def test_bishop_from_h8_full_sw_traverse():
     bishops_bb = 1 << src
     moves = generate_bishop_moves(bishops_bb, my_occ=0, their_occ=0)
     expected_dsts = [54, 45, 36, 27, 18, 9, 0]
-    got = sorted(m.dst for m in moves)
+    got = sorted(m[1] for m in moves)
     assert sorted(expected_dsts) == got
-    assert all(not m.capture for m in moves)
+    assert all(not m[2] for m in moves)
 
 
 def test_bishop_adjacent_capture_and_block():
@@ -170,9 +171,9 @@ def test_bishop_adjacent_capture_and_block():
     my_occ = 1 << 16  # block SW beyond
     their_occ = 1 << 9  # capture SW
     moves = generate_bishop_moves(bishops_bb, my_occ, their_occ)
-    cap_moves = [(m.dst, m.capture) for m in moves if m.capture]
+    cap_moves = [(m[1], m[2]) for m in moves if m[2]]
     assert cap_moves == [(9, True)]
-    assert all(m.dst != 16 for m in moves)
+    assert all(m[1] != 16 for m in moves)
 
 
 def test_bishop_fully_blocked_by_friends():
@@ -180,7 +181,7 @@ def test_bishop_fully_blocked_by_friends():
     bishops_bb = 1 << 27
     my_occ = sum(1 << sq for sq in [18, 20, 34, 36])  # c3, e3, c5, e5
     moves = generate_bishop_moves(bishops_bb, my_occ, their_occ=0)
-    assert all(m.dst not in (18, 20, 34, 36) for m in moves)
+    assert all(m[1] not in (18, 20, 34, 36) for m in moves)
     assert moves == []
 
 
@@ -191,9 +192,7 @@ def test_bishop_long_ray_with_mixed_blockers():
     my_occ = 1 << 38
     their_occ = 1 << 2
     moves = generate_bishop_moves(bishops_bb, my_occ, their_occ)
-    ne = [m for m in moves if m.src == 20 and m.dst in (29, 38)]
-    assert [(m.dst, m.capture) for m in ne] == [(29, False)]
-    sw = [
-        (m.dst, m.capture) for m in moves if m.src == 20 and m.dst in (11, 2)
-    ]
+    ne = [m for m in moves if m[0] == 20 and m[1] in (29, 38)]
+    assert [(m[1], m[2]) for m in ne] == [(29, False)]
+    sw = [(m[1], m[2]) for m in moves if m[0] == 20 and m[1] in (11, 2)]
     assert set(sw) == {(11, False), (2, True)}

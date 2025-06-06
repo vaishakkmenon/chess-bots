@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from engine.bitboard.moves.knight import KNIGHT_ATTACKS
 from engine.bitboard.moves.bishop import bishop_attacks
 from engine.bitboard.moves.rook import rook_attacks
-from engine.bitboard.moves.king import KING_ATTACKS
 from engine.bitboard.constants import (
     WHITE_PAWN,
     BLACK_PAWN,
@@ -80,6 +79,9 @@ def is_square_attacked(
         return True
 
     # 5. King attacks (adjacent)
+    # King attack import done only at runtime to avoid circular import
+    from engine.bitboard.moves.king import KING_ATTACKS
+
     king_bb = (
         board.bitboards[WHITE_KING]
         if attacker_side == WHITE

@@ -1,7 +1,9 @@
 import pytest
 
-from engine.bitboard.board import Board
 from engine.bitboard.move import Move
+from engine.bitboard.board import Board
+from engine.bitboard.utils import move_to_tuple
+
 from engine.bitboard.constants import (
     WHITE,
     WHITE_KING,
@@ -51,7 +53,7 @@ def test_castling_allowed(rook_sq: int, to_sq: int, rights: int) -> None:
         board.white_occ,
         board.black_occ,
     )
-    assert any(m.src == sq(5, 1) and m.dst == to_sq for m in moves)
+    assert any(m[0] == sq(5, 1) and m[1] == to_sq for m in moves)
 
 
 def test_castling_blocked_path() -> None:
@@ -63,7 +65,7 @@ def test_castling_blocked_path() -> None:
         board.white_occ,
         board.black_occ,
     )
-    assert not any(m.src == sq(5, 1) and m.dst == sq(7, 1) for m in moves)
+    assert not any(m[0] == sq(5, 1) and m[1] == sq(7, 1) for m in moves)
 
 
 def test_castling_king_in_check() -> None:
@@ -75,7 +77,7 @@ def test_castling_king_in_check() -> None:
         board.white_occ,
         board.black_occ,
     )
-    assert not any(m.src == sq(5, 1) and m.dst == sq(7, 1) for m in moves)
+    assert not any(m[0] == sq(5, 1) and m[1] == sq(7, 1) for m in moves)
 
 
 def test_castling_crossed_square_attacked() -> None:
@@ -87,7 +89,7 @@ def test_castling_crossed_square_attacked() -> None:
         board.white_occ,
         board.black_occ,
     )
-    assert not any(m.src == sq(5, 1) and m.dst == sq(7, 1) for m in moves)
+    assert not any(m[0] == sq(5, 1) and m[1] == sq(7, 1) for m in moves)
 
 
 def test_castling_king_not_home() -> None:
@@ -99,7 +101,7 @@ def test_castling_king_not_home() -> None:
         board.white_occ,
         board.black_occ,
     )
-    assert not any(m.src == sq(4, 1) and m.dst == sq(6, 1) for m in moves)
+    assert not any(m[0] == sq(4, 1) and m[1] == sq(6, 1) for m in moves)
 
 
 @pytest.mark.parametrize(
@@ -119,9 +121,9 @@ def test_castling_rights_cleared_and_restored(
     board = make_board({start: piece})
     board.castling_rights = mask
     before = board.castling_rights
-    board.make_move(Move(src=start, dst=end))
+    board.make_move_raw(move_to_tuple(Move(src=start, dst=end)))
     assert board.castling_rights == 0
-    board.undo_move()
+    board.undo_move_raw()
     assert board.castling_rights == before
 
 
@@ -134,7 +136,7 @@ def test_castling_destination_attacked() -> None:
         board.white_occ,
         board.black_occ,
     )
-    assert not any(m.src == sq(5, 1) and m.dst == sq(7, 1) for m in moves)
+    assert not any(m[0] == sq(5, 1) and m[1] == sq(7, 1) for m in moves)
 
 
 def test_castling_crossed_square_attacked_queenside() -> None:
@@ -146,7 +148,7 @@ def test_castling_crossed_square_attacked_queenside() -> None:
         board.white_occ,
         board.black_occ,
     )
-    assert not any(m.src == sq(5, 1) and m.dst == sq(3, 1) for m in moves)
+    assert not any(m[0] == sq(5, 1) and m[1] == sq(3, 1) for m in moves)
 
 
 def test_castling_no_rook_piece() -> None:
@@ -158,7 +160,7 @@ def test_castling_no_rook_piece() -> None:
         board.white_occ,
         board.black_occ,
     )
-    assert not any(m.src == sq(5, 1) and m.dst == sq(7, 1) for m in moves)
+    assert not any(m[0] == sq(5, 1) and m[1] == sq(7, 1) for m in moves)
 
 
 def test_castling_with_enemy_rook_illegal() -> None:
@@ -170,18 +172,18 @@ def test_castling_with_enemy_rook_illegal() -> None:
         board.white_occ,
         board.black_occ,
     )
-    assert not any(m.src == sq(5, 1) and m.dst == sq(7, 1) for m in moves)
+    assert not any(m[0] == sq(5, 1) and m[1] == sq(7, 1) for m in moves)
 
 
 def test_castling_move_execution_and_undo() -> None:
     board = make_board({sq(5, 1): "K", sq(8, 1): "R"})
-    board.castling_rights = 0b0001
-    move = Move(src=sq(5, 1), dst=sq(7, 1), castling=True)
-    board.make_move(move)
+    board.castling_rights = 0b0001  # White can castle kingside
+    raw = move_to_tuple(Move(src=sq(5, 1), dst=sq(7, 1), castling=True))
+    board.make_move_raw(raw)
     assert (board.bitboards[WHITE_KING] & (1 << sq(7, 1))) != 0
-    assert (board.bitboards[WHITE_ROOK] & (1 << sq(8, 1))) != 0
+    assert (board.bitboards[WHITE_ROOK] & (1 << sq(6, 1))) != 0
     assert board.castling_rights == 0
-    board.undo_move()
+    board.undo_move_raw()
     assert (board.bitboards[WHITE_KING] & (1 << sq(5, 1))) != 0
     assert (board.bitboards[WHITE_ROOK] & (1 << sq(8, 1))) != 0
     assert board.castling_rights == 0b0001

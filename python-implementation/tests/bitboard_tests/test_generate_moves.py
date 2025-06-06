@@ -1,5 +1,7 @@
-from engine.bitboard.board import Board
 from engine.bitboard.move import Move
+from engine.bitboard.board import Board
+from engine.bitboard.utils import move_to_tuple
+
 from engine.bitboard.constants import (
     WHITE,
     BLACK,
@@ -17,12 +19,7 @@ from engine.bitboard.generator import generate_legal_moves
 def sort_moves(moves):
     return sorted(
         moves,
-        key=lambda m: (
-            m.src,
-            m.dst,
-            m.capture,
-            getattr(m, "en_passant", False),
-        ),
+        key=lambda m: (m[0], m[1], m[2], m[4]),
     )
 
 
@@ -31,7 +28,7 @@ def bb_of(idx: int) -> int:
 
 
 def move_set(moves):
-    return {(m.src, m.dst, m.capture) for m in moves}
+    return {(m[0], m[1], m[2]) for m in moves}
 
 
 def test_generate_moves_white_pawn_pushes_and_captures():
@@ -47,10 +44,10 @@ def test_generate_moves_white_pawn_pushes_and_captures():
 
     moves = generate_legal_moves(board)
     expected = [
-        Move(12, 19, capture=True),
-        Move(12, 21, capture=True),
-        Move(12, 20),
-        Move(12, 28),
+        move_to_tuple(Move(12, 19, capture=True)),
+        move_to_tuple(Move(12, 21, capture=True)),
+        move_to_tuple(Move(12, 20)),
+        move_to_tuple(Move(12, 28)),
     ]
     assert sort_moves(moves) == sort_moves(expected)
 
@@ -68,10 +65,10 @@ def test_generate_moves_black_pawn_pushes_and_captures():
 
     moves = generate_legal_moves(board)
     expected = [
-        Move(52, 43, capture=True),
-        Move(52, 45, capture=True),
-        Move(52, 44),
-        Move(52, 36),
+        move_to_tuple(Move(52, 43, capture=True)),
+        move_to_tuple(Move(52, 45, capture=True)),
+        move_to_tuple(Move(52, 44)),
+        move_to_tuple(Move(52, 36)),
     ]
     assert sort_moves(moves) == sort_moves(expected)
 
@@ -88,12 +85,10 @@ def test_generate_moves_knight():
     moves = generate_legal_moves(board)
     # g1 -> {e2(12), f3(21), h3(23)}
     expected_dsts = {12, 21, 23}
-    got_dsts = {m.dst for m in moves if m.src == 6}
+    got_dsts = {m[1] for m in moves if m[0] == 6}
     assert got_dsts == expected_dsts
     # None of these should be captures or en passant
-    assert all(
-        not m.capture and not getattr(m, "en_passant", False) for m in moves
-    )
+    assert all(not m[2] and not m[4] for m in moves)
 
 
 def test_generate_moves_en_passant_flow():
@@ -104,7 +99,7 @@ def test_generate_moves_en_passant_flow():
     # Black pawn double-push e7->e5
     board.bitboards[BLACK_PAWN] = 1 << 52
     board.update_occupancies()
-    board.make_move(Move(src=52, dst=36, capture=False))
+    board.make_move_raw(move_to_tuple(Move(src=52, dst=36, capture=False)))
     assert board.side_to_move == WHITE
 
     # Place white pawn on d5 (35) to capture en passant
@@ -112,8 +107,10 @@ def test_generate_moves_en_passant_flow():
     board.update_occupancies()
 
     moves = generate_legal_moves(board)
-    ep_moves = [m for m in moves if getattr(m, "en_passant", False)]
-    assert ep_moves == [Move(35, 44, capture=True, en_passant=True)]
+    ep_moves = [m for m in moves if m[4]]
+    assert ep_moves == [
+        move_to_tuple(Move(35, 44, capture=True, en_passant=True))
+    ]
 
 
 def test_generate_moves_bishop_simple_and_capture():
@@ -130,7 +127,7 @@ def test_generate_moves_bishop_simple_and_capture():
     board.update_occupancies()
 
     all_moves = generate_legal_moves(board)
-    bishop_moves = [m for m in all_moves if m.src == 2]
+    bishop_moves = [m for m in all_moves if m[0] == 2]
     got = move_set(bishop_moves)
     expected_quiet = {
         (2, 9, False),  # b2
@@ -153,7 +150,7 @@ def test_generate_moves_bishop_simple_and_capture():
     board.update_occupancies()
 
     all_moves = generate_legal_moves(board)
-    bishop_moves = [m for m in all_moves if m.src == 2]
+    bishop_moves = [m for m in all_moves if m[0] == 2]
     got = move_set(bishop_moves)
     expected_with_capture = {
         (2, 9, False),
@@ -179,7 +176,7 @@ def test_generate_moves_rook_simple_and_capture():
     board.update_occupancies()
 
     all_moves = generate_legal_moves(board)
-    rook_moves = [m for m in all_moves if m.src == 27]
+    rook_moves = [m for m in all_moves if m[0] == 27]
     got = move_set(rook_moves)
     expected_quiet = {
         # left
@@ -214,7 +211,7 @@ def test_generate_moves_rook_simple_and_capture():
     board.update_occupancies()
 
     all_moves = generate_legal_moves(board)
-    rook_moves = [m for m in all_moves if m.src == 27]
+    rook_moves = [m for m in all_moves if m[0] == 27]
     got = move_set(rook_moves)
     expected_with_capture = {
         # up
@@ -250,7 +247,7 @@ def test_generate_moves_queen_simple_and_capture():
     board.update_occupancies()
 
     all_moves = generate_legal_moves(board)
-    queen_moves = [m for m in all_moves if m.src == 27]
+    queen_moves = [m for m in all_moves if m[0] == 27]
     got = move_set(queen_moves)
 
     rook_part = {
@@ -298,7 +295,7 @@ def test_generate_moves_queen_simple_and_capture():
     board.update_occupancies()
 
     all_moves = generate_legal_moves(board)
-    queen_moves = [m for m in all_moves if m.src == 27]
+    queen_moves = [m for m in all_moves if m[0] == 27]
     got = move_set(queen_moves)
 
     expected_with_capture = set()
@@ -358,7 +355,7 @@ def test_generate_moves_king_simple_and_capture():
     board.update_occupancies()
 
     all_moves = generate_legal_moves(board)
-    king_moves = [m for m in all_moves if m.src == 4]
+    king_moves = [m for m in all_moves if m[0] == 4]
     got = move_set(king_moves)
     expected_quiet = {
         (4, 3, False),  # d1
@@ -380,7 +377,7 @@ def test_generate_moves_king_simple_and_capture():
     board.update_occupancies()
 
     all_moves = generate_legal_moves(board)
-    king_moves = [m for m in all_moves if m.src == 4]
+    king_moves = [m for m in all_moves if m[0] == 4]
     got = move_set(king_moves)
     expected_with_capture = {
         (4, 3, True),

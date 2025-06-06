@@ -173,8 +173,7 @@ class Board:
         # 3) Handle double‐pawn push (pawn ep target)
         if piece_idx in (WHITE_PAWN, BLACK_PAWN):
             rank_diff = (dst // 8) - (src // 8)
-            if abs(rank_diff) == 2:
-                # set ep target square
+            if abs(rank_diff) == 2 and not capture:
                 self.ep_square = (src + dst) // 2
 
         # 4) Remove the moving piece from src
