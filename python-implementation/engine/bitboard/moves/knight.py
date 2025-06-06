@@ -1,5 +1,5 @@
 from typing import List, Union, Tuple, Optional
-from engine.bitboard.config import USE_RAW_MOVES
+import engine.bitboard.config as config
 from engine.bitboard.move import Move
 from engine.bitboard.utils import pop_lsb
 from engine.bitboard.constants import KNIGHT_OFFSETS
@@ -44,7 +44,7 @@ def generate_knight_moves(
         while tmp:
             dest = pop_lsb(tmp)
             is_capture = bool(their_occ & (1 << dest))
-            if USE_RAW_MOVES:
+            if config.USE_RAW_MOVES:
                 moves.append((src, dest, is_capture, None, False, False))
             else:
                 moves.append(Move(src, dest, capture=is_capture))

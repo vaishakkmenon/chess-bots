@@ -1,7 +1,7 @@
 # engine/bitboard/moves/king.py
 
 from typing import List, Union, Tuple, TYPE_CHECKING
-from engine.bitboard.config import USE_RAW_MOVES
+import engine.bitboard.config as config
 
 from engine.bitboard.move import Move  # noqa: TC002
 from engine.bitboard.utils import pop_lsb
@@ -85,7 +85,7 @@ def generate_king_moves(
         # If destination is not attacked, it is legal
         if not board.is_square_attacked(dst, opponent):
             is_capture = bool((1 << dst) & their_occ)
-            if USE_RAW_MOVES:
+            if config.USE_RAW_MOVES:
                 moves.append((src, dst, is_capture, None, False, False))
             else:
                 moves.append(Move(src, dst, capture=is_capture))
@@ -108,7 +108,7 @@ def generate_king_moves(
                             and not is_square_attacked(board, 5, BLACK)
                             and not is_square_attacked(board, 6, BLACK)
                         ):
-                            if USE_RAW_MOVES:
+                            if config.USE_RAW_MOVES:
                                 moves.append(
                                     (src, 6, False, None, False, True)
                                 )
@@ -127,7 +127,7 @@ def generate_king_moves(
                             and not is_square_attacked(board, 3, BLACK)
                             and not is_square_attacked(board, 2, BLACK)
                         ):
-                            if USE_RAW_MOVES:
+                            if config.USE_RAW_MOVES:
                                 moves.append(
                                     (src, 2, False, None, False, True)
                                 )
@@ -145,7 +145,7 @@ def generate_king_moves(
                             and not is_square_attacked(board, 61, WHITE)
                             and not is_square_attacked(board, 62, WHITE)
                         ):
-                            if USE_RAW_MOVES:
+                            if config.USE_RAW_MOVES:
                                 moves.append(
                                     (src, 62, False, None, False, True)
                                 )
@@ -161,7 +161,7 @@ def generate_king_moves(
                             and not is_square_attacked(board, 59, WHITE)
                             and not is_square_attacked(board, 58, WHITE)
                         ):
-                            if USE_RAW_MOVES:
+                            if config.USE_RAW_MOVES:
                                 moves.append(
                                     (src, 58, False, None, False, True)
                                 )

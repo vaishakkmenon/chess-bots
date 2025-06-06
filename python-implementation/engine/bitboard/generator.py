@@ -1,4 +1,5 @@
-from typing import List
+import engine.bitboard.config as config
+from typing import List, Union, Tuple, Optional
 from engine.bitboard.move import Move  # noqa: TC002
 from engine.bitboard.board import Board  # noqa: TC002
 from engine.bitboard.constants import (
@@ -55,12 +56,16 @@ __all__ = [
 ]
 
 
-def generate_moves(board: Board) -> List[Move]:
+def generate_moves(
+    board: Board,
+) -> List[Union[Move, Tuple[int, int, bool, Optional[str], bool, bool]]]:
     """
     Master move generator for the side to move.
     Calls each piece-type generator and collects all legal moves.
     """
-    moves: List[Move] = []
+    moves: List[
+        Union[Move, Tuple[int, int, bool, Optional[str], bool, bool]]
+    ] = []
 
     # Pawn moves (including en-passant)
     if board.side_to_move == WHITE:
@@ -121,20 +126,31 @@ def generate_moves(board: Board) -> List[Move]:
     return moves
 
 
-def generate_legal_moves(board: Board) -> List[Move]:
+def generate_legal_moves(
+    board: Board,
+) -> List[Union[Move, Tuple[int, int, bool, Optional[str], bool, bool]]]:
     """
     Wraps generate_moves(board) and returns only those moves
     that do not leave the side-to-move's king in check.
     """
-    legal_moves: List[Move] = []
+    legal_moves: List[
+        Union[Move, Tuple[int, int, bool, Optional[str], bool, bool]]
+    ] = []
     side = board.side_to_move
 
     pseudo_moves = generate_moves(board)
-
     for move in pseudo_moves:
-        board.make_move(move)
+        if config.USE_RAW_MOVES:
+            board.make_move_raw(move)
+        else:
+            board.make_move(move)
+
         if not board.in_check(side):
             legal_moves.append(move)
-        board.undo_move()
+
+        if config.USE_RAW_MOVES:
+            board.undo_move_raw()
+        else:
+            board.undo_move()
 
     return legal_moves

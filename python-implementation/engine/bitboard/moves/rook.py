@@ -1,5 +1,5 @@
 from typing import List, Union, Tuple
-from engine.bitboard.config import USE_RAW_MOVES
+import engine.bitboard.config as config
 from engine.bitboard.move import Move
 from engine.bitboard.utils import pop_lsb
 from engine.bitboard.constants import MASK_64
@@ -42,7 +42,7 @@ def generate_rook_moves(
         while legal_temp:
             dst = pop_lsb(legal_temp)
             is_capture = bool(their_occ & (1 << dst))
-            if USE_RAW_MOVES:
+            if config.USE_RAW_MOVES:
                 moves.append((src, dst, is_capture, None, False, False))
             else:
                 moves.append(Move(src, dst, capture=is_capture))
