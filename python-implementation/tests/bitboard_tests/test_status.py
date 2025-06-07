@@ -5,6 +5,7 @@ from engine.bitboard.status import (
     is_stalemate,
     is_checkmate,
     is_insufficient_material,
+    is_fifty_move_draw,
 )
 from engine.bitboard.constants import (
     WHITE_KING,
@@ -101,3 +102,11 @@ def test_simple_checkmate():
     place_piece(b, BLACK_KING, 1)  # b1
     b.side_to_move = 1  # Black to move
     assert is_checkmate(b)
+
+
+def test_fifty_move_draw():
+    b = Board()
+    b.halfmove_clock = 99
+    assert not is_fifty_move_draw(b)
+    b.halfmove_clock = 100
+    assert is_fifty_move_draw(b)

@@ -80,3 +80,11 @@ def is_insufficient_material(board: Board) -> bool:
             return True
 
     return False
+
+
+def is_fifty_move_draw(board: Board) -> bool:
+    """
+    Draw by fifty-move rule once 100 half-moves (plies) have elapsed
+    without a pawn move or capture.
+    """
+    return board.halfmove_clock >= 100
