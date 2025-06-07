@@ -101,7 +101,7 @@ def is_threefold_repetition(board: Board) -> bool:
 
 def is_fivefold_repetition(board: Board) -> bool:
     """
-    Draw by threefold repetition rule once the
+    Draw by fivefold repetition rule once the
     same position has been seen three times
     """
     current_hash = board.zobrist_key
