@@ -28,6 +28,10 @@ from engine.bitboard.constants import (
     CASTLE_BLACK_KINGSIDE,
     CASTLE_BLACK_QUEENSIDE,
     CASTLE_ALL,
+    ZOBRIST_PIECE_KEYS,
+    ZOBRIST_SIDE_KEY,
+    ZOBRIST_CASTLE_KEYS,
+    ZOBRIST_EP_KEYS,
 )
 
 PROMO_MAP_WHITE = {
@@ -43,7 +47,12 @@ PROMO_MAP_BLACK = {
     "Q": BLACK_QUEEN,
 }
 
-_CORNER_BIT = {0: 1, 7: 0, 56: 3, 63: 2}
+castle_map = {
+    CASTLE_WHITE_KINGSIDE: ZOBRIST_CASTLE_KEYS["K"],
+    CASTLE_WHITE_QUEENSIDE: ZOBRIST_CASTLE_KEYS["Q"],
+    CASTLE_BLACK_KINGSIDE: ZOBRIST_CASTLE_KEYS["k"],
+    CASTLE_BLACK_QUEENSIDE: ZOBRIST_CASTLE_KEYS["q"],
+}
 
 
 class Board:
@@ -132,6 +141,39 @@ class Board:
         self.update_occupancies()
         # All castling rights at start
         self.castling_rights = CASTLE_ALL
+
+        # Compute starting board zobrist key
+        self._compute_zobrist_from_scratch()
+
+        # Keep a history of zobrist keys for repetition checks
+        # Also used for testing purposes
+        self.zobrist_history = [self.zobrist_key]
+
+    def _compute_zobrist_from_scratch(self) -> None:
+        key = 0
+        # Piece XOR for all pieces
+        for piece_idx in range(12):
+            bb = self.bitboards[piece_idx]
+            while bb:
+                lsb = bb & -bb
+                sq = lsb.bit_length() - 1
+                key ^= ZOBRIST_PIECE_KEYS[piece_idx][sq]
+                bb ^= lsb
+        # Side to move changes with black
+        if self.side_to_move == BLACK:
+            key ^= ZOBRIST_SIDE_KEY
+
+        # XOR each of the keys for all castling types
+        for mask, zob_key in castle_map.items():
+            if self.castling_rights & mask:
+                key ^= zob_key
+
+        # XOR for the file that en-passant is happening
+        if self.ep_square is not None:
+            file = self.ep_square % 8
+            key ^= ZOBRIST_EP_KEYS[file]
+
+        self.zobrist_key = key
 
     def set_fen(self, fen: str) -> None:
         """
@@ -313,6 +355,7 @@ class Board:
                 self.ep_square = (src + dst) // 2
 
         # remove from src
+        self.zobrist_key ^= ZOBRIST_PIECE_KEYS[piece_idx][src]
         self.bitboards[piece_idx] ^= 1 << src
         self.square_to_piece[src] = None
         if piece_idx < 6:
@@ -338,6 +381,7 @@ class Board:
                 raise ValueError(
                     f"make_move_raw: no captured piece at {cap_sq}"
                 )
+            self.zobrist_key ^= ZOBRIST_PIECE_KEYS[captured_idx][cap_sq]
             self.bitboards[captured_idx] ^= 1 << cap_sq
             self.square_to_piece[cap_sq] = None
             if captured_idx < 6:
@@ -351,7 +395,13 @@ class Board:
         else:
             self.halfmove_clock += 1
 
-        # update castling rights for king/rook moves
+        # If there was an old ep square, XOR out its file key:
+        if old_ep is not None:
+            self.zobrist_key ^= ZOBRIST_EP_KEYS[old_ep % 8]
+        # If a new ep square got set, XOR in its file key:
+        if self.ep_square is not None:
+            self.zobrist_key ^= ZOBRIST_EP_KEYS[self.ep_square % 8]
+
         # update castling rights for king/rook moves
         if piece_idx == WHITE_KING:
             # clears both White rights
@@ -411,11 +461,22 @@ class Board:
                 self.square_to_piece[59] = BLACK_ROOK
                 self.black_occ |= 1 << 59
 
+        if old_castling != self.castling_rights:
+            # remove any old castling bits
+            for mask, zob_key in castle_map.items():
+                if old_castling & mask:
+                    self.zobrist_key ^= zob_key
+            # add any new castling bits
+            for mask, zob_key in castle_map.items():
+                if self.castling_rights & mask:
+                    self.zobrist_key ^= zob_key
+
         target_idx = piece_idx
         if promotion:
             promo_map = PROMO_MAP_WHITE if piece_idx < 6 else PROMO_MAP_BLACK
             target_idx = promo_map[promotion]
 
+        self.zobrist_key ^= ZOBRIST_PIECE_KEYS[target_idx][dst]
         self.bitboards[target_idx] |= 1 << dst
         self.square_to_piece[dst] = target_idx
         if target_idx < 6:
@@ -428,7 +489,9 @@ class Board:
         if self.side_to_move == BLACK:
             self.fullmove_number += 1
         self.side_to_move = BLACK if self.side_to_move == WHITE else WHITE
+        self.zobrist_key ^= ZOBRIST_SIDE_KEY
 
+        self.zobrist_history.append(self.zobrist_key)
         # push raw history record
         self.raw_history.append(
             (
@@ -470,6 +533,9 @@ class Board:
         self.ep_square = old_ep
         self.side_to_move = prev_side
         self.castling_rights = old_castling
+
+        self.zobrist_history.pop()
+        self.zobrist_key = self.zobrist_history[-1]
 
         if castling:
             if src == 4 and dst == 6:

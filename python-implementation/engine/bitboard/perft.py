@@ -40,3 +40,27 @@ def perft_divide(board: Board, depth: int) -> Dict[RawMove, int]:
         results[move] = perft_count(board, depth - 1)
         board.undo_move_raw()
     return results
+
+
+def perft_hashed(
+    board: Board, depth: int, table: Dict[tuple[int, int], int]
+) -> int:
+    """
+    A transposition-table-enabled perft:
+    table[(zobrist_hash, depth)] = node count
+    """
+    key = (board.zobrist_hash, depth)
+    if key in table:
+        return table[key]
+
+    if depth == 0:
+        return 1
+
+    total = 0
+    for move in generate_legal_moves(board, board.side_to_move):
+        board.make_move_raw(move)
+        total += perft_hashed(board, depth - 1, table)
+        board.undo_move_raw()
+
+    table[key] = total
+    return total
