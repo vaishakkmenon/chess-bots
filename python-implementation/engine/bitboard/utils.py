@@ -3,6 +3,31 @@ from engine.bitboard.move import Move
 from engine.bitboard.config import RawMove  # noqa: TC002
 
 
+def algebraic_to_index(coord: str) -> int:
+    """
+    Convert algebraic coordinates (e.g. "a1", "e4", "h8")
+    into a 0-63 square index, where:
+      a1 → 0, b1 → 1, …, h1 → 7,
+      a2 → 8, …, h8 → 63.
+    """
+    file_char = coord[0].lower()
+    rank_char = coord[1]
+    file = ord(file_char) - ord("a")
+    rank = int(rank_char) - 1
+    if not (0 <= file < 8 and 0 <= rank < 8):
+        raise ValueError(f"Invalid square: {coord}")
+    return rank * 8 + file
+
+
+def index_to_algebraic(sq: int) -> str:
+    """
+    0 -> 'a1', 1 -> 'b1', ..., 63 -> 'h8'
+    """
+    file = sq % 8
+    rank = sq // 8
+    return f"{chr(ord('a')+file)}{rank+1}"
+
+
 def tuple_to_move(raw: RawMove) -> Move:
     src, dst, capture, promotion, en_passant, castling = raw
     return Move(

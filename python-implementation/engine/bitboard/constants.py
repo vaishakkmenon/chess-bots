@@ -9,6 +9,25 @@ BLACK_PAWN, BLACK_KNIGHT, BLACK_BISHOP, BLACK_ROOK, BLACK_QUEEN, BLACK_KING = (
     range(6, 12)
 )
 
+PIECE_CHARS = "PNBRQKpnbrqk"
+PIECE_INDICES = [
+    WHITE_PAWN,
+    WHITE_KNIGHT,
+    WHITE_BISHOP,
+    WHITE_ROOK,
+    WHITE_QUEEN,
+    WHITE_KING,
+    BLACK_PAWN,
+    BLACK_KNIGHT,
+    BLACK_BISHOP,
+    BLACK_ROOK,
+    BLACK_QUEEN,
+    BLACK_KING,
+]
+
+PIECE_MAP = dict(zip(PIECE_CHARS, PIECE_INDICES))
+INV_PIECE_MAP = {v: k for k, v in PIECE_MAP.items()}
+
 INITIAL_MASKS = [
     0x000000000000FF00,  # WHITE_PAWN
     0x0000000000000042,  # WHITE_KNIGHT
@@ -39,3 +58,17 @@ RANK_2 = 0x000000000000FF00  # white starting pawns
 RANK_4 = 0x00000000FF000000  # (black pawns capturing en passant)
 RANK_5 = 0x000000FF00000000  # (white pawns capturing en passant)
 RANK_7 = 0x00FF000000000000  # black starting pawns
+
+# Castling‐rights bitflags
+CASTLE_WHITE_KINGSIDE = 0b0010  # ‘K’
+CASTLE_WHITE_QUEENSIDE = 0b0001  # ‘Q’
+CASTLE_BLACK_KINGSIDE = 0b1000  # ‘k’
+CASTLE_BLACK_QUEENSIDE = 0b0100  # ‘q’
+
+# A convenience mask for “all castling allowed”:
+CASTLE_ALL = (
+    CASTLE_WHITE_KINGSIDE
+    | CASTLE_WHITE_QUEENSIDE
+    | CASTLE_BLACK_KINGSIDE
+    | CASTLE_BLACK_QUEENSIDE
+)
