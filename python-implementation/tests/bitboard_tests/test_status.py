@@ -77,8 +77,8 @@ def test_insufficient_material_two_bishops_same_color():
 
 def test_not_insufficient_if_rook_present():
     b = make_empty_board()
-    place_piece(b, WHITE_KING, 4)
-    place_piece(b, BLACK_KING, 60)
+    place_piece(b, WHITE_KING, 4)  # e1
+    place_piece(b, BLACK_KING, 60)  # 38
     place_piece(b, WHITE_ROOK, 0)  # a1
     assert not is_insufficient_material(b)
 
@@ -87,8 +87,8 @@ def test_simple_stalemate():
     b = make_empty_board()
     # Black to move, classic corner stalemate:
     place_piece(b, BLACK_KING, 63)  # h8
-    place_piece(b, WHITE_KING, 13)  # f7
-    place_piece(b, WHITE_QUEEN, 46)  # supposed to be h4
+    place_piece(b, WHITE_KING, 13)  # f2
+    place_piece(b, WHITE_QUEEN, 46)  # g6
     b.side_to_move = 1  # BLACK
     assert is_stalemate(b)
     assert not is_checkmate(b)
@@ -96,8 +96,8 @@ def test_simple_stalemate():
 
 def test_simple_checkmate():
     b = make_empty_board()
-    place_piece(b, WHITE_KING, 17)
-    place_piece(b, WHITE_ROOK, 7)  # b2 (just to the right of a2)
-    place_piece(b, BLACK_KING, 1)  # a8 is idx 56
+    place_piece(b, WHITE_KING, 17)  # b3
+    place_piece(b, WHITE_ROOK, 7)  # h1
+    place_piece(b, BLACK_KING, 1)  # b1
     b.side_to_move = 1  # Black to move
     assert is_checkmate(b)
