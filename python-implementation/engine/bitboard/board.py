@@ -211,6 +211,8 @@ class Board:
                     sq = rank * 8 + file
                     self.bitboards[idx] |= 1 << sq
                     file += 1
+            if file != 8:
+                raise ValueError("Invalid FEN placement")
 
         # Side to move
         if side == "w":

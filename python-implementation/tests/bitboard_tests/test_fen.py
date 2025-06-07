@@ -29,6 +29,20 @@ def test_invalid_fen_raises():
 
 
 @pytest.mark.parametrize(
+    "fen",
+    [
+        "8/8/8/8/8/8/8/7 w - - 0 1",
+        "8/8/8/8/8/8/8/9 w - - 0 1",
+    ],
+)
+def test_invalid_row_lengths(fen):
+    """FEN rows must describe exactly 8 squares."""
+    board = Board()
+    with pytest.raises(ValueError):
+        board.set_fen(fen)
+
+
+@pytest.mark.parametrize(
     "fen, expected_ep",
     [
         ("8/8/8/8/3Pp3/8/8/8 w - e6 0 1", "e6"),
