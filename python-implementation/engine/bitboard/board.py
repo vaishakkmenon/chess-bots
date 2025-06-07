@@ -1,7 +1,8 @@
 # from engine.bitboard.config import RawMove  # noqa: TC002
 from typing import List, Tuple, Optional
-from engine.bitboard.undo import Undo
-from .attack_utils import is_square_attacked as _is_square_attacked
+from engine.bitboard.attack_utils import (
+    is_square_attacked as _is_square_attacked,
+)
 from engine.bitboard.constants import (
     INITIAL_MASKS,
     WHITE_PAWN,
@@ -50,8 +51,11 @@ class Board:
         self.ep_square: Optional[int] = None
 
         # History of all moves
-        self.history: List[Undo] = []
         self.raw_history: List[Tuple] = []
+
+        # Move counts half and full
+        self.halfmove_clock = 0  # counts plies since last pawn move or capture
+        self.fullmove_number = 1  # starts at 1, increments after Black’s turn
 
         # Flag to see side to move
         self.side_to_move = WHITE
@@ -221,6 +225,11 @@ class Board:
             else:
                 self.black_occ ^= 1 << cap_sq
 
+        if piece_idx in (WHITE_PAWN, BLACK_PAWN) or capture:
+            self.halfmove_clock = 0
+        else:
+            self.halfmove_clock += 1
+
         # 6) Update castling rights if moving king or rook
         if piece_idx == WHITE_KING:
             self.castling_rights &= ~0b0011
@@ -291,8 +300,12 @@ class Board:
         else:
             self.black_occ |= 1 << dst
 
-        # 9) Recompute occupancy and flip side
+        # 9) Recompute occupancy, update full move, and flip side
         self.all_occ = self.white_occ | self.black_occ
+
+        if self.side_to_move == BLACK:
+            self.fullmove_number += 1
+
         self.side_to_move = BLACK if self.side_to_move == WHITE else WHITE
 
         # 10) Push a “raw history” tuple so
@@ -310,6 +323,8 @@ class Board:
                 promotion,
                 en_passant,
                 castling,
+                self.halfmove_clock,
+                self.fullmove_number,
             )
         )
 
@@ -330,9 +345,13 @@ class Board:
             promotion,
             en_passant,
             castling,
+            old_halfmove,
+            old_fullmove,
         ) = self.raw_history.pop()
 
-        # 1) Restore ep, side, castling flags
+        # 1) Restore ep, side, castling flags, and move clocks
+        self.halfmove_clock = old_halfmove
+        self.fullmove_number = old_fullmove
         self.ep_square = old_ep
         self.side_to_move = prev_side
         self.castling_rights = old_castling
