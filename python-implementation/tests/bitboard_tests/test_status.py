@@ -7,6 +7,7 @@ from engine.bitboard.status import (
     is_insufficient_material,
     is_fifty_move_draw,
     is_threefold_repetition,
+    is_fivefold_repetition,
 )
 from engine.bitboard.constants import (
     WHITE_KING,
@@ -113,15 +114,27 @@ def test_fifty_move_draw():
     assert is_fifty_move_draw(b)
 
 
-def test_threefold_repetition_via_hash_history():
-    b = Board()
-    # Starting position is in history once
-    # Append two more identical entries
-    b.zobrist_history.append(b.zobrist_key)
-    b.zobrist_history.append(b.zobrist_key)
-    assert is_threefold_repetition(b)
+def test_repetition_hash_history():
+    # 1) Fivefold repetition should be true (and thus also threefold)
+    b1 = Board()
+    # Starting position counts as 1 already in history
+    # Append 4 more to make 5 total
+    for _ in range(4):
+        b1.zobrist_history.append(b1.zobrist_key)
+    assert is_fivefold_repetition(b1)
+    assert is_threefold_repetition(b1)
 
-    # Only two copies = not yet repetition
+    # 2) Threefold but not fivefold: total 3 occurrences
     b2 = Board()
-    b2.zobrist_history.append(b2.zobrist_key)
-    assert not is_threefold_repetition(b2)
+    # Start (1) + append 2 more = 3
+    for _ in range(2):
+        b2.zobrist_history.append(b2.zobrist_key)
+    assert not is_fivefold_repetition(b2)
+    assert is_threefold_repetition(b2)
+
+    # 3) Neither threefold nor fivefold: total 2 occurrences
+    b3 = Board()
+    # Start (1) + append 1 more = 2
+    b3.zobrist_history.append(b3.zobrist_key)
+    assert not is_threefold_repetition(b3)
+    assert not is_fivefold_repetition(b3)

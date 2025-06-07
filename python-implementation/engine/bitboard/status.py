@@ -97,3 +97,12 @@ def is_threefold_repetition(board: Board) -> bool:
     """
     current_hash = board.zobrist_key
     return board.zobrist_history.count(current_hash) >= 3
+
+
+def is_fivefold_repetition(board: Board) -> bool:
+    """
+    Draw by threefold repetition rule once the
+    same position has been seen three times
+    """
+    current_hash = board.zobrist_key
+    return board.zobrist_history.count(current_hash) >= 5
