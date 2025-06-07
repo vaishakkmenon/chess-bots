@@ -88,3 +88,12 @@ def is_fifty_move_draw(board: Board) -> bool:
     without a pawn move or capture.
     """
     return board.halfmove_clock >= 100
+
+
+def is_threefold_repetition(board: Board) -> bool:
+    """
+    Draw by threefold repetition rule once the
+    same position has been seen three times
+    """
+    current_hash = board.zobrist_key
+    return board.zobrist_history.count(current_hash) >= 3

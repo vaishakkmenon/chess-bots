@@ -3,8 +3,6 @@ from engine.bitboard.constants import (
     ZOBRIST_CASTLE_KEYS,
 )
 
-# from engine.bitboard.status import is_threefold_repetition
-
 
 def test_initial_hash_consistency():
     # Two fresh boards should have the same starting hash
@@ -61,17 +59,3 @@ def test_en_passant_hash_variation():
     b.ep_square = 17  # file=1
     b._compute_zobrist_from_scratch()
     assert b.zobrist_key != second
-
-
-# def test_threefold_repetition_via_hash_history():
-#     b = Board()
-#     # Starting position is in history once
-#     # Append two more identical entries
-#     b.zobrist_history.append(b.zobrist_key)
-#     b.zobrist_history.append(b.zobrist_key)
-#     assert is_threefold_repetition(b)
-
-#     # Only two copies = not yet repetition
-#     b2 = Board()
-#     b2.zobrist_history.append(b2.zobrist_key)
-#     assert not is_threefold_repetition(b2)

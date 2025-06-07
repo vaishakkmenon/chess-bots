@@ -6,6 +6,7 @@ from engine.bitboard.status import (
     is_checkmate,
     is_insufficient_material,
     is_fifty_move_draw,
+    is_threefold_repetition,
 )
 from engine.bitboard.constants import (
     WHITE_KING,
@@ -110,3 +111,17 @@ def test_fifty_move_draw():
     assert not is_fifty_move_draw(b)
     b.halfmove_clock = 100
     assert is_fifty_move_draw(b)
+
+
+def test_threefold_repetition_via_hash_history():
+    b = Board()
+    # Starting position is in history once
+    # Append two more identical entries
+    b.zobrist_history.append(b.zobrist_key)
+    b.zobrist_history.append(b.zobrist_key)
+    assert is_threefold_repetition(b)
+
+    # Only two copies = not yet repetition
+    b2 = Board()
+    b2.zobrist_history.append(b2.zobrist_key)
+    assert not is_threefold_repetition(b2)
