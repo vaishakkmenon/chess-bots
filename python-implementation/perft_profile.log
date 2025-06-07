@@ -9,7 +9,7 @@ Depth │ Positions │   Gen Time (s)   │  Move+Recurse Time (s)  │ Total T
     5 │   197,281 │      49.412475 │            2122.331286 │   2171.743761
     6 │ 4,865,609 │    1274.342792 │             788.709282 │   2063.052074
 
-Total leaf‐node count at depth 6: 119,060,324
+Total leaf-node count at depth 6: 119,060,324
 
 Perft Profile (max_depth = 6)
 Depth │ Positions │   Gen Time (s)   │  Move+Recurse Time (s)  │ Total Time (s)
@@ -21,7 +21,7 @@ Depth │ Positions │   Gen Time (s)   │  Move+Recurse Time (s)  │ Total T
     5 │   197,281 │      25.638565 │            1160.834376 │   1186.472941
     6 │ 4,865,609 │     692.843741 │             436.289384 │   1129.133125
 
-Total leaf‐node count at depth 6: 119,060,324
+Total leaf-node count at depth 6: 119,060,324
 
 Perft Profile (max_depth = 6)
 Depth │ Positions │   Gen Time (s)   │  Move+Recurse Time (s)  │ Total Time (s)
@@ -33,7 +33,7 @@ Depth │ Positions │   Gen Time (s)   │  Move+Recurse Time (s)  │ Total T
     5 │   197,281 │        24.698235 │             1115.941965 │   1140.640199
     6 │ 4,865,609 │       664.747960 │              419.665283 │   1084.413244
 
-Total leaf‐node count at depth 6: 119,060,324
+Total leaf-node count at depth 6: 119,060,324
 
 Perft Profile (max_depth = 6)
 Depth │ Positions │   Gen Time (s)   │  Move+Recurse Time (s)  │ Total Time (s)
@@ -45,4 +45,16 @@ Depth │ Positions │   Gen Time (s)   │  Move+Recurse Time (s)  │ Total T
     5 │   197,281 │        18.176931 │              633.515093 │    651.692024
     6 │ 4,865,609 │       436.135361 │              184.693820 │    620.829182
 
-Total leaf‐node count at depth 6: 119,060,324
+Total leaf-node count at depth 6: 119,060,324
+
+Perft Profile (max_depth = 6) after adding Zobrist Hashing, This version does not use the hashing
+Depth │ Positions │   Gen Time (s)   │  Move+Recurse Time (s)  │ Total Time (s)
+──────┼───────────┼──────────────────┼─────────────────────────┼───────────────
+    1 │         1 │         0.000157 │              796.798458 │    796.798615
+    2 │        20 │         0.001858 │              796.796430 │    796.798288
+    3 │       400 │         0.039950 │              796.754829 │    796.794779
+    4 │     8,902 │         0.853136 │              795.864172 │    796.717307
+    5 │   197,281 │        21.410264 │              773.835149 │    795.245413
+    6 │ 4,865,609 │       510.484377 │              247.013098 │    757.497475
+
+Total leaf-node count at depth 6: 119,060,324

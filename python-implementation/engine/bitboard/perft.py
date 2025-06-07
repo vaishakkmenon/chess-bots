@@ -3,6 +3,11 @@ from engine.bitboard.board import Board  # noqa:TC002
 from engine.bitboard.config import RawMove  # noqa: TC002
 from engine.bitboard.generator import generate_legal_moves
 
+from collections import Counter
+
+lookups_by_depth = Counter()
+hits_by_depth = Counter()
+
 
 def perft_count(board: Board, depth: int) -> int:
     """
@@ -42,25 +47,38 @@ def perft_divide(board: Board, depth: int) -> Dict[RawMove, int]:
     return results
 
 
-def perft_hashed(
-    board: Board, depth: int, table: Dict[tuple[int, int], int]
-) -> int:
-    """
-    A transposition-table-enabled perft:
-    table[(zobrist_hash, depth)] = node count
-    """
-    key = (board.zobrist_hash, depth)
-    if key in table:
-        return table[key]
-
+def perft_hashed(board, depth, table, cur_depth):
     if depth == 0:
         return 1
 
+    key = (board.zobrist_key, depth)
+    lookups_by_depth[cur_depth] += 1
+    if key in table:
+        hits_by_depth[cur_depth] += 1
+        return table[key]
+
     total = 0
-    for move in generate_legal_moves(board, board.side_to_move):
+    for move in generate_legal_moves(board):
         board.make_move_raw(move)
-        total += perft_hashed(board, depth - 1, table)
+        total += perft_hashed(board, depth - 1, table, cur_depth + 1)
         board.undo_move_raw()
 
     table[key] = total
+    return total
+
+
+def perft_hashed_root(board: Board, depth: int) -> int:
+    lookups_by_depth.clear()
+    hits_by_depth.clear()
+    table: Dict[tuple[int, int], int] = {}
+    total = perft_hashed(board, depth, table, cur_depth=0)
+
+    print("\nTransposition Table Stats:")
+    for d in sorted(lookups_by_depth):
+        looks = lookups_by_depth[d]
+        hits = hits_by_depth[d]
+        print(
+            f" depth={d:2d}  lookups={looks:7d}  hits={hits:7d}  hit-rate={hits/looks:.1%}"  # noqa: E501
+        )
+
     return total

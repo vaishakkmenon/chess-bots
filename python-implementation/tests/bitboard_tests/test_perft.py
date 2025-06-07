@@ -2,7 +2,7 @@ import pytest
 
 from engine.bitboard.board import Board
 from engine.bitboard.generator import generate_legal_moves
-from engine.bitboard.perft import perft_count, perft_divide
+from engine.bitboard.perft import perft_count, perft_divide, perft_hashed_root
 
 
 def test_perft_depth_zero_is_one():
@@ -41,3 +41,9 @@ def test_perft_divide_consistency_with_depth_two():
     divide2 = perft_divide(b, 2)
     assert sum(divide2.values()) == total2
     assert any(cnt > 1 for cnt in divide2.values())
+
+
+def test_perft_hashed_vs_perft_count():
+    b = Board()
+    assert perft_count(b, 3) == perft_hashed_root(b, 3)
+    assert perft_count(b, 4) == perft_hashed_root(b, 4)
