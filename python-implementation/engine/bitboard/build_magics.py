@@ -204,6 +204,7 @@ def find_magic(
                 return magic, shift  # success!
     raise RuntimeError(f"No magic found for square {sq} within search bounds")
 
+
 # ---------------------------------------------------------------------------
 # Main generator
 # ---------------------------------------------------------------------------

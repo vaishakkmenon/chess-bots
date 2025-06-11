@@ -1,6 +1,7 @@
 # engine/bitboard/board.py
 
-from typing import List, Tuple, Optional
+from typing import List, Optional
+from engine.bitboard.config import RawHistoryEntry  # noqa : TC001
 from engine.bitboard.attack_utils import (
     is_square_attacked as _is_square_attacked,
 )
@@ -56,6 +57,21 @@ castle_map = {
 
 
 class Board:
+
+    bitboards: List[int]
+    white_occ: int
+    black_occ: int
+    all_occ: int
+    ep_square: Optional[int]
+    raw_history: List[RawHistoryEntry]  # Raw history records
+    halfmove_clock: int
+    fullmove_number: int
+    side_to_move: int
+    castling_rights: int
+    square_to_piece: List[Optional[int]]
+    zobrist_key: int
+    zobrist_history: List[int]
+
     def __init__(self):
         # a list of 12 ints, one per piece-type
         self.bitboards = [0] * 12
@@ -69,7 +85,7 @@ class Board:
         self.ep_square: Optional[int] = None
 
         # History of all moves
-        self.raw_history: List[Tuple] = []
+        self.raw_history = []
 
         # Move counts half and full
         self.halfmove_clock = 0  # counts plies since last pawn move or capture
@@ -82,7 +98,7 @@ class Board:
         self.castling_rights: int = 0
 
         # create an empty lookup from 0..63 -> piece‐index or None
-        self.square_to_piece: list[Optional[int]] = [None] * 64
+        self.square_to_piece: List[Optional[int]] = [None] * 64
 
         # Initialize starting positions
         self.init_positions()
@@ -116,7 +132,7 @@ class Board:
             "q",
             "k",  # Black
         ]
-        rows = []
+        rows: List[str] = []
         for rank in range(8, 0, -1):
             row = [str(rank)]
             for file in range(8):
@@ -174,6 +190,14 @@ class Board:
             key ^= ZOBRIST_EP_KEYS[file]
 
         self.zobrist_key = key
+
+    def get_piece_char(self, square: int) -> Optional[str]:
+        """
+        Return the piece character on the given square, or None if empty.
+        E.g. 'N' for a white knight, 'q' for a black queen.
+        """
+        idx = self.square_to_piece[square]
+        return INV_PIECE_MAP[idx] if idx is not None else None
 
     def set_fen(self, fen: str) -> None:
         """
@@ -266,10 +290,10 @@ class Board:
         Serialize current board state into a FEN string.
         """
         # 1) Piece-placement
-        rows = []
+        rows: List[str] = []
         for rank in range(7, -1, -1):
             empty = 0
-            row_s = []
+            row_s: List[str] = []
             for file in range(8):
                 sq = rank * 8 + file
                 idx = self.square_to_piece[sq]
@@ -569,38 +593,57 @@ class Board:
                 self.square_to_piece[56] = BLACK_ROOK
                 self.black_occ |= 1 << 56
 
-        moved_idx = self.square_to_piece[dst]
-        if moved_idx is None:
-            raise ValueError(f"undo_move_raw: no piece found on dst={dst}")
-        self.bitboards[moved_idx] ^= 1 << dst
-        self.square_to_piece[dst] = None
-        if moved_idx < 6:
-            self.white_occ ^= 1 << dst
-        else:
-            self.black_occ ^= 1 << dst
+        # ====== now the real undo of the moved piece ======
 
         if promotion:
-            pawn_idx = WHITE_PAWN if moved_idx < 6 else BLACK_PAWN
+            # 1) clear the promoted piece off dst
+            promo_map = PROMO_MAP_WHITE if piece_idx < 6 else PROMO_MAP_BLACK
+            promo_idx = promo_map[promotion]
+            self.bitboards[promo_idx] ^= 1 << dst
+            self.square_to_piece[dst] = None
+            if promo_idx < 6:
+                self.white_occ ^= 1 << dst
+            else:
+                self.black_occ ^= 1 << dst
+
+            # 2) restore exactly one pawn on src
+            pawn_idx = WHITE_PAWN if piece_idx < 6 else BLACK_PAWN
             self.bitboards[pawn_idx] |= 1 << src
             self.square_to_piece[src] = pawn_idx
             if pawn_idx < 6:
                 self.white_occ |= 1 << src
             else:
                 self.black_occ |= 1 << src
+
         else:
-            self.bitboards[moved_idx] |= 1 << src
-            self.square_to_piece[src] = moved_idx
-            if moved_idx < 6:
+            # normal, non‐promotion undo: move piece_idx from dst back to src
+            self.bitboards[piece_idx] ^= 1 << dst
+            self.square_to_piece[dst] = None
+            if piece_idx < 6:
+                self.white_occ ^= 1 << dst
+            else:
+                self.black_occ ^= 1 << dst
+
+            self.bitboards[piece_idx] |= 1 << src
+            self.square_to_piece[src] = piece_idx
+            if piece_idx < 6:
                 self.white_occ |= 1 << src
             else:
                 self.black_occ |= 1 << src
 
+        # ====== finally, if there was a capture, put it back ======
         if captured_idx is not None:
-            self.bitboards[captured_idx] |= 1 << cap_sq
-            self.square_to_piece[cap_sq] = captured_idx
-            if captured_idx < 6:
-                self.white_occ |= 1 << cap_sq
+            if en_passant:
+                restore_sq = dst - 8 if prev_side == WHITE else dst + 8
             else:
-                self.black_occ |= 1 << cap_sq
+                assert cap_sq is not None
+                restore_sq = cap_sq  # guaranteed non‐None
+            self.bitboards[captured_idx] |= 1 << restore_sq
+            self.square_to_piece[restore_sq] = captured_idx
+            if captured_idx < 6:
+                self.white_occ |= 1 << restore_sq
+            else:
+                self.black_occ |= 1 << restore_sq
 
+        # and rebuild the all‐occupancy
         self.all_occ = self.white_occ | self.black_occ

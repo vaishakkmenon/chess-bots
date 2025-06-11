@@ -5,8 +5,8 @@ from engine.bitboard.generator import generate_legal_moves
 
 from collections import Counter
 
-lookups_by_depth = Counter()
-hits_by_depth = Counter()
+lookups_by_depth: Counter[int] = Counter()
+hits_by_depth: Counter[int] = Counter()
 
 
 def perft_count(board: Board, depth: int) -> int:
@@ -39,7 +39,7 @@ def perft_divide(board: Board, depth: int) -> Dict[RawMove, int]:
     if depth == 0:
         return {}
 
-    results = {}
+    results: Dict[RawMove, int] = {}
     for move in generate_legal_moves(board):
         board.make_move_raw(move)
         results[move] = perft_count(board, depth - 1)
@@ -47,7 +47,9 @@ def perft_divide(board: Board, depth: int) -> Dict[RawMove, int]:
     return results
 
 
-def perft_hashed(board, depth, table, cur_depth):
+def perft_hashed(
+    board: Board, depth: int, table: Dict[tuple[int, int], int], cur_depth: int
+):
     if depth == 0:
         return 1
 

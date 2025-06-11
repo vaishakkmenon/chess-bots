@@ -27,7 +27,7 @@ class Move:
         cas = "cas" if self.castling else ""
         return f"Move({self.src}{cap}->{self.dst}{promo}{ep}{cas})"
 
-    def __eq__(self, other):
+    def __eq__(self, other: object):
         return (
             isinstance(other, Move)
             and self.src == other.src

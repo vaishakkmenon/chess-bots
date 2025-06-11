@@ -1,6 +1,11 @@
-from typing import Optional
+from __future__ import annotations
+from typing import List, Optional, TYPE_CHECKING
 from engine.bitboard.move import Move
-from engine.bitboard.config import RawMove  # noqa: TC002
+
+if TYPE_CHECKING:
+    from engine.bitboard.config import RawMove
+
+# from engine.bitboard.config import RawMove
 
 
 def algebraic_to_index(coord: str) -> int:
@@ -59,10 +64,11 @@ def expand_occupancy(subset_index: int, relevant_mask: int) -> int:
     relevant_mask is set in the result if and only if the
     k-th bit of subset_index is 1.
     """
-    positions = []
+    positions: List[int] = []
     temp = relevant_mask
     while temp:
         bit_sq = pop_lsb(temp)
+        assert bit_sq is not None
         positions.append(bit_sq)
         temp &= temp - 1
 
