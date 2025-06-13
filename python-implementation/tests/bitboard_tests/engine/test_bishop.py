@@ -92,7 +92,6 @@ def test_bishop_open_board_from_d4():
             6,
         ]
     )
-    print(moves)
     got = sorted(m[1] for m in moves)
     assert got == expected_dsts
     assert all(not m[2] for m in moves)
