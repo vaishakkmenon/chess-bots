@@ -6,7 +6,7 @@ from pathlib import Path
 
 def test_uci_smoke():
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[2])
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[3])
     proc = subprocess.Popen(
         [sys.executable, "-m", "engine.bitboard.uci"],
         stdin=subprocess.PIPE,
