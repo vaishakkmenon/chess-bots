@@ -1,5 +1,4 @@
 # .github/workflows/build_status.yml
-
 name: Build Status
 
 on:
@@ -13,9 +12,35 @@ on:
       - "rust-implementation/**"
 
 jobs:
+  # ───────────────────────────────────────────────────────────────────────────────
+  # 1) Detect which parts changed
+  paths-filter:
+    name: Detect changed areas
+    runs-on: ubuntu-latest
+    outputs:
+      python-changed: ${{ steps.filter.outputs.python }}
+      rust-changed: ${{ steps.filter.outputs.rust }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Filter paths
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            python:
+              - 'python-implementation/**'
+            rust:
+              - 'rust-implementation/**'
+
+  # ───────────────────────────────────────────────────────────────────────────────
+  # 2) Python Tests (only if python-implementation/** changed)
   python-tests:
     name: Python 🐍 Tests
     runs-on: ubuntu-latest
+    needs: paths-filter
+    if: needs.paths-filter.outputs.python-changed == 'true'
     strategy:
       matrix:
         python-version: [3.13]
@@ -40,10 +65,13 @@ jobs:
       - name: Run pytest
         run: pytest --maxfail=1 --disable-warnings -q
 
+  # ───────────────────────────────────────────────────────────────────────────────
+  # 3) Rust Tests (only if rust-implementation/** changed)
   rust-tests:
     name: Rust 🦀 Tests
     runs-on: ubuntu-latest
-    needs: python-tests
+    needs: paths-filter
+    if: needs.paths-filter.outputs.rust-changed == 'true'
 
     steps:
       - name: Check out repository
