@@ -1,0 +1,10 @@
+[tool.black]
+line-length = 79
+
+[tool.flake8]
+extend-ignore = []
+enable-extensions = []
+plugins = [
+    "flake8-pyproject",
+    "flake8-type-checking"
+]
