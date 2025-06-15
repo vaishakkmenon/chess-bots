@@ -4,12 +4,12 @@ name: Build Status
 on:
   push:
     paths:
-      - "python-implementation/**"
-      - "rust-implementation/**"
+      - 'python-implementation/**'
+      - 'rust-implementation/**'
   pull_request:
     paths:
-      - "python-implementation/**"
-      - "rust-implementation/**"
+      - 'python-implementation/**'
+      - 'rust-implementation/**'
 
 jobs:
   # ───────────────────────────────────────────────────────────────────────────────
@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       python-changed: ${{ steps.filter.outputs.python }}
-      rust-changed: ${{ steps.filter.outputs.rust }}
+      rust-changed:  ${{ steps.filter.outputs.rust }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -83,13 +83,21 @@ jobs:
           toolchain: stable
 
       - name: "Check formatting: rust-cli"
-        run: cargo fmt -- --check --manifest-path=rust-implementation/rust-cli/Cargo.toml
+        run: |
+          cargo fmt \
+            --manifest-path=rust-implementation/rust-cli/Cargo.toml \
+            -- \
+            --check
 
       - name: "Run tests: rust-cli"
         run: cargo test --manifest-path=rust-implementation/rust-cli/Cargo.toml --verbose
 
       - name: "Check formatting: rust-engine"
-        run: cargo fmt -- --check --manifest-path=rust-implementation/rust-engine/Cargo.toml
+        run: |
+          cargo fmt \
+            --manifest-path=rust-implementation/rust-engine/Cargo.toml \
+            -- \
+            --check
 
       - name: "Run tests: rust-engine"
         run: cargo test --manifest-path=rust-implementation/rust-engine/Cargo.toml --verbose
