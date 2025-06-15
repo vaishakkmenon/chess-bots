@@ -10,6 +10,7 @@ on:
     paths:
       - "python-implementation/**"
       - "rust-implementation/**"
+  workflow_dispatch:
 
 jobs:
   # ───────────────────────────────────────────────────────────────────────────────
