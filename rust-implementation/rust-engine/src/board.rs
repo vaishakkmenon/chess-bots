@@ -99,6 +99,7 @@ impl Board {
     }
     pub fn new() -> Self {
         let mut b = Board::new_empty();
+        // Set up white pieces
         b.white_pawns = WHITE_PAWN_MASK;
         b.white_bishops = WHITE_BISHOP_MASK;
         b.white_knights = WHITE_KNIGHT_MASK;
@@ -106,6 +107,7 @@ impl Board {
         b.white_queens = WHITE_QUEEN_MASK;
         b.white_king = WHITE_KING_MASK;
 
+        // Set up black pieces
         b.black_pawns = BLACK_PAWN_MASK;
         b.black_rooks = BLACK_ROOK_MASK;
         b.black_knights = BLACK_KNIGHT_MASK;
@@ -113,6 +115,7 @@ impl Board {
         b.black_queens = BLACK_QUEEN_MASK;
         b.black_king = BLACK_KING_MASK;
 
+        // Setup side to move and other important information
         b.side_to_move = Color::White;
         b.castling_rights = CASTLE_WK | CASTLE_WQ | CASTLE_BK | CASTLE_BQ;
         b.en_passant = None;
