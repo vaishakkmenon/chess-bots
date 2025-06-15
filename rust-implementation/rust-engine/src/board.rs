@@ -29,6 +29,15 @@ const BLACK_QUEEN_MASK: u64 = 1 << 59; // 0x0800_0000_0000_0000
 // King on e8 (bit 60)
 const BLACK_KING_MASK: u64 = 1 << 60; // 0x1000_0000_0000_0000
 
+// Castling White Kingside
+const CASTLE_WK: u8 = 0b0001;
+// Castling White Queenside
+const CASTLE_WQ: u8 = 0b0010;
+// Castling Black Kingside
+const CASTLE_BK: u8 = 0b0100;
+// Castling Black Queenside
+const CASTLE_BQ: u8 = 0b1000;
+
 /// Which side is to move.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Color {
@@ -39,6 +48,7 @@ pub enum Color {
 /// Core board representation using bitboards.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Board {
+    /// White Pieces
     pub white_pawns: u64,
     pub white_knights: u64,
     pub white_bishops: u64,
@@ -46,12 +56,22 @@ pub struct Board {
     pub white_queens: u64,
     pub white_king: u64,
     pub black_pawns: u64,
+    /// Black Pieces
     pub black_knights: u64,
     pub black_bishops: u64,
     pub black_rooks: u64,
     pub black_queens: u64,
     pub black_king: u64,
+    /// White or Black to move
     pub side_to_move: Color,
+    /// Castling rights: bit 0=White kingside, 1=White queenside, 2=Black kingside, 3=Black queenside
+    pub castling_rights: u8,
+    /// En passant target square, as 0–63, or None if not available.
+    pub en_passant: Option<u8>,
+    /// Halfmove clock (for fifty-move draw rule).
+    pub halfmove_clock: u32,
+    /// Fullmove number (starts at 1 and increments after Black’s move).
+    pub fullmove_number: u32,
 }
 
 impl Board {
@@ -71,6 +91,10 @@ impl Board {
             black_queens: 0,
             black_king: 0,
             side_to_move: Color::White,
+            castling_rights: 0,
+            en_passant: None,
+            halfmove_clock: 0,
+            fullmove_number: 1,
         }
     }
     pub fn new() -> Self {
@@ -88,6 +112,12 @@ impl Board {
         b.black_bishops = BLACK_BISHOP_MASK;
         b.black_queens = BLACK_QUEEN_MASK;
         b.black_king = BLACK_KING_MASK;
+
+        b.side_to_move = Color::White;
+        b.castling_rights = CASTLE_WK | CASTLE_WQ | CASTLE_BK | CASTLE_BQ;
+        b.en_passant = None;
+        b.halfmove_clock = 0;
+        b.fullmove_number = 1;
         return b;
     }
     pub fn occupied(&self) -> u64 {
@@ -103,6 +133,9 @@ impl Board {
             | self.black_rooks
             | self.black_queens
             | self.black_king
+    }
+    pub fn has_castling(&self, flag: u8) -> bool {
+        self.castling_rights & flag != 0
     }
 }
 
@@ -120,11 +153,48 @@ mod tests {
     #[test]
     fn test_new_empty_board() {
         let b = Board::new_empty();
-        assert_eq!(b.white_pawns, 0);
-        assert_eq!(b.black_pawns, 0);
-        match b.side_to_move {
-            Color::White => (),
-            Color::Black => panic!("Expected White to move on a new empty board"),
+
+        // All piece bitboards should be zero:
+        assert_empty_board(&b);
+
+        // Move‐clock fields:
+        assert_eq!(b.halfmove_clock, 0);
+        assert_eq!(b.fullmove_number, 1);
+
+        // Side to move:
+        assert!(
+            matches!(b.side_to_move, Color::White),
+            "Expected White to move on a new empty board"
+        );
+
+        // Castling rights & en passant:
+        assert_empty_castling(&b);
+        assert!(b.en_passant.is_none());
+    }
+
+    // Helper in tests:
+    fn assert_empty_board(b: &Board) {
+        for &bb in &[
+            b.white_pawns,
+            b.white_knights,
+            b.white_bishops,
+            b.white_rooks,
+            b.white_queens,
+            b.white_king,
+            b.black_pawns,
+            b.black_knights,
+            b.black_bishops,
+            b.black_rooks,
+            b.black_queens,
+            b.black_king,
+        ] {
+            assert_eq!(bb, 0);
+        }
+    }
+
+    fn assert_empty_castling(b: &Board) {
+        for &bb in &[CASTLE_WK, CASTLE_WQ, CASTLE_BK, CASTLE_BQ] {
+            assert_eq!(b.has_castling(bb), false);
         }
     }
 
@@ -192,5 +262,52 @@ mod tests {
 
         // And ensure the overall occupied mask covers both sides
         assert_eq!(b.occupied(), white_expected | black_expected);
+    }
+
+    #[test]
+    fn test_new_board_castling() {
+        let b = Board::new();
+        assert!(b.has_castling(CASTLE_WK));
+        assert!(b.has_castling(CASTLE_WQ));
+        assert!(b.has_castling(CASTLE_BK));
+        assert!(b.has_castling(CASTLE_BQ));
+    }
+
+    #[test]
+    fn test_new_board_defaults() {
+        let b = Board::new();
+
+        // Move‐clock fields:
+        assert_eq!(b.halfmove_clock, 0, "Starting halfmove clock should be 0");
+        assert_eq!(b.fullmove_number, 1, "Starting fullmove number should be 1");
+
+        // Side to move & en passant:
+        assert!(
+            matches!(b.side_to_move, Color::White),
+            "Expected White to move on the standard starting board"
+        );
+        assert!(
+            b.en_passant.is_none(),
+            "En passant square should be None at start"
+        );
+
+        // Occupied mask covers all pieces:
+        let expected = WHITE_PAWN_MASK
+            | WHITE_ROOK_MASK
+            | WHITE_KNIGHT_MASK
+            | WHITE_BISHOP_MASK
+            | WHITE_QUEEN_MASK
+            | WHITE_KING_MASK
+            | BLACK_PAWN_MASK
+            | BLACK_ROOK_MASK
+            | BLACK_KNIGHT_MASK
+            | BLACK_BISHOP_MASK
+            | BLACK_QUEEN_MASK
+            | BLACK_KING_MASK;
+        assert_eq!(
+            b.occupied(),
+            expected,
+            "occupied() should match all starting pieces"
+        );
     }
 }
