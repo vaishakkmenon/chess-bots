@@ -85,12 +85,6 @@ jobs:
       - name: Install rustfmt
         run: rustup component add rustfmt
 
-      - name: Debug workspace layout
-        run: |
-          echo "GITHUB_WORKSPACE = $GITHUB_WORKSPACE"
-          pwd
-          ls -R .
-
       - name: "Check formatting: rust-cli"
         working-directory: rust-implementation/rust-cli
         run: cargo fmt -- --check
