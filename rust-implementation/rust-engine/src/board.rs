@@ -210,6 +210,23 @@ impl Board {
         }
         return fen;
     }
+
+    // pub fn castling_fen(&self) -> String {}
+    // pub fn en_passant_fen_fen(&self) -> String {}
+
+    pub fn to_fen(&self) -> String {
+        format!(
+            "{} {} {} {}",
+            self.placement_fen(),
+            if self.side_to_move == Color::White {
+                'w'
+            } else {
+                'b'
+            },
+            self.halfmove_clock,
+            self.fullmove_number,
+        )
+    }
 }
 
 /// An all-zero board (no pieces) with White to move.
@@ -381,6 +398,14 @@ mod tests {
             b.occupied(),
             expected,
             "occupied() should match all starting pieces"
+        );
+    }
+
+    #[test]
+    fn test_starting_placement() {
+        assert_eq!(
+            Board::new().placement_fen(),
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
         );
     }
 }
