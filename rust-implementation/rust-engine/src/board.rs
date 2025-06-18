@@ -211,18 +211,40 @@ impl Board {
         return fen;
     }
 
-    // pub fn castling_fen(&self) -> String {}
+    pub fn castling_fen(&self) -> String {
+        let mut s = String::new();
+
+        if self.has_castling(CASTLE_WK) {
+            s.push('K');
+        }
+        if self.has_castling(CASTLE_WQ) {
+            s.push('Q');
+        }
+        if self.has_castling(CASTLE_BK) {
+            s.push('k');
+        }
+        if self.has_castling(CASTLE_BQ) {
+            s.push('q');
+        }
+
+        if s.is_empty() {
+            s.push('-');
+        }
+
+        return s;
+    }
     // pub fn en_passant_fen_fen(&self) -> String {}
 
     pub fn to_fen(&self) -> String {
         format!(
-            "{} {} {} {}",
+            "{} {} {} {} {}",
             self.placement_fen(),
             if self.side_to_move == Color::White {
                 'w'
             } else {
                 'b'
             },
+            self.castling_fen(),
             self.halfmove_clock,
             self.fullmove_number,
         )
@@ -407,5 +429,26 @@ mod tests {
             Board::new().placement_fen(),
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
         );
+    }
+
+    #[test]
+    fn test_castling_fen() {
+        let mut b = Board::new_empty();
+        // no rights ⇒ "-"
+        assert_eq!(b.castling_fen(), "-");
+
+        // grant each right in isolation
+        b.castling_rights = CASTLE_WK;
+        assert_eq!(b.castling_fen(), "K");
+        b.castling_rights = CASTLE_WQ;
+        assert_eq!(b.castling_fen(), "Q");
+        b.castling_rights = CASTLE_BK;
+        assert_eq!(b.castling_fen(), "k");
+        b.castling_rights = CASTLE_BQ;
+        assert_eq!(b.castling_fen(), "q");
+
+        // starting full rights
+        b = Board::new();
+        assert_eq!(b.castling_fen(), "KQkq");
     }
 }
