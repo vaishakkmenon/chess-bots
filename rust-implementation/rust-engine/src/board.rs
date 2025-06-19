@@ -233,11 +233,17 @@ impl Board {
 
         return s;
     }
-    // pub fn en_passant_fen_fen(&self) -> String {}
+
+    pub fn en_passant_fen(&self) -> String {
+        match self.en_passant {
+            Some(sq) => sq.to_string(),
+            None => "-".to_string(),
+        }
+    }
 
     pub fn to_fen(&self) -> String {
         format!(
-            "{} {} {} {} {}",
+            "{} {} {} {} {} {}",
             self.placement_fen(),
             if self.side_to_move == Color::White {
                 'w'
@@ -245,6 +251,7 @@ impl Board {
                 'b'
             },
             self.castling_fen(),
+            self.en_passant_fen(),
             self.halfmove_clock,
             self.fullmove_number,
         )
@@ -450,5 +457,36 @@ mod tests {
         // starting full rights
         b = Board::new();
         assert_eq!(b.castling_fen(), "KQkq");
+    }
+
+    #[test]
+    fn test_en_passant_fen_helper() {
+        let mut b = Board::new_empty();
+        // default None → "-"
+        assert_eq!(b.en_passant_fen(), "-");
+
+        // set en_passant to e3
+        let sq_e3 = "e3".parse::<Square>().unwrap();
+        b.en_passant = Some(sq_e3);
+        assert_eq!(b.en_passant_fen(), "e3");
+
+        // set en_passant to h6
+        let sq_h6 = "h6".parse::<Square>().unwrap();
+        b.en_passant = Some(sq_h6);
+        assert_eq!(b.en_passant_fen(), "h6");
+    }
+
+    #[test]
+    fn test_to_fen_starting_position() {
+        // The full FEN for a fresh new board:
+        let expected = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        assert_eq!(Board::new().to_fen(), expected);
+    }
+
+    #[test]
+    fn test_to_fen_empty_board() {
+        // An empty board (all 8s), White to move, no castling, no en-passant:
+        let expected = "8/8/8/8/8/8/8/8 w - - 0 1";
+        assert_eq!(Board::new_empty().to_fen(), expected);
     }
 }
