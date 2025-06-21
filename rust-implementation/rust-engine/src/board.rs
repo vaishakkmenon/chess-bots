@@ -339,6 +339,28 @@ impl Board {
         };
         Ok(())
     }
+
+    /// Parse the castling-rights field (e.g. "KQkq" or "-") and update `self.castling_rights`.
+    fn parse_castling_rights(&mut self, field: &str) -> Result<(), String> {
+        self.castling_rights = 0;
+
+        if field == "-" {
+            return Ok(());
+        }
+
+        for c in field.chars() {
+            match c {
+                'K' => self.castling_rights |= CASTLE_WK,
+                'Q' => self.castling_rights |= CASTLE_WQ,
+                'k' => self.castling_rights |= CASTLE_BK,
+                'q' => self.castling_rights |= CASTLE_BQ,
+                _ => {
+                    return Err(format!("Invalid castling-rights character `{}`", c));
+                }
+            }
+        }
+        return Ok(());
+    }
 }
 
 /// An all-zero board (no pieces) with White to move.
@@ -622,5 +644,44 @@ mod tests {
 
         let err = b.parse_active_color("x").unwrap_err();
         assert!(err.contains("Invalid active-color"));
+    }
+
+    #[test]
+    fn test_parse_castling_rights_none() {
+        let mut b = Board::new_empty();
+        b.parse_castling_rights("-").unwrap();
+        assert_eq!(b.castling_rights, 0);
+    }
+
+    #[test]
+    fn test_parse_castling_rights_individual() {
+        let mut b = Board::new_empty();
+
+        b.parse_castling_rights("K").unwrap();
+        assert_eq!(b.castling_rights, CASTLE_WK);
+
+        b.parse_castling_rights("Q").unwrap();
+        assert_eq!(b.castling_rights, CASTLE_WQ);
+
+        b.parse_castling_rights("k").unwrap();
+        assert_eq!(b.castling_rights, CASTLE_BK);
+
+        b.parse_castling_rights("q").unwrap();
+        assert_eq!(b.castling_rights, CASTLE_BQ);
+    }
+
+    #[test]
+    fn test_parse_castling_rights_all() {
+        let mut b = Board::new_empty();
+        b.parse_castling_rights("KQkq").unwrap();
+        let expected = CASTLE_WK | CASTLE_WQ | CASTLE_BK | CASTLE_BQ;
+        assert_eq!(b.castling_rights, expected);
+    }
+
+    #[test]
+    fn test_parse_castling_rights_invalid() {
+        let mut b = Board::new_empty();
+        let err = b.parse_castling_rights("KX").unwrap_err();
+        assert!(err.contains("Invalid castling-rights character"));
     }
 }
