@@ -256,6 +256,89 @@ impl Board {
             self.fullmove_number,
         )
     }
+
+    /// Split into six fields, validate count
+    fn split_fen(fen: &str) -> Result<(&str, &str, &str, &str, &str, &str), String> {
+        let p: Vec<&str> = fen.split_whitespace().collect();
+        if p.len() != 6 {
+            return Err(format!("Expected 6 FEN fields, found {}", p.len()));
+        }
+        Ok((p[0], p[1], p[2], p[3], p[4], p[5]))
+    }
+
+    fn parse_placement(&mut self, placement: &str) -> Result<(), String> {
+        *self = Board::new_empty(); // reset the board
+        let ranks: Vec<&str> = placement.split('/').collect();
+        if ranks.len() != 8 {
+            return Err(format!("Expected 8 ranks, got {}", ranks.len()));
+        }
+        for (i, &rank_str) in ranks.iter().enumerate() {
+            let rank = 7 - i;
+            self.parse_rank(rank, rank_str)?; // call the method on `self`
+        }
+        Ok(())
+    }
+
+    fn parse_rank(&mut self, rank: usize, rank_str: &str) -> Result<(), String> {
+        let mut file = 0u8;
+        for ch in rank_str.chars() {
+            if file >= 8 {
+                return Err(format!(
+                    "Too many squares on rank {}: {}",
+                    8 - rank,
+                    rank_str
+                ));
+            }
+            if let Some(skip) = ch.to_digit(10) {
+                // Digit: skip that many empty files
+                file = file
+                    .checked_add(skip as u8)
+                    .ok_or_else(|| format!("Invalid skip {} on rank {}", skip, rank))?;
+            } else {
+                // Letter: set a piece at (rank, file)
+                let idx = rank * 8 + file as usize;
+                self.set_piece_at(ch, idx)?;
+                file += 1;
+            }
+        }
+        if file != 8 {
+            return Err(format!(
+                "Not enough squares on rank {}: {}",
+                8 - rank,
+                rank_str
+            ));
+        }
+        Ok(())
+    }
+
+    fn set_piece_at(&mut self, ch: char, idx: usize) -> Result<(), String> {
+        let mask = 1u64 << idx;
+        match ch {
+            'P' => self.white_pawns |= mask,
+            'N' => self.white_knights |= mask,
+            'B' => self.white_bishops |= mask,
+            'R' => self.white_rooks |= mask,
+            'Q' => self.white_queens |= mask,
+            'K' => self.white_king |= mask,
+            'p' => self.black_pawns |= mask,
+            'n' => self.black_knights |= mask,
+            'b' => self.black_bishops |= mask,
+            'r' => self.black_rooks |= mask,
+            'q' => self.black_queens |= mask,
+            'k' => self.black_king |= mask,
+            _ => return Err(format!("Invalid piece char '{}'", ch)),
+        }
+        Ok(())
+    }
+
+    fn parse_active_color(&mut self, field: &str) -> Result<(), String> {
+        self.side_to_move = match field {
+            "w" => Color::White,
+            "b" => Color::Black,
+            _ => return Err(format!("Invalid active-color in FEN: `{}`", field)),
+        };
+        Ok(())
+    }
 }
 
 /// An all-zero board (no pieces) with White to move.
@@ -488,5 +571,56 @@ mod tests {
         // An empty board (all 8s), White to move, no castling, no en-passant:
         let expected = "8/8/8/8/8/8/8/8 w - - 0 1";
         assert_eq!(Board::new_empty().to_fen(), expected);
+    }
+
+    #[test]
+    fn test_split_fen_valid() {
+        // Exactly six fields
+        let s = "a b c d e f";
+        let parts = Board::split_fen(s).expect("should split");
+        assert_eq!(parts, ("a", "b", "c", "d", "e", "f"));
+    }
+
+    #[test]
+    fn test_split_fen_invalid() {
+        // Too few fields
+        let err = Board::split_fen("only five fields ok?").unwrap_err();
+        assert!(err.contains("Expected 6 FEN fields"));
+    }
+
+    #[test]
+    fn test_parse_placement_empty() {
+        let mut b = Board::new_empty();
+        // eight empty ranks
+        let placement = "8/8/8/8/8/8/8/8";
+        b.parse_placement(placement).unwrap();
+        // No pieces ⇒ occupied() == 0, and placement_fen round-trips
+        assert_eq!(b.occupied(), 0);
+        assert_eq!(b.placement_fen(), placement);
+    }
+
+    #[test]
+    fn test_parse_placement_starting() {
+        let mut b = Board::new_empty();
+        let placement = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+        b.parse_placement(placement).unwrap();
+        // Check a couple of bitboards:
+        assert_eq!(b.white_pawns, WHITE_PAWN_MASK);
+        assert_eq!(b.black_rooks, BLACK_ROOK_MASK);
+        // And ensure placement_fen reproduces it
+        assert_eq!(b.placement_fen(), placement);
+    }
+
+    #[test]
+    fn test_parse_active_color() {
+        let mut b = Board::new_empty();
+        b.parse_active_color("w").unwrap();
+        assert_eq!(b.side_to_move, Color::White);
+
+        b.parse_active_color("b").unwrap();
+        assert_eq!(b.side_to_move, Color::Black);
+
+        let err = b.parse_active_color("x").unwrap_err();
+        assert!(err.contains("Invalid active-color"));
     }
 }
