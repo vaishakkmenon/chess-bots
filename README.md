@@ -4,7 +4,6 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](#)  
 [![Python](https://img.shields.io/badge/python-3.13%2B-blue.svg)](#)  
 [![Rust](https://img.shields.io/badge/rust-1.60%2B-orange.svg)](#)  
-![Lines of Code](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.codetabs.com%2Fv1%2Floc%2F%3Fgithub%3Dvaishakkmenon%2Fchess-bots&label=LOC&query=%24%5B6%5D.linesOfCode&color=blue)  
 
 
 A step-by-step blueprint for building a high-performance chess engine—from a native Python implementation all the way to a Rust-powered, neural-enhanced AlphaZero-style system.
