@@ -361,6 +361,17 @@ impl Board {
         }
         return Ok(());
     }
+    fn parse_en_passant(&mut self, field: &str) -> Result<(), String> {
+        self.en_passant = if field == "-" {
+            None
+        } else {
+            let sq = field
+                .parse::<Square>()
+                .map_err(|e| format!("Invalid en-passant square `{}`: {}", field, e))?;
+            Some(sq)
+        };
+        Ok(())
+    }
 }
 
 /// An all-zero board (no pieces) with White to move.
@@ -683,5 +694,30 @@ mod tests {
         let mut b = Board::new_empty();
         let err = b.parse_castling_rights("KX").unwrap_err();
         assert!(err.contains("Invalid castling-rights character"));
+    }
+
+    #[test]
+    fn test_parse_en_passant_none() {
+        let mut b = Board::new_empty();
+        b.parse_en_passant("-").unwrap();
+        assert!(b.en_passant.is_none());
+    }
+
+    #[test]
+    fn test_parse_en_passant_valid() {
+        let mut b = Board::new_empty();
+
+        b.parse_en_passant("a6").unwrap();
+        assert_eq!(b.en_passant, Some("a6".parse::<Square>().unwrap()));
+
+        b.parse_en_passant("h3").unwrap();
+        assert_eq!(b.en_passant, Some("h3".parse::<Square>().unwrap()));
+    }
+
+    #[test]
+    fn test_parse_en_passant_invalid() {
+        let mut b = Board::new_empty();
+        let err = b.parse_en_passant("z9").unwrap_err();
+        assert!(err.contains("Invalid en-passant square"));
     }
 }
