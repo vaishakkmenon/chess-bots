@@ -94,7 +94,7 @@ pub fn knight_attacks(square: u8) -> u64 {
         (-1, -2),
     ];
 
-    for (df, dr) in deltas {
+    for (dr, df) in deltas {
         let r = rank as i8 + dr;
         let f = file as i8 + df;
         if (0..8).contains(&r) && (0..8).contains(&f) {
@@ -108,6 +108,13 @@ pub fn knight_attacks(square: u8) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::{KNIGHT_ATTACKS, knight_attacks};
+
+    #[test]
+    fn dump_knight_attacks() {
+        for sq in 0..64 {
+            println!("0x{:016X}, // {}", knight_attacks(sq), sq);
+        }
+    }
 
     fn assert_attacks(square: u8, expected: u64) {
         let generated = KNIGHT_ATTACKS[square as usize];
