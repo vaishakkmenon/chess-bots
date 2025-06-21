@@ -85,7 +85,7 @@ pub fn king_attacks(square: u8) -> u64 {
             }
         }
     }
-    attacks
+    return attacks;
 }
 
 #[cfg(test)]
