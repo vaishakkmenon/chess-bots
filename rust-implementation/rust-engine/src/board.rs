@@ -47,6 +47,17 @@ pub enum Color {
     Black,
 }
 
+/// Piece enum to hold all types of pieces
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Piece {
+    Pawn,
+    Knight,
+    Bishop,
+    Rook,
+    Queen,
+    King,
+}
+
 /// Core board representation using bitboards.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Board {
