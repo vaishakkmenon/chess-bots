@@ -1,4 +1,4 @@
-use crate::board::{Color, Piece};
+use crate::board::{Board, Color, Piece};
 use crate::moves::{king, knight, pawn};
 
 /// Returns a bitboard showing all the squares that *piece* could attack from *square*
@@ -11,6 +11,18 @@ pub fn attacks_from(piece: Piece, color: Color, square: u8) -> u64 {
         _ => 0,
     }
 }
+
+// pub fn in_check(board: &Board, color: Color) -> bool {
+//     let king_bb = if color == Color::White {
+//         board.white_king
+//     } else {
+//         board.black_king
+//     };
+
+//     let king_sq: u8 = king_bb.trailing_zeros() as u8;
+
+//     true
+// }
 
 #[cfg(test)]
 mod tests {
