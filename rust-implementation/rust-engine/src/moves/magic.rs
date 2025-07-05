@@ -76,10 +76,35 @@ pub fn bishop_occupancy_mask(square: usize) -> u64 {
     return mask;
 }
 
+pub fn generate_rook_blockers(square: usize) -> Vec<u64> {
+    let mask = rook_occupancy_mask(square);
+    let mut configs = Vec::new();
+
+    enumerate_subsets(mask, |subset| {
+        configs.push(subset);
+    });
+
+    return configs;
+}
+
+pub fn generate_bishop_blockers(square: usize) -> Vec<u64> {
+    let mask = bishop_occupancy_mask(square);
+    let mut configs = Vec::new();
+
+    enumerate_subsets(mask, |subset| {
+        configs.push(subset);
+    });
+
+    return configs;
+}
+
 #[cfg(test)]
 mod tests {
 
-    use super::{bishop_occupancy_mask, rook_occupancy_mask};
+    use super::{
+        bishop_occupancy_mask, generate_bishop_blockers, generate_rook_blockers,
+        rook_occupancy_mask,
+    };
 
     fn print_bitboard(mask: u64) {
         for rank in (0..8).rev() {
@@ -108,5 +133,27 @@ mod tests {
         let d4 = 3 + 3 * 8; // square 27
         let mask = bishop_occupancy_mask(d4);
         print_bitboard(mask);
+    }
+
+    #[test]
+    fn test_rook_blockers_d4() {
+        let d4 = 3 + 3 * 8;
+        let configs = generate_rook_blockers(d4);
+        println!("Total configs: {}", configs.len());
+        // for (i, b) in configs.iter().enumerate() {
+        //     println!("Config {}:", i);
+        //     print_bitboard(*b);
+        // }
+    }
+
+    #[test]
+    fn test_bishop_blockers_d4() {
+        let d4 = 3 + 3 * 8;
+        let configs = generate_bishop_blockers(d4);
+        println!("Total configs: {}", configs.len());
+        // for (i, b) in configs.iter().enumerate() {
+        //     println!("Config {}:", i);
+        //     print_bitboard(*b);
+        // }
     }
 }
