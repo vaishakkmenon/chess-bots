@@ -1,7 +1,7 @@
 use rust_engine::moves::magic::{
-    bishop_attacks_per_square, bishop_occupancy_mask, generate_bishop_blockers,
+    bishop_attacks_per_square, bishop_vision_mask, generate_bishop_blockers,
     generate_rook_blockers, precompute_bishop_attacks, precompute_rook_attacks,
-    rook_attacks_per_square, rook_occupancy_mask,
+    rook_attacks_per_square, rook_vision_mask,
 };
 
 /// Helper: Pretty-print a bitboard
@@ -21,34 +21,34 @@ fn print_bitboard(mask: u64) {
 }
 
 #[test]
-fn test_rook_occupancy_d4() {
+fn test_rook_vision_d4() {
     let d4 = 3 + 3 * 8;
-    let mask = rook_occupancy_mask(d4);
-    println!("Rook occupancy mask d4:");
+    let mask = rook_vision_mask(d4);
+    println!("Rook vision mask d4:");
     print_bitboard(mask);
 }
 
 #[test]
-fn test_rook_occupancy_a1() {
+fn test_rook_vision_a1() {
     let a1 = 0;
-    let mask = rook_occupancy_mask(a1);
-    println!("Rook occupancy mask a1:");
+    let mask = rook_vision_mask(a1);
+    println!("Rook vision mask a1:");
     print_bitboard(mask);
 }
 
 #[test]
-fn test_bishop_occupancy_d4() {
+fn test_bishop_vision_d4() {
     let d4 = 3 + 3 * 8;
-    let mask = bishop_occupancy_mask(d4);
-    println!("Bishop occupancy mask d4:");
+    let mask = bishop_vision_mask(d4);
+    println!("Bishop vision mask d4:");
     print_bitboard(mask);
 }
 
 #[test]
-fn test_bishop_occupancy_c1() {
+fn test_bishop_vision_c1() {
     let c1 = 2;
-    let mask = bishop_occupancy_mask(c1);
-    println!("Bishop occupancy mask c1:");
+    let mask = bishop_vision_mask(c1);
+    println!("Bishop vision mask c1:");
     print_bitboard(mask);
 }
 
@@ -176,7 +176,7 @@ fn test_rook_attack_table_counts() {
     let table = precompute_rook_attacks();
 
     for square in 0..64 {
-        let mask = rook_occupancy_mask(square);
+        let mask = rook_vision_mask(square);
         let bit_count = mask.count_ones();
         let expected_len = 1 << bit_count;
 
@@ -196,7 +196,7 @@ fn test_bishop_attack_table_counts() {
     let table = precompute_bishop_attacks();
 
     for square in 0..64 {
-        let mask = bishop_occupancy_mask(square);
+        let mask = bishop_vision_mask(square);
         let bit_count = mask.count_ones();
         let expected_len = 1 << bit_count;
 

@@ -1,6 +1,6 @@
 use crate::utils::enumerate_subsets;
 
-pub fn rook_occupancy_mask(square: usize) -> u64 {
+pub fn rook_vision_mask(square: usize) -> u64 {
     let rank = square / 8;
     let file = square % 8;
     let mut mask = 0u64;
@@ -28,7 +28,7 @@ pub fn rook_occupancy_mask(square: usize) -> u64 {
     return mask;
 }
 
-pub fn bishop_occupancy_mask(square: usize) -> u64 {
+pub fn bishop_vision_mask(square: usize) -> u64 {
     let rank = square / 8;
     let file = square % 8;
     let mut mask = 0u64;
@@ -81,7 +81,7 @@ pub fn bishop_occupancy_mask(square: usize) -> u64 {
 }
 
 pub fn generate_rook_blockers(square: usize) -> Vec<u64> {
-    let mask = rook_occupancy_mask(square);
+    let mask = rook_vision_mask(square);
     let mut configs = Vec::new();
 
     enumerate_subsets(mask, |subset| {
@@ -92,7 +92,7 @@ pub fn generate_rook_blockers(square: usize) -> Vec<u64> {
 }
 
 pub fn generate_bishop_blockers(square: usize) -> Vec<u64> {
-    let mask = bishop_occupancy_mask(square);
+    let mask = bishop_vision_mask(square);
     let mut configs = Vec::new();
 
     enumerate_subsets(mask, |subset| {
@@ -239,7 +239,7 @@ pub fn precompute_rook_attacks() -> Vec<Vec<u64>> {
     let mut table = Vec::with_capacity(64);
 
     for square in 0..64 {
-        let mask = rook_occupancy_mask(square);
+        let mask = rook_vision_mask(square);
 
         let mut subsets = Vec::new();
         enumerate_subsets(mask, |subset| {
@@ -263,7 +263,7 @@ pub fn precompute_bishop_attacks() -> Vec<Vec<u64>> {
     let mut table = Vec::with_capacity(64);
 
     for square in 0..64 {
-        let mask = bishop_occupancy_mask(square);
+        let mask = bishop_vision_mask(square);
 
         let mut subsets = Vec::new();
         enumerate_subsets(mask, |subset| {
