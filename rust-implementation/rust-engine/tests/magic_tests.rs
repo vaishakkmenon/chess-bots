@@ -1,6 +1,7 @@
 use rust_engine::moves::magic::{
     bishop_attacks_per_square, bishop_occupancy_mask, generate_bishop_blockers,
-    generate_rook_blockers, rook_attacks_per_square, rook_occupancy_mask,
+    generate_rook_blockers, precompute_bishop_attacks, precompute_rook_attacks,
+    rook_attacks_per_square, rook_occupancy_mask,
 };
 
 /// Helper: Pretty-print a bitboard
@@ -138,8 +139,8 @@ fn test_bishop_blocker_count_c1() {
 fn test_rook_attacks_blockers_first_square() {
     let d4 = 3 + 3 * 8;
 
-    let blocker_north = ((4) * 8) + 3; // d5
-    let blocker_south = ((2) * 8) + 3; // d3
+    let blocker_north = (4 * 8) + 3; // d5
+    let blocker_south = (2 * 8) + 3; // d3
     let blocker_east = (3 * 8) + 4; // e4
     let blocker_west = (3 * 8) + 2; // c4
 
@@ -157,10 +158,10 @@ fn test_rook_attacks_blockers_first_square() {
 fn test_bishop_attacks_blockers_first_square() {
     let d4 = 3 + 3 * 8;
 
-    let blocker_ne = ((4) * 8) + 4; // e5
-    let blocker_nw = ((4) * 8) + 2; // c5
-    let blocker_se = ((2) * 8) + 4; // e3
-    let blocker_sw = ((2) * 8) + 2; // c3
+    let blocker_ne = (4 * 8) + 4; // e5
+    let blocker_nw = (4 * 8) + 2; // c5
+    let blocker_se = (2 * 8) + 4; // e3
+    let blocker_sw = (2 * 8) + 2; // c3
 
     let blockers =
         (1u64 << blocker_ne) | (1u64 << blocker_nw) | (1u64 << blocker_se) | (1u64 << blocker_sw);
@@ -168,4 +169,44 @@ fn test_bishop_attacks_blockers_first_square() {
     let attacks = bishop_attacks_per_square(d4, blockers);
     println!("Bishop attacks with blockers in first square each diagonal:");
     print_bitboard(attacks);
+}
+
+#[test]
+fn test_rook_attack_table_counts() {
+    let table = precompute_rook_attacks();
+
+    for square in 0..64 {
+        let mask = rook_occupancy_mask(square);
+        let bit_count = mask.count_ones();
+        let expected_len = 1 << bit_count;
+
+        assert_eq!(
+            table[square].len(),
+            expected_len as usize,
+            "Square {}: expected {} entries, got {}",
+            square,
+            expected_len,
+            table[square].len()
+        );
+    }
+}
+
+#[test]
+fn test_bishop_attack_table_counts() {
+    let table = precompute_bishop_attacks();
+
+    for square in 0..64 {
+        let mask = bishop_occupancy_mask(square);
+        let bit_count = mask.count_ones();
+        let expected_len = 1 << bit_count;
+
+        assert_eq!(
+            table[square].len(),
+            expected_len as usize,
+            "Square {}: expected {} entries, got {}",
+            square,
+            expected_len,
+            table[square].len()
+        );
+    }
 }
