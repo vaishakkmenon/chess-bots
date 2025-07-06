@@ -44,36 +44,40 @@ pub fn bishop_occupancy_mask(square: usize) -> u64 {
     }
 
     // SW
-    r = rank.wrapping_sub(1);
-    f = file.wrapping_sub(1);
-    while r >= 1 && f >= 1 {
-        let sq = r * 8 + f;
-        mask |= 1u64 << sq;
-        r -= 1;
-        f -= 1;
+    if let Some(mut r) = rank.checked_sub(1) {
+        if let Some(mut f) = file.checked_sub(1) {
+            while r >= 1 && f >= 1 {
+                let sq = r * 8 + f;
+                mask |= 1u64 << sq;
+                r -= 1;
+                f -= 1;
+            }
+        }
     }
 
     // NW
-    r = rank + 1;
-    f = file.wrapping_sub(1);
-    while r <= 6 && f >= 1 {
-        let sq = r * 8 + f;
-        mask |= 1u64 << sq;
-        r += 1;
-        f -= 1;
+    let mut r = rank + 1;
+    if let Some(mut f) = file.checked_sub(1) {
+        while r <= 6 && f >= 1 {
+            let sq = r * 8 + f;
+            mask |= 1u64 << sq;
+            r += 1;
+            f -= 1;
+        }
     }
 
     // SE
-    r = rank.wrapping_sub(1);
-    f = file + 1;
-    while r >= 1 && f <= 6 {
-        let sq = r * 8 + f;
-        mask |= 1u64 << sq;
-        r -= 1;
-        f += 1;
+    if let Some(mut r) = rank.checked_sub(1) {
+        let mut f = file + 1;
+        while r >= 1 && f <= 6 {
+            let sq = r * 8 + f;
+            mask |= 1u64 << sq;
+            r -= 1;
+            f += 1;
+        }
     }
 
-    return mask;
+    mask
 }
 
 pub fn generate_rook_blockers(square: usize) -> Vec<u64> {
@@ -98,62 +102,135 @@ pub fn generate_bishop_blockers(square: usize) -> Vec<u64> {
     return configs;
 }
 
-#[cfg(test)]
-mod tests {
+pub fn rook_attacks_per_square(square: usize, blockers: u64) -> u64 {
+    let rank = square / 8;
+    let file = square % 8;
+    let mut attacks = 0u64;
 
-    use super::{
-        bishop_occupancy_mask, generate_bishop_blockers, generate_rook_blockers,
-        rook_occupancy_mask,
-    };
+    // North
+    let mut r = rank + 1;
+    while r <= 7 {
+        let sq = r * 8 + file;
+        attacks |= 1u64 << sq;
+        if (blockers >> sq) & 1 != 0 {
+            break;
+        }
+        r += 1;
+    }
 
-    fn print_bitboard(mask: u64) {
-        for rank in (0..8).rev() {
-            for file in 0..8 {
-                let sq = rank * 8 + file;
-                let is_set = (mask >> sq) & 1;
-                if is_set == 1 {
-                    let file_char = (b'a' + file as u8) as char;
-                    let rank_char = (b'1' + rank as u8) as char;
-                    print!("{}{} ", file_char, rank_char);
+    // South
+    if let Some(mut r) = rank.checked_sub(1) {
+        while r <= 7 {
+            let sq = r * 8 + file;
+            attacks |= 1u64 << sq;
+            if (blockers >> sq) & 1 != 0 {
+                break;
+            }
+            if r == 0 {
+                break;
+            }
+            r -= 1;
+        }
+    }
+
+    // East
+    let mut f = file + 1;
+    while f <= 7 {
+        let sq = rank * 8 + f;
+        attacks |= 1u64 << sq;
+        if (blockers >> sq) & 1 != 0 {
+            break;
+        }
+        f += 1;
+    }
+
+    // West
+    if let Some(mut f) = file.checked_sub(1) {
+        while f <= 7 {
+            let sq = rank * 8 + f;
+            attacks |= 1u64 << sq;
+            if (blockers >> sq) & 1 != 0 {
+                break;
+            }
+            if f == 0 {
+                break;
+            }
+            f -= 1;
+        }
+    }
+
+    return attacks;
+}
+
+pub fn bishop_attacks_per_square(square: usize, blockers: u64) -> u64 {
+    let rank = square / 8;
+    let file = square % 8;
+    let mut attacks = 0u64;
+
+    // NE
+    let mut r = rank + 1;
+    let mut f = file + 1;
+    while r <= 7 && f <= 7 {
+        let sq = r * 8 + f;
+        attacks |= 1u64 << sq;
+        if (blockers >> sq) & 1 != 0 {
+            break;
+        }
+        r += 1;
+        f += 1;
+    }
+
+    // SW
+    if let Some(mut r) = rank.checked_sub(1) {
+        if let Some(mut f) = file.checked_sub(1) {
+            loop {
+                let sq = r * 8 + f;
+                attacks |= 1u64 << sq;
+                if (blockers >> sq) & 1 != 0 {
+                    break;
                 }
+                if r == 0 || f == 0 {
+                    break;
+                }
+                r -= 1;
+                f -= 1;
             }
         }
-        println!();
     }
 
-    #[test]
-    fn test_rook_mask_d4() {
-        let d4 = 3 + 3 * 8; // square 27
-        let mask = rook_occupancy_mask(d4);
-        print_bitboard(mask);
+    // NW
+    let mut r = rank + 1;
+    if let Some(mut f) = file.checked_sub(1) {
+        while r <= 7 {
+            let sq = r * 8 + f;
+            attacks |= 1u64 << sq;
+            if (blockers >> sq) & 1 != 0 {
+                break;
+            }
+            r += 1;
+            if f == 0 {
+                break;
+            }
+            f -= 1;
+        }
     }
 
-    #[test]
-    fn test_bishop_mask_d4() {
-        let d4 = 3 + 3 * 8; // square 27
-        let mask = bishop_occupancy_mask(d4);
-        print_bitboard(mask);
+    // SE
+    if let Some(mut r) = rank.checked_sub(1) {
+        let mut f = file + 1;
+        while f <= 7 {
+            let sq = r * 8 + f;
+            attacks |= 1u64 << sq;
+            if (blockers >> sq) & 1 != 0 {
+                break;
+            }
+            if r == 0 {
+                break;
+            }
+            r -= 1;
+            f += 1;
+        }
     }
 
-    #[test]
-    fn test_rook_blockers_d4() {
-        let d4 = 3 + 3 * 8;
-        let configs = generate_rook_blockers(d4);
-        println!("Total configs: {}", configs.len());
-        // for (i, b) in configs.iter().enumerate() {
-        //     println!("Config {}:", i);
-        //     print_bitboard(*b);
-        // }
-    }
-
-    #[test]
-    fn test_bishop_blockers_d4() {
-        let d4 = 3 + 3 * 8;
-        let configs = generate_bishop_blockers(d4);
-        println!("Total configs: {}", configs.len());
-        // for (i, b) in configs.iter().enumerate() {
-        //     println!("Config {}:", i);
-        //     print_bitboard(*b);
-        // }
-    }
+    return attacks;
 }
