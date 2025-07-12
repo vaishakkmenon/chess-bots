@@ -1,6 +1,7 @@
 use rust_engine::moves::magic::{
     bishop_attacks_per_square, bishop_vision_mask, generate_bishop_blockers,
-    generate_rook_blockers, precompute_bishop_attacks, precompute_rook_attacks,
+    generate_rook_blockers, get_bishop_attack_bitboards, get_rook_attack_bitboards,
+    is_magic_candidate_valid, precompute_bishop_attacks, precompute_rook_attacks,
     rook_attacks_per_square, rook_vision_mask,
 };
 
@@ -209,4 +210,101 @@ fn test_bishop_attack_table_counts() {
             table[square].len()
         );
     }
+}
+
+#[test]
+fn test_invalid_magic_detects_collisions() {
+    let d4 = 3 + 3 * 8;
+    let blockers = generate_rook_blockers(d4);
+    let attacks = get_rook_attack_bitboards(d4, &blockers);
+
+    // This magic number is almost certainly invalid
+    let bad_magic = 1u64;
+
+    let shift = 64 - rook_vision_mask(d4).count_ones();
+
+    let valid = is_magic_candidate_valid(&blockers, &attacks, bad_magic, shift);
+    assert!(!valid, "Expected invalid magic to produce collisions");
+}
+
+#[test]
+fn test_trivial_magic_zero_fails() {
+    let d4 = 3 + 3 * 8;
+    let blockers = generate_rook_blockers(d4);
+    let attacks = get_rook_attack_bitboards(d4, &blockers);
+
+    // Trivial magic number zero is invalid
+    let bad_magic = 0u64;
+
+    let shift = 64 - rook_vision_mask(d4).count_ones();
+
+    let valid = is_magic_candidate_valid(&blockers, &attacks, bad_magic, shift);
+    assert!(!valid, "Magic 0 must be invalid");
+}
+
+#[test]
+fn test_all_same_attack_always_valid() {
+    let d4 = 3 + 3 * 8;
+    let blockers = generate_rook_blockers(d4);
+
+    // If all attacks are identical, any magic is "valid"
+    let attacks = vec![0xDEADBEEF; blockers.len()];
+
+    let shift = 64 - rook_vision_mask(d4).count_ones();
+
+    let magic = 1u64;
+    let valid = is_magic_candidate_valid(&blockers, &attacks, magic, shift);
+    assert!(
+        valid,
+        "If all attacks are identical, any magic must be valid"
+    );
+}
+
+#[test]
+fn test_invalid_bishop_magic_detects_collisions() {
+    let d4 = 3 + 3 * 8;
+    let blockers = generate_bishop_blockers(d4);
+    let attacks = get_bishop_attack_bitboards(d4, &blockers);
+
+    // Almost certainly invalid
+    let bad_magic = 1u64;
+
+    let shift = 64 - bishop_vision_mask(d4).count_ones();
+
+    let valid = is_magic_candidate_valid(&blockers, &attacks, bad_magic, shift);
+    assert!(
+        !valid,
+        "Expected invalid bishop magic to produce collisions"
+    );
+}
+
+#[test]
+fn test_trivial_bishop_magic_zero_fails() {
+    let d4 = 3 + 3 * 8;
+    let blockers = generate_bishop_blockers(d4);
+    let attacks = get_bishop_attack_bitboards(d4, &blockers);
+
+    let bad_magic = 0u64;
+    let shift = 64 - bishop_vision_mask(d4).count_ones();
+
+    let valid = is_magic_candidate_valid(&blockers, &attacks, bad_magic, shift);
+    assert!(!valid, "Magic 0 must be invalid");
+}
+
+#[test]
+fn test_bishop_all_same_attack_always_valid() {
+    let d4 = 3 + 3 * 8;
+    let blockers = generate_bishop_blockers(d4);
+
+    // All identical attacks: any magic passes
+    let attacks = vec![0xDEADBEEF; blockers.len()];
+
+    let shift = 64 - bishop_vision_mask(d4).count_ones();
+    let magic = 1u64;
+
+    let valid = is_magic_candidate_valid(&blockers, &attacks, magic, shift);
+    assert!(
+        valid,
+        "If all attacks are identical, any magic must be valid"
+    );
 }
