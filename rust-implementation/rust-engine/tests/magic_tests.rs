@@ -1,8 +1,8 @@
 use rust_engine::moves::magic::{
-    bishop_attacks_per_square, bishop_vision_mask, generate_bishop_blockers,
-    generate_rook_blockers, get_bishop_attack_bitboards, get_rook_attack_bitboards,
-    is_magic_candidate_valid, precompute_bishop_attacks, precompute_rook_attacks,
-    rook_attacks_per_square, rook_vision_mask,
+    bishop_attacks_per_square, bishop_vision_mask, find_magic_number_for_square,
+    generate_bishop_blockers, generate_rook_blockers, get_bishop_attack_bitboards,
+    get_rook_attack_bitboards, is_magic_candidate_valid, precompute_bishop_attacks,
+    precompute_rook_attacks, rook_attacks_per_square, rook_vision_mask,
 };
 
 /// Helper: Pretty-print a bitboard
@@ -307,4 +307,28 @@ fn test_bishop_all_same_attack_always_valid() {
         valid,
         "If all attacks are identical, any magic must be valid"
     );
+}
+
+#[test]
+fn test_find_magic_for_rook_d4_real_search() {
+    let d4 = 3 + 3 * 8;
+    let blockers = generate_rook_blockers(d4);
+    let attacks = get_rook_attack_bitboards(d4, &blockers);
+    let shift = 64 - rook_vision_mask(d4).count_ones();
+
+    let magic = find_magic_number_for_square(&blockers, &attacks, shift);
+    let valid = is_magic_candidate_valid(&blockers, &attacks, magic, shift);
+    assert!(valid, "The found rook magic must be valid");
+}
+
+#[test]
+fn test_find_magic_for_bishop_d4_real_search() {
+    let d4 = 3 + 3 * 8;
+    let blockers = generate_bishop_blockers(d4);
+    let attacks = get_bishop_attack_bitboards(d4, &blockers);
+    let shift = 64 - bishop_vision_mask(d4).count_ones();
+
+    let magic = find_magic_number_for_square(&blockers, &attacks, shift);
+    let valid = is_magic_candidate_valid(&blockers, &attacks, magic, shift);
+    assert!(valid, "The found bishop magic must be valid");
 }
