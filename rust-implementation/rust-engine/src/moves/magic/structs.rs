@@ -1,3 +1,4 @@
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MagicEntry {
     pub magic: u64,
     pub shift: u32,
