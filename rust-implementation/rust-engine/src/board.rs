@@ -1,4 +1,5 @@
 use crate::square::Square;
+use std::str::FromStr;
 
 /// Starting position constants
 // ———————— White side (ranks 1 & 2) ————————
@@ -457,6 +458,16 @@ impl Board {
 impl Default for Board {
     fn default() -> Self {
         Board::new_empty()
+    }
+}
+
+impl FromStr for Board {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut board = Board::new_empty();
+        board.set_fen(s)?;
+        Ok(board)
     }
 }
 

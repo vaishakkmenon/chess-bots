@@ -457,3 +457,18 @@ fn test_invalid_fullmove_zero() {
     assert!(res.is_err());
     assert!(res.unwrap_err().contains("must be >= 1"));
 }
+
+#[test]
+fn test_parse_fen_from_str() {
+    let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    let board: Board = fen.parse().expect("Failed to parse FEN");
+    assert_eq!(board.fullmove_number, 1);
+    assert_eq!(board.side_to_move, Color::White);
+}
+
+#[test]
+fn test_parse_fen_invalid() {
+    let fen = "invalid fen string";
+    let res: Result<Board, _> = fen.parse();
+    assert!(res.is_err());
+}
