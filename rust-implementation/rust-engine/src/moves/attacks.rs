@@ -1,4 +1,4 @@
-use crate::board::{Board, Color, Piece};
+use crate::board::{Color, Piece};
 use crate::moves::{king, knight, pawn};
 
 /// Returns a bitboard showing all the squares that *piece* could attack from *square*
