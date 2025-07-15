@@ -441,3 +441,19 @@ fn test_validate_with_overlap() {
     b.white_pawns |= 1 << 0; // Square a1, already occupied by white rook
     assert!(b.validate().is_err());
 }
+
+#[test]
+fn test_valid_clocks() {
+    let mut b = Board::new_empty();
+    assert!(b.parse_clocks("5", "10").is_ok());
+    assert_eq!(b.halfmove_clock, 5);
+    assert_eq!(b.fullmove_number, 10);
+}
+
+#[test]
+fn test_invalid_fullmove_zero() {
+    let mut b = Board::new_empty();
+    let res = b.parse_clocks("0", "0");
+    assert!(res.is_err());
+    assert!(res.unwrap_err().contains("must be >= 1"));
+}
