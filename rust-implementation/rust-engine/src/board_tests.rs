@@ -472,3 +472,13 @@ fn test_parse_fen_invalid() {
     let res: Result<Board, _> = fen.parse();
     assert!(res.is_err());
 }
+
+#[test]
+fn test_display_fen() {
+    let board = Board::new();
+    let fen = format!("{}", board);
+    assert_eq!(
+        fen,
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    );
+}

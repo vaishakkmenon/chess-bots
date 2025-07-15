@@ -1,4 +1,5 @@
 use crate::square::Square;
+use std::fmt;
 use std::str::FromStr;
 
 /// Starting position constants
@@ -468,6 +469,13 @@ impl FromStr for Board {
         let mut board = Board::new_empty();
         board.set_fen(s)?;
         Ok(board)
+    }
+}
+
+impl fmt::Display for Board {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let fen = self.to_fen();
+        write!(f, "{}", fen)
     }
 }
 
