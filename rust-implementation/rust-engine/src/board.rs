@@ -388,12 +388,24 @@ impl Board {
 
     /// Parse the halfmove and fullmove clock fields.
     fn parse_clocks(&mut self, halfmove_s: &str, fullmove_s: &str) -> Result<(), String> {
-        self.halfmove_clock = halfmove_s
+        let halfmove: u32 = halfmove_s
             .parse()
             .map_err(|_| format!("Invalid halfmove clock `{}`", halfmove_s))?;
-        self.fullmove_number = fullmove_s
+
+        let fullmove: u32 = fullmove_s
             .parse()
             .map_err(|_| format!("Invalid fullmove number `{}`", fullmove_s))?;
+
+        if fullmove < 1 {
+            return Err(format!(
+                "Invalid fullmove number `{}`: must be >= 1",
+                fullmove
+            ));
+        }
+
+        self.halfmove_clock = halfmove;
+        self.fullmove_number = fullmove;
+
         Ok(())
     }
 
