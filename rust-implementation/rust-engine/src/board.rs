@@ -411,6 +411,34 @@ impl Board {
 
         Ok(())
     }
+
+    /// Validate that no square is occupied by more than one piece.
+    /// Returns Ok if valid, Err describing the overlap if invalid.
+    pub fn validate(&self) -> Result<(), String> {
+        let bitboards = [
+            ("white_pawns", self.white_pawns),
+            ("white_knights", self.white_knights),
+            ("white_bishops", self.white_bishops),
+            ("white_rooks", self.white_rooks),
+            ("white_queens", self.white_queens),
+            ("white_king", self.white_king),
+            ("black_pawns", self.black_pawns),
+            ("black_knights", self.black_knights),
+            ("black_bishops", self.black_bishops),
+            ("black_rooks", self.black_rooks),
+            ("black_queens", self.black_queens),
+            ("black_king", self.black_king),
+        ];
+
+        let mut seen: u64 = 0;
+        for (name, bb) in &bitboards {
+            if (seen & bb) != 0 {
+                return Err(format!("Bitboard `{}` overlaps with another piece", name));
+            }
+            seen |= bb;
+        }
+        Ok(())
+    }
 }
 
 /// An all-zero board (no pieces) with White to move.

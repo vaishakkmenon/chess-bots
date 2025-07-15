@@ -427,3 +427,17 @@ fn test_set_fen_invalid_fullmove() {
     let err = b.set_fen("8/8/8/8/8/8/8/8 w - - 0 bar").unwrap_err();
     assert!(err.contains("Invalid fullmove number"));
 }
+
+#[test]
+fn test_validate_no_overlap() {
+    let b = Board::new();
+    assert!(b.validate().is_ok());
+}
+
+#[test]
+fn test_validate_with_overlap() {
+    let mut b = Board::new();
+    // Force an overlap manually:
+    b.white_pawns |= 1 << 0; // Square a1, already occupied by white rook
+    assert!(b.validate().is_err());
+}
