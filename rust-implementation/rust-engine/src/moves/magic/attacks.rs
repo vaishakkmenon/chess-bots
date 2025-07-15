@@ -1,6 +1,3 @@
-use super::masks::*;
-use crate::utils::enumerate_subsets;
-
 pub fn rook_attacks_per_square(square: usize, blockers: u64) -> u64 {
     let rank = square / 8;
     let file = square % 8;
@@ -132,54 +129,6 @@ pub fn bishop_attacks_per_square(square: usize, blockers: u64) -> u64 {
     }
 
     return attacks;
-}
-
-pub fn precompute_rook_attacks() -> Vec<Vec<u64>> {
-    let mut table = Vec::with_capacity(64);
-
-    for square in 0..64 {
-        let mask = rook_vision_mask(square);
-
-        let mut subsets = Vec::new();
-        enumerate_subsets(mask, |subset| {
-            subsets.push(subset);
-        });
-
-        let mut attacks_for_square = Vec::with_capacity(subsets.len());
-
-        for blockers in subsets {
-            let attacks = rook_attacks_per_square(square, blockers);
-            attacks_for_square.push(attacks);
-        }
-
-        table.push(attacks_for_square);
-    }
-
-    return table;
-}
-
-pub fn precompute_bishop_attacks() -> Vec<Vec<u64>> {
-    let mut table = Vec::with_capacity(64);
-
-    for square in 0..64 {
-        let mask = bishop_vision_mask(square);
-
-        let mut subsets = Vec::new();
-        enumerate_subsets(mask, |subset| {
-            subsets.push(subset);
-        });
-
-        let mut attacks_for_square = Vec::with_capacity(subsets.len());
-
-        for blockers in subsets {
-            let attacks = bishop_attacks_per_square(square, blockers);
-            attacks_for_square.push(attacks);
-        }
-
-        table.push(attacks_for_square);
-    }
-
-    return table;
 }
 
 pub fn get_rook_attack_bitboards(square: usize, blockers: &[u64]) -> Vec<u64> {
