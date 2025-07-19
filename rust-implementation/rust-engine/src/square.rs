@@ -51,3 +51,37 @@ impl FromStr for Square {
         Ok(Square(rank_idx * 8 + file_idx))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_parse_lowercase() {
+        let sq = Square::from_str("e4").unwrap();
+        assert_eq!(sq.index(), 28);
+    }
+
+    #[test]
+    fn test_parse_uppercase() {
+        let sq = Square::from_str("E4").unwrap();
+        assert_eq!(sq.index(), 28);
+    }
+
+    #[test]
+    fn test_parse_invalid_file() {
+        assert!("z4".parse::<Square>().is_err());
+    }
+
+    #[test]
+    fn test_parse_invalid_rank() {
+        assert!("e9".parse::<Square>().is_err());
+    }
+
+    #[test]
+    fn test_display() {
+        let sq = Square::from_index(28);
+        assert_eq!(sq.to_string(), "e4");
+    }
+}
