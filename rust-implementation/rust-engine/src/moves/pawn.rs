@@ -140,6 +140,14 @@ pub fn pawn_attacks(square: u8, color: Color) -> u64 {
     }
 }
 
+/// Returns the pawn attack bitboard for a given square and color, or None if the square is invalid.
+pub fn pawn_attacks_checked(square: u8, color: Color) -> Option<u64> {
+    if square >= 64 {
+        return None;
+    }
+    Some(pawn_attacks(square, color))
+}
+
 #[allow(dead_code)]
 fn white_pawn_attack_mask(square: u8) -> u64 {
     // only top-right and top-left (north-east and north-west)
@@ -227,5 +235,25 @@ mod test {
                 square
             );
         }
+    }
+
+    #[test]
+    fn test_pawn_attacks_checked() {
+        use crate::board::Color;
+
+        assert_eq!(
+            super::pawn_attacks_checked(27, Color::White),
+            Some(super::WHITE_PAWN_ATTACKS[27])
+        );
+        assert_eq!(
+            super::pawn_attacks_checked(64, Color::Black),
+            None,
+            "Square 64 should return None"
+        );
+        assert_eq!(
+            super::pawn_attacks_checked(255, Color::White),
+            None,
+            "Out-of-bounds square should return None"
+        );
     }
 }
