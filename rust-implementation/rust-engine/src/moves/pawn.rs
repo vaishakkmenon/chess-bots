@@ -133,6 +133,7 @@ pub const BLACK_PAWN_ATTACKS: [u64; 64] = [
     0x0040000000000000, // 63
 ];
 
+#[inline(always)]
 pub fn pawn_attacks(square: u8, color: Color) -> u64 {
     match color {
         Color::White => WHITE_PAWN_ATTACKS[square as usize],
@@ -172,7 +173,7 @@ fn pawn_attack_mask(square: u8, color: Color) -> u64 {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
 
     use super::{BLACK_PAWN_ATTACKS, WHITE_PAWN_ATTACKS, pawn_attack_mask};
     use crate::board::Color;
