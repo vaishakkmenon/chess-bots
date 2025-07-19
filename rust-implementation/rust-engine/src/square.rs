@@ -31,14 +31,21 @@ impl FromStr for Square {
         if bytes.len() != 2 {
             return Err(format!("Invalid square length: {}", s));
         }
-        let file = bytes[0];
+        let mut file = bytes[0];
         let rank = bytes[1];
+
+        if (b'A'..=b'H').contains(&file) {
+            file = file + (b'a' - b'A');
+        }
+
         if !(b'a'..=b'h').contains(&file) {
             return Err(format!("Invalid file: {}", s));
         }
+
         if !(b'1'..=b'8').contains(&rank) {
             return Err(format!("Invalid rank: {}", s));
         }
+
         let file_idx = file - b'a';
         let rank_idx = rank - b'1';
         Ok(Square(rank_idx * 8 + file_idx))
