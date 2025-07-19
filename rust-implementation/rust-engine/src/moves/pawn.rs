@@ -149,13 +149,16 @@ pub fn pawn_attacks_checked(square: u8, color: Color) -> Option<u64> {
 }
 
 #[allow(dead_code)]
-fn white_pawn_attack_mask(square: u8) -> u64 {
-    // only top-right and top-left (north-east and north-west)
+fn pawn_attack_mask(square: u8, color: Color) -> u64 {
     let rank = square / 8;
     let file = square % 8;
     let mut attacks = 0u64;
 
-    let deltas: [(i8, i8); 2] = [(1, -1), (1, 1)];
+    let deltas: [(i8, i8); 2] = match color {
+        Color::White => [(1, -1), (1, 1)],
+        Color::Black => [(-1, -1), (-1, 1)],
+    };
+
     for (dr, df) in deltas {
         let r = rank as i8 + dr;
         let f = file as i8 + df;
@@ -164,45 +167,35 @@ fn white_pawn_attack_mask(square: u8) -> u64 {
             attacks |= 1u64 << dest;
         }
     }
-    return attacks;
-}
 
-#[allow(dead_code)]
-fn black_pawn_attack_mask(square: u8) -> u64 {
-    // only bottom-right and bottom-left (south-east and south-west)
-    let rank = square / 8;
-    let file = square % 8;
-    let mut attacks = 0u64;
-
-    let deltas: [(i8, i8); 2] = [(-1, -1), (-1, 1)];
-    for (dr, df) in deltas {
-        let r = rank as i8 + dr;
-        let f = file as i8 + df;
-        if (0..8).contains(&r) && (0..8).contains(&f) {
-            let dest = r * 8 + f;
-            attacks |= 1u64 << dest;
-        }
-    }
-    return attacks;
+    attacks
 }
 
 #[cfg(test)]
 mod test {
-    use super::{
-        BLACK_PAWN_ATTACKS, WHITE_PAWN_ATTACKS, black_pawn_attack_mask, white_pawn_attack_mask,
-    };
+
+    use super::{BLACK_PAWN_ATTACKS, WHITE_PAWN_ATTACKS, pawn_attack_mask};
+    use crate::board::Color;
 
     #[test]
     fn dump_white_pawn_attacks() {
         for sq in 0..64 {
-            println!("0x{:016X}, // {}", white_pawn_attack_mask(sq), sq);
+            println!(
+                "0x{:016X}, // {}",
+                pawn_attack_mask(sq as u8, Color::White),
+                sq
+            );
         }
     }
 
     #[test]
     fn dump_black_pawn_attacks() {
         for sq in 0..64 {
-            println!("0x{:016X}, // {}", black_pawn_attack_mask(sq), sq);
+            println!(
+                "0x{:016X}, // {}",
+                pawn_attack_mask(sq as u8, Color::Black),
+                sq
+            );
         }
     }
 
@@ -210,7 +203,7 @@ mod test {
     fn test_white_pawn_attack_mask_d4() {
         let d4 = 3 + 8 * 3; // index 27
         let expected = (1u64 << (4 * 8 + 2)) | (1u64 << (4 * 8 + 4)); // c5 + e5
-        assert_eq!(white_pawn_attack_mask(d4), expected);
+        assert_eq!(pawn_attack_mask(d4, Color::White), expected);
     }
 
     #[test]
@@ -218,7 +211,7 @@ mod test {
         for square in 0..64 {
             assert_eq!(
                 WHITE_PAWN_ATTACKS[square],
-                white_pawn_attack_mask(square as u8),
+                pawn_attack_mask(square as u8, Color::White),
                 "Mismatch at square {}",
                 square
             );
@@ -230,7 +223,7 @@ mod test {
         for square in 0..64 {
             assert_eq!(
                 BLACK_PAWN_ATTACKS[square],
-                black_pawn_attack_mask(square as u8),
+                pawn_attack_mask(square as u8, Color::Black),
                 "Mismatch at square {}",
                 square
             );
