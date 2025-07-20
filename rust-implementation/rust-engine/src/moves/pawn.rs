@@ -242,6 +242,19 @@ mod tests {
     }
 
     #[test]
+    fn test_checked_matches_const() {
+        use crate::board::Color;
+
+        for square in 0..64u8 {
+            let w = super::pawn_attacks_checked(square, Color::White);
+            let b = super::pawn_attacks_checked(square, Color::Black);
+
+            assert_eq!(w, Some(super::WHITE_PAWN_ATTACKS[square as usize]));
+            assert_eq!(b, Some(super::BLACK_PAWN_ATTACKS[square as usize]));
+        }
+    }
+
+    #[test]
     fn test_white_pawn_attack_mask_d4() {
         let d4 = 3 + 8 * 3; // index 27
         let expected = (1u64 << (4 * 8 + 2)) | (1u64 << (4 * 8 + 4)); // c5 + e5
