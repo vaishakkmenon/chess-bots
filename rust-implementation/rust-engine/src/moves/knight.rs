@@ -1,3 +1,5 @@
+use crate::board::Color;
+
 pub const KNIGHT_ATTACKS: [u64; 64] = [
     0x0000000000020400, // 0
     0x0000000000050800, // 1
@@ -77,6 +79,15 @@ pub fn print_bitboard(bb: u64) {
     println!("a b c d e f g h");
 }
 
+/// Returns the knight attack bitboard for a given square and color, or None if the square is invalid.
+pub fn knight_attacks_checked(square: u8) -> Option<u64> {
+    if square >= 64 {
+        return None;
+    }
+    Some(KNIGHT_ATTACKS[square as usize])
+}
+
+#[inline(always)]
 pub fn knight_attacks(square: u8) -> u64 {
     let rank = square / 8;
     let file = square % 8;
