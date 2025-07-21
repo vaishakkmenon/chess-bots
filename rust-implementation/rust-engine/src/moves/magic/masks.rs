@@ -101,3 +101,52 @@ pub fn generate_bishop_blockers(square: usize) -> Vec<u64> {
 
     return configs;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn bitboard_to_string(bb: u64) -> String {
+        let mut s = String::new();
+        for rank in (0..8).rev() {
+            for file in 0..8 {
+                let idx = rank * 8 + file;
+                s.push(if (bb >> idx) & 1 == 1 { 'X' } else { '.' });
+            }
+            s.push('\n');
+        }
+        s
+    }
+
+    #[test]
+    fn test_rook_vision_d4() {
+        let idx = 3 * 8 + 3; // d4
+        let mask = rook_vision_mask(idx);
+        println!("Rook vision mask for d4:\n{}", bitboard_to_string(mask));
+        assert_eq!(mask.count_ones(), 10); // was 14
+    }
+
+    #[test]
+    fn test_bishop_vision_d4() {
+        let idx = 3 * 8 + 3; // d4
+        let mask = bishop_vision_mask(idx);
+        println!("Bishop vision mask for d4:\n{}", bitboard_to_string(mask));
+        assert_eq!(mask.count_ones(), 9); // was 13
+    }
+
+    #[test]
+    fn test_rook_vision_a1() {
+        let idx = 0; // a1
+        let mask = rook_vision_mask(idx);
+        println!("Rook vision mask for a1:\n{}", bitboard_to_string(mask));
+        assert_eq!(mask.count_ones(), 12); // was 10
+    }
+
+    #[test]
+    fn test_bishop_vision_h8() {
+        let idx = 63; // h8
+        let mask = bishop_vision_mask(idx);
+        println!("Bishop vision mask for h8:\n{}", bitboard_to_string(mask));
+        assert_eq!(mask.count_ones(), 6); // was 7
+    }
+}
