@@ -66,6 +66,14 @@ pub const KING_ATTACKS: [u64; 64] = [
     0x40C0000000000000, // 63
 ];
 
+/// Returns the king attack bitboard for a given square and color, or None if the square is invalid.
+pub fn king_attacks_checked(square: u8) -> Option<u64> {
+    if square >= 64 {
+        return None;
+    }
+    Some(KING_ATTACKS[square as usize])
+}
+
 /// Computes the king's attack mask from a given square (0..63).
 pub fn king_attacks(square: u8) -> u64 {
     let rank = square / 8;
@@ -91,7 +99,7 @@ pub fn king_attacks(square: u8) -> u64 {
 #[cfg(test)]
 mod tests {
     // use super::{KING_ATTACKS, king_attacks};
-    use super::{KING_ATTACKS, king_attacks};
+    use super::{KING_ATTACKS, king_attacks, king_attacks_checked};
 
     #[test]
     fn dump_king_attacks() {
@@ -155,5 +163,24 @@ mod tests {
                 square, expected, actual
             );
         }
+    }
+
+    #[test]
+    fn test_king_attacks_checked_valid() {
+        for sq in 0u8..64 {
+            assert_eq!(
+                king_attacks_checked(sq),
+                Some(KING_ATTACKS[sq as usize]),
+                "Expected valid king attack for square {}",
+                sq
+            );
+        }
+    }
+
+    #[test]
+    fn test_king_attacks_checked_invalid() {
+        assert_eq!(king_attacks_checked(64), None);
+        assert_eq!(king_attacks_checked(100), None);
+        assert_eq!(king_attacks_checked(u8::MAX), None);
     }
 }
