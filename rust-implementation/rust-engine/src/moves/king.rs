@@ -47,28 +47,6 @@ pub fn king_attacks_checked(square: u8) -> Option<u64> {
     Some(KING_ATTACKS[square as usize])
 }
 
-// /// Computes the king's attack mask from a given square (0..63).
-// pub fn king_attacks(square: u8) -> u64 {
-//     let rank = square / 8;
-//     let file = square % 8;
-//     let mut attacks = 0u64;
-
-//     for dr in -1..=1 {
-//         for df in -1..=1 {
-//             if dr == 0 && df == 0 {
-//                 continue;
-//             }
-//             let r = rank as i8 + dr;
-//             let f = file as i8 + df;
-//             if (0..8).contains(&r) && (0..8).contains(&f) {
-//                 let dest = r * 8 + f;
-//                 attacks |= 1u64 << dest;
-//             }
-//         }
-//     }
-//     return attacks;
-// }
-
 #[cfg(test)]
 mod tests {
     // use super::{KING_ATTACKS, king_attacks};
