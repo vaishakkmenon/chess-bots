@@ -57,7 +57,7 @@ pub fn pawn_attacks(square: u8, color: Color) -> u64 {
     }
 }
 
-#[allow(dead_code)]
+#[cfg(test)]
 fn pawn_attack_mask(square: u8, color: Color) -> u64 {
     let rank = square / 8;
     let file = square % 8;
