@@ -2,7 +2,7 @@ pub const KNIGHT_ATTACKS: [u64; 64] = generate_knight_table();
 
 /// Knight attack generation using const for compile time generation instead of hardcoding
 #[inline(always)]
-pub const fn knight_attacks(square: u8) -> u64 {
+const fn knight_attacks(square: u8) -> u64 {
     let rank = square / 8;
     let file = square % 8;
 
@@ -25,7 +25,7 @@ pub const fn knight_attacks(square: u8) -> u64 {
     return attacks;
 }
 
-pub const fn generate_knight_table() -> [u64; 64] {
+const fn generate_knight_table() -> [u64; 64] {
     let mut table = [0u64; 64];
     let mut i = 0;
 
