@@ -1,69 +1,40 @@
-pub const KNIGHT_ATTACKS: [u64; 64] = [
-    0x0000000000020400, // 0
-    0x0000000000050800, // 1
-    0x00000000000A1100, // 2
-    0x0000000000142200, // 3
-    0x0000000000284400, // 4
-    0x0000000000508800, // 5
-    0x0000000000A01000, // 6
-    0x0000000000402000, // 7
-    0x0000000002040004, // 8
-    0x0000000005080008, // 9
-    0x000000000A110011, // 10
-    0x0000000014220022, // 11
-    0x0000000028440044, // 12
-    0x0000000050880088, // 13
-    0x00000000A0100010, // 14
-    0x0000000040200020, // 15
-    0x0000000204000402, // 16
-    0x0000000508000805, // 17
-    0x0000000A1100110A, // 18
-    0x0000001422002214, // 19
-    0x0000002844004428, // 20
-    0x0000005088008850, // 21
-    0x000000A0100010A0, // 22
-    0x0000004020002040, // 23
-    0x0000020400040200, // 24
-    0x0000050800080500, // 25
-    0x00000A1100110A00, // 26
-    0x0000142200221400, // 27
-    0x0000284400442800, // 28
-    0x0000508800885000, // 29
-    0x0000A0100010A000, // 30
-    0x0000402000204000, // 31
-    0x0002040004020000, // 32
-    0x0005080008050000, // 33
-    0x000A1100110A0000, // 34
-    0x0014220022140000, // 35
-    0x0028440044280000, // 36
-    0x0050880088500000, // 37
-    0x00A0100010A00000, // 38
-    0x0040200020400000, // 39
-    0x0204000402000000, // 40
-    0x0508000805000000, // 41
-    0x0A1100110A000000, // 42
-    0x1422002214000000, // 43
-    0x2844004428000000, // 44
-    0x5088008850000000, // 45
-    0xA0100010A0000000, // 46
-    0x4020002040000000, // 47
-    0x0400040200000000, // 48
-    0x0800080500000000, // 49
-    0x1100110A00000000, // 50
-    0x2200221400000000, // 51
-    0x4400442800000000, // 52
-    0x8800885000000000, // 53
-    0x100010A000000000, // 54
-    0x2000204000000000, // 55
-    0x0004020000000000, // 56
-    0x0008050000000000, // 57
-    0x00110A0000000000, // 58
-    0x0022140000000000, // 59
-    0x0044280000000000, // 60
-    0x0088500000000000, // 61
-    0x0010A00000000000, // 62
-    0x0020400000000000, // 63
-];
+pub const KNIGHT_ATTACKS: [u64; 64] = generate_knight_table();
+
+/// Knight attack generation using const for compile time generation instead of hardcoding
+#[inline(always)]
+pub const fn knight_attacks(square: u8) -> u64 {
+    let rank = square / 8;
+    let file = square % 8;
+
+    let mut attacks = 0u64;
+    let mut i = 0;
+    while i < 8 {
+        let dr = [2, 2, -2, -2, 1, 1, -1, -1][i];
+        let df = [1, -1, 1, -1, 2, -2, 2, -2][i];
+
+        let r = rank as i8 + dr;
+        let f = file as i8 + df;
+
+        if r >= 0 && r < 8 && f >= 0 && f < 8 {
+            attacks |= 1u64 << (r * 8 + f);
+        }
+
+        i += 1;
+    }
+
+    return attacks;
+}
+
+pub const fn generate_knight_table() -> [u64; 64] {
+    let mut table = [0u64; 64];
+    let mut i = 0;
+
+    while i < 64 {
+        table[i] = knight_attacks(i as u8);
+        i += 1;
+    }
+    return table;
+}
 
 /// Returns the knight attack bitboard for a given square and color, or None if the square is invalid.
 pub fn knight_attacks_checked(square: u8) -> Option<u64> {
@@ -71,35 +42,6 @@ pub fn knight_attacks_checked(square: u8) -> Option<u64> {
         return None;
     }
     Some(KNIGHT_ATTACKS[square as usize])
-}
-
-#[inline(always)]
-pub fn knight_attacks(square: u8) -> u64 {
-    let rank = square / 8;
-    let file = square % 8;
-
-    let mut attacks = 0u64;
-
-    let deltas: [(i8, i8); 8] = [
-        (2, 1),
-        (2, -1),
-        (-2, 1),
-        (-2, -1),
-        (1, 2),
-        (1, -2),
-        (-1, 2),
-        (-1, -2),
-    ];
-
-    for (dr, df) in deltas {
-        let r = rank as i8 + dr;
-        let f = file as i8 + df;
-        if (0..8).contains(&r) && (0..8).contains(&f) {
-            let dest = r * 8 + f;
-            attacks |= 1u64 << dest;
-        }
-    }
-    return attacks;
 }
 
 #[cfg(test)]
@@ -168,5 +110,15 @@ mod tests {
                 square, expected, actual
             );
         }
+    }
+
+    #[test]
+    fn test_knight_attacks_checked_bounds() {
+        use super::knight_attacks_checked;
+
+        assert_eq!(knight_attacks_checked(0), Some(KNIGHT_ATTACKS[0]));
+        assert_eq!(knight_attacks_checked(63), Some(KNIGHT_ATTACKS[63]));
+        assert_eq!(knight_attacks_checked(64), None);
+        assert_eq!(knight_attacks_checked(u8::MAX), None);
     }
 }
