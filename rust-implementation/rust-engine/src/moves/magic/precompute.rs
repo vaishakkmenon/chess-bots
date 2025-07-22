@@ -106,6 +106,14 @@ where
         let table_size = 1 << mask.count_ones();
         let mut table = vec![0u64; table_size];
 
+        // Magic indexing step:
+        // 1. Mask the blockers to extract only the relevant bits.
+        // 2. Multiply by the magic number (a carefully chosen constant).
+        // 3. Shift right by `shift` to get a compact, unique index into the table.
+        //
+        // This ensures each blocker configuration maps to a unique entry,
+        // provided the magic number avoids collisions (found via brute force).
+
         for &b in &blockers {
             let idx = ((b & mask).wrapping_mul(magic)) >> shift;
             table[idx as usize] = attacks_per_square(square, b);
