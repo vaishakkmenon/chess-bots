@@ -1,3 +1,4 @@
+#[inline]
 pub fn rook_attacks_per_square(square: usize, blockers: u64) -> u64 {
     let rank = square / 8;
     let file = square % 8;
@@ -58,6 +59,7 @@ pub fn rook_attacks_per_square(square: usize, blockers: u64) -> u64 {
     return attacks;
 }
 
+#[inline]
 pub fn bishop_attacks_per_square(square: usize, blockers: u64) -> u64 {
     let rank = square / 8;
     let file = square % 8;
