@@ -154,3 +154,80 @@ pub fn generate_bishop_magic_tables() -> BishopMagicTables {
         ),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::moves::magic::masks::{bishop_vision_mask, rook_vision_mask};
+    use crate::utils::{bitboard_to_string, square_index};
+
+    fn square_from_str(sq: &str) -> usize {
+        let file = (sq.as_bytes()[0] - b'a') as usize;
+        let rank = (sq.as_bytes()[1] - b'1') as usize;
+        square_index(rank, file)
+    }
+
+    #[test]
+    fn test_rook_attacks_e4_no_blockers() {
+        let tables = generate_rook_magic_tables();
+        let square = square_from_str("e4");
+        let blockers = 0u64;
+
+        let entry = &tables.entries[square];
+        let idx = ((blockers & rook_vision_mask(square)).wrapping_mul(entry.magic)) >> entry.shift;
+        let actual = entry.table[idx as usize];
+
+        // Expected: file e + rank 4, minus the square itself
+        let file_mask = 0x0101010101010101u64 << (square % 8);
+        let rank_mask = 0xFFu64 << (8 * (square / 8));
+        let expected = (file_mask | rank_mask) & !(1u64 << square);
+
+        assert_eq!(
+            actual,
+            expected,
+            "Incorrect rook attack for e4 (no blockers)\nExpected:\n{}\nGot:\n{}",
+            bitboard_to_string(expected),
+            bitboard_to_string(actual)
+        );
+    }
+
+    #[test]
+    fn test_bishop_attacks_c1_with_e3_blocker() {
+        // Build the bishop magic tables
+        let tables = generate_bishop_magic_tables();
+
+        // Square indices
+        let square = square_from_str("c1"); // bishop origin
+        let blocker_square = square_index(2, 4); // e3  (rank 2, file 4)
+
+        // Bitboard containing just the blocker on e3
+        let blockers = 1u64 << blocker_square;
+
+        // Look up the pre-computed attack bitboard via the magic table
+        let entry = &tables.entries[square];
+        let idx =
+            ((blockers & bishop_vision_mask(square)).wrapping_mul(entry.magic)) >> entry.shift;
+        let actual = entry.table[idx as usize];
+
+        // ─────────────────────────────────────────────────────────────
+        // Expected attack squares from c1 with a blocker on e3:
+        //   NE: d2  (rank 1, file 3)
+        //       e3  (rank 2, file 4)  ← blocker square, capture allowed
+        //   NW: b2  (rank 1, file 1)
+        //       a3  (rank 2, file 0)
+        // ─────────────────────────────────────────────────────────────
+        let mut expected = 0u64;
+        expected |= 1u64 << square_index(1, 3); // d2
+        expected |= 1u64 << square_index(2, 4); // e3
+        expected |= 1u64 << square_index(1, 1); // b2
+        expected |= 1u64 << square_index(2, 0); // a3
+
+        assert_eq!(
+            actual,
+            expected,
+            "Incorrect bishop attack for c1 with blocker on e3\nExpected:\n{}\nGot:\n{}",
+            bitboard_to_string(expected),
+            bitboard_to_string(actual)
+        );
+    }
+}
