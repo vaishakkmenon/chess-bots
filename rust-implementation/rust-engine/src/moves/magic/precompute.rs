@@ -52,16 +52,54 @@ pub fn precompute_bishop_attacks() -> Vec<Vec<u64>> {
     return table;
 }
 
-pub fn generate_rook_magic_tables() -> RookMagicTables {
+/// Generates a full set of 64 `MagicEntry`s for a sliding piece (e.g. rook or bishop)
+/// by building magic bitboard lookup tables for each square.
+///
+/// # Parameters
+/// - `piece_name`: A string label used only for logging.
+/// - `gen_blockers`: Function that returns all possible blocker permutations for a given square.
+/// - `get_attacks`: Function that returns the expected attack bitboards for all blocker permutations.
+/// - `get_mask`: Function that returns the vision mask for a given square.
+/// - `attacks_per_square`: Function that returns the actual attack bitboard for a given square and blocker configuration.
+///
+/// # Returns
+/// An array of 64 `MagicEntry`s, one for each square on the board. Each entry contains:
+/// - a magic number (used for hashing blocker configurations),
+/// - a shift value (how many bits to shift the hash down),
+/// - and a lookup table mapping hashed blockers to precomputed attacks.
+///
+/// # How It Works
+/// For each square:
+/// 1. All blocker permutations within the piece's vision mask are generated.
+/// 2. The corresponding attack bitboards are computed.
+/// 3. A "magic" number is found that produces a unique index for each blocker configuration.
+/// 4. A lookup table is populated using these magic indices.
+///
+/// # Panics
+/// Panics if the final `Vec<MagicEntry>` does not contain exactly 64 entries. This
+/// would indicate a logic error in how blockers were generated or processed.
+
+fn generate_magic_entries<FBlockers, FAttacks, FMask, FPerSquare>(
+    piece_name: &str,
+    gen_blockers: FBlockers,
+    get_attacks: FAttacks,
+    get_mask: FMask,
+    attacks_per_square: FPerSquare,
+) -> [MagicEntry; 64]
+where
+    FBlockers: Fn(usize) -> Vec<u64>,
+    FAttacks: Fn(usize, &[u64]) -> Vec<u64>,
+    FMask: Fn(usize) -> u64,
+    FPerSquare: Fn(usize, u64) -> u64,
+{
     let mut entries_vec = Vec::with_capacity(64);
 
     for square in 0..64 {
-        println!("Generating rook magic for square {}", square);
+        println!("Generating {} magic for square {}", piece_name, square);
 
-        let blockers = generate_rook_blockers(square);
-        let attacks = get_rook_attack_bitboards(square, &blockers);
-
-        let mask = rook_vision_mask(square);
+        let blockers = gen_blockers(square);
+        let attacks = get_attacks(square, &blockers);
+        let mask = get_mask(square);
         let shift = 64 - mask.count_ones();
         let magic = find_magic_number_for_square(&blockers, &attacks, shift);
 
@@ -70,7 +108,7 @@ pub fn generate_rook_magic_tables() -> RookMagicTables {
 
         for &b in &blockers {
             let idx = ((b & mask).wrapping_mul(magic)) >> shift;
-            table[idx as usize] = rook_attacks_per_square(square, b);
+            table[idx as usize] = attacks_per_square(square, b);
         }
 
         entries_vec.push(MagicEntry {
@@ -80,44 +118,31 @@ pub fn generate_rook_magic_tables() -> RookMagicTables {
         });
     }
 
-    let entries: [MagicEntry; 64] = entries_vec
+    entries_vec
         .try_into()
-        .expect("Expected exactly 64 entries for magic table generation");
+        .expect("Expected 64 entries for magic generation")
+}
 
-    return RookMagicTables { entries };
+pub fn generate_rook_magic_tables() -> RookMagicTables {
+    RookMagicTables {
+        entries: generate_magic_entries(
+            "rook",
+            generate_rook_blockers,
+            get_rook_attack_bitboards,
+            rook_vision_mask,
+            rook_attacks_per_square,
+        ),
+    }
 }
 
 pub fn generate_bishop_magic_tables() -> BishopMagicTables {
-    let mut entries_vec = Vec::with_capacity(64);
-
-    for square in 0..64 {
-        println!("Generating bishop magic for square {}", square);
-
-        let blockers = generate_bishop_blockers(square);
-        let attacks = get_bishop_attack_bitboards(square, &blockers);
-
-        let mask = bishop_vision_mask(square);
-        let shift = 64 - mask.count_ones();
-        let magic = find_magic_number_for_square(&blockers, &attacks, shift);
-
-        let table_size = 1 << mask.count_ones();
-        let mut table = vec![0u64; table_size];
-
-        for &b in &blockers {
-            let idx = ((b & mask).wrapping_mul(magic)) >> shift;
-            table[idx as usize] = bishop_attacks_per_square(square, b);
-        }
-
-        entries_vec.push(MagicEntry {
-            magic,
-            shift,
-            table,
-        });
+    BishopMagicTables {
+        entries: generate_magic_entries(
+            "bishop",
+            generate_bishop_blockers,
+            get_bishop_attack_bitboards,
+            bishop_vision_mask,
+            bishop_attacks_per_square,
+        ),
     }
-
-    let entries: [MagicEntry; 64] = entries_vec
-        .try_into()
-        .expect("Expected exactly 64 entries for magic table generation");
-
-    return BishopMagicTables { entries };
 }
