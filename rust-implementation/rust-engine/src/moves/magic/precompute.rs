@@ -80,7 +80,10 @@ pub fn generate_rook_magic_tables() -> RookMagicTables {
         });
     }
 
-    let entries: [MagicEntry; 64] = entries_vec.try_into().unwrap();
+    let entries: [MagicEntry; 64] = entries_vec
+        .try_into()
+        .expect("Expected exactly 64 entries for magic table generation");
+
     return RookMagicTables { entries };
 }
 
@@ -112,6 +115,9 @@ pub fn generate_bishop_magic_tables() -> BishopMagicTables {
         });
     }
 
-    let entries: [MagicEntry; 64] = entries_vec.try_into().unwrap();
+    let entries: [MagicEntry; 64] = entries_vec
+        .try_into()
+        .expect("Expected exactly 64 entries for magic table generation");
+
     return BishopMagicTables { entries };
 }
