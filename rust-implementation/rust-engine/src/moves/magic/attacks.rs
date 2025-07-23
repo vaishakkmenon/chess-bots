@@ -1,3 +1,5 @@
+use crate::utils::square_index;
+
 #[inline]
 pub fn rook_attacks_per_square(square: usize, blockers: u64) -> u64 {
     let rank = square / 8;
@@ -7,7 +9,7 @@ pub fn rook_attacks_per_square(square: usize, blockers: u64) -> u64 {
     // North
     let mut r = rank + 1;
     while r <= 7 {
-        let sq = r * 8 + file;
+        let sq = square_index(r, file);
         attacks |= 1u64 << sq;
         if (blockers >> sq) & 1 != 0 {
             break;
@@ -18,7 +20,7 @@ pub fn rook_attacks_per_square(square: usize, blockers: u64) -> u64 {
     // South
     if let Some(mut r) = rank.checked_sub(1) {
         while r <= 7 {
-            let sq = r * 8 + file;
+            let sq = square_index(r, file);
             attacks |= 1u64 << sq;
             if (blockers >> sq) & 1 != 0 {
                 break;
@@ -69,7 +71,7 @@ pub fn bishop_attacks_per_square(square: usize, blockers: u64) -> u64 {
     let mut r = rank + 1;
     let mut f = file + 1;
     while r <= 7 && f <= 7 {
-        let sq = r * 8 + f;
+        let sq = square_index(r, f);
         attacks |= 1u64 << sq;
         if (blockers >> sq) & 1 != 0 {
             break;
@@ -82,7 +84,7 @@ pub fn bishop_attacks_per_square(square: usize, blockers: u64) -> u64 {
     if let Some(mut r) = rank.checked_sub(1) {
         if let Some(mut f) = file.checked_sub(1) {
             loop {
-                let sq = r * 8 + f;
+                let sq = square_index(r, f);
                 attacks |= 1u64 << sq;
                 if (blockers >> sq) & 1 != 0 {
                     break;
@@ -100,7 +102,7 @@ pub fn bishop_attacks_per_square(square: usize, blockers: u64) -> u64 {
     let mut r = rank + 1;
     if let Some(mut f) = file.checked_sub(1) {
         while r <= 7 {
-            let sq = r * 8 + f;
+            let sq = square_index(r, f);
             attacks |= 1u64 << sq;
             if (blockers >> sq) & 1 != 0 {
                 break;
@@ -117,7 +119,7 @@ pub fn bishop_attacks_per_square(square: usize, blockers: u64) -> u64 {
     if let Some(mut r) = rank.checked_sub(1) {
         let mut f = file + 1;
         while f <= 7 {
-            let sq = r * 8 + f;
+            let sq = square_index(r, f);
             attacks |= 1u64 << sq;
             if (blockers >> sq) & 1 != 0 {
                 break;
