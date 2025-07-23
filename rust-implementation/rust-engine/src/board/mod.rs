@@ -230,6 +230,25 @@ impl Board {
             (Piece::King, Color::Black) => self.black_king,
         }
     }
+
+    // Utility Aliases
+    pub fn en_passant_target(&self) -> Option<Square> {
+        self.en_passant
+    }
+
+    pub fn has_kingside_castle(&self, color: Color) -> bool {
+        match color {
+            Color::White => self.castling_rights & 0b0001 != 0,
+            Color::Black => self.castling_rights & 0b0100 != 0,
+        }
+    }
+
+    pub fn has_queenside_castle(&self, color: Color) -> bool {
+        match color {
+            Color::White => self.castling_rights & 0b0010 != 0,
+            Color::Black => self.castling_rights & 0b1000 != 0,
+        }
+    }
 }
 
 impl Color {
