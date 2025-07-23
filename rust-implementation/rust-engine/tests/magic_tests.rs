@@ -1,10 +1,16 @@
-use rust_engine::moves::magic::{
-    bishop_attacks, bishop_attacks_per_square, bishop_vision_mask, find_magic_number_for_square,
-    generate_bishop_blockers, generate_rook_blockers, get_bishop_attack_bitboards,
-    get_rook_attack_bitboards, is_magic_candidate_valid, precompute_bishop_attacks,
-    precompute_rook_attacks, queen_attacks, rook_attacks, rook_attacks_per_square,
-    rook_vision_mask,
+use rust_engine::moves::magic::attacks::{
+    bishop_attacks_per_square, get_bishop_attack_bitboards, get_rook_attack_bitboards,
+    rook_attacks_per_square,
 };
+use rust_engine::moves::magic::masks::{
+    bishop_vision_mask, generate_bishop_blockers, generate_rook_blockers, rook_vision_mask,
+};
+use rust_engine::moves::magic::precompute::{
+    generate_bishop_magic_tables, generate_rook_magic_tables, precompute_bishop_attacks,
+    precompute_rook_attacks,
+};
+use rust_engine::moves::magic::search::{find_magic_number_for_square, is_magic_candidate_valid};
+use rust_engine::moves::magic::structs::MagicTables;
 
 /// Helper: Pretty-print a bitboard
 fn print_bitboard(mask: u64) {
@@ -339,93 +345,58 @@ fn test_find_magic_for_bishop_d4_real_search() -> Result<(), String> {
 }
 
 #[test]
-fn test_runtime_rook_attacks_matches_per_square() -> Result<(), String> {
-    let d4 = 3 + 3 * 8;
-    let blockers = generate_rook_blockers(d4);
-    let attacks = get_rook_attack_bitboards(d4, &blockers);
-    let shift = 64 - rook_vision_mask(d4).count_ones();
-    let magic = find_magic_number_for_square(&blockers, &attacks, shift)?;
+fn test_magic_lookup_matches_scan_rook() {
+    let square = 27; // D4
+    let blockers = 0x0000_0800_0000_0000; // D6, example blocker
+    let expected = rook_attacks_per_square(square, blockers);
 
-    let mut table = vec![0u64; attacks.len()];
-    for (i, &b) in blockers.iter().enumerate() {
-        let idx = (b.wrapping_mul(magic)) >> shift;
-        table[idx as usize] = attacks[i];
-    }
+    let table = generate_rook_magic_tables().unwrap();
+    let mask = rook_vision_mask(square);
+    let result = table.get_attacks(square, blockers, mask);
 
-    for (i, &b) in blockers.iter().enumerate() {
-        let expected = attacks[i];
-        let lookup = rook_attacks(d4, b, magic, shift, &table);
-        assert_eq!(lookup, expected, "Mismatch for blocker subset {}", i);
-    }
-
-    Ok(())
-}
-
-#[test]
-fn test_runtime_bishop_attacks_matches_per_square() -> Result<(), String> {
-    let d4 = 3 + 3 * 8;
-    let blockers = generate_bishop_blockers(d4);
-    let attacks = get_bishop_attack_bitboards(d4, &blockers);
-    let shift = 64 - bishop_vision_mask(d4).count_ones();
-    let magic = find_magic_number_for_square(&blockers, &attacks, shift)?;
-
-    let mut table = vec![0u64; attacks.len()];
-    for (i, &b) in blockers.iter().enumerate() {
-        let idx = (b.wrapping_mul(magic)) >> shift;
-        table[idx as usize] = attacks[i];
-    }
-
-    for (i, &b) in blockers.iter().enumerate() {
-        let expected = attacks[i];
-        let lookup = bishop_attacks(d4, b, magic, shift, &table);
-        assert_eq!(lookup, expected, "Mismatch for blocker subset {}", i);
-    }
-
-    Ok(())
-}
-
-#[test]
-fn test_runtime_queen_attacks_matches_per_square() -> Result<(), String> {
-    let d4 = 3 + 3 * 8;
-
-    let rook_blockers = generate_rook_blockers(d4);
-    let rook_attacks_vec = get_rook_attack_bitboards(d4, &rook_blockers);
-    let rook_shift = 64 - rook_vision_mask(d4).count_ones();
-    let rook_magic = find_magic_number_for_square(&rook_blockers, &rook_attacks_vec, rook_shift)?;
-
-    let mut rook_table = vec![0u64; rook_attacks_vec.len()];
-    for (i, &b) in rook_blockers.iter().enumerate() {
-        let idx = (b.wrapping_mul(rook_magic)) >> rook_shift;
-        rook_table[idx as usize] = rook_attacks_vec[i];
-    }
-
-    let bishop_blockers = generate_bishop_blockers(d4);
-    let bishop_attacks_vec = get_bishop_attack_bitboards(d4, &bishop_blockers);
-    let bishop_shift = 64 - bishop_vision_mask(d4).count_ones();
-    let bishop_magic =
-        find_magic_number_for_square(&bishop_blockers, &bishop_attacks_vec, bishop_shift)?;
-
-    let mut bishop_table = vec![0u64; bishop_attacks_vec.len()];
-    for (i, &b) in bishop_blockers.iter().enumerate() {
-        let idx = (b.wrapping_mul(bishop_magic)) >> bishop_shift;
-        bishop_table[idx as usize] = bishop_attacks_vec[i];
-    }
-
-    let occupied = 0;
-    let queen = queen_attacks(
-        d4,
-        occupied,
-        rook_magic,
-        rook_shift,
-        &rook_table,
-        bishop_magic,
-        bishop_shift,
-        &bishop_table,
+    assert_eq!(
+        result, expected,
+        "Rook magic lookup failed at square {}",
+        square
     );
+}
 
-    let expected = rook_attacks_per_square(d4, occupied) | bishop_attacks_per_square(d4, occupied);
+#[test]
+fn test_magic_lookup_matches_scan_bishop() {
+    let square = 27; // D4
+    let blockers = 0x0000_0010_0000_0000; // B6, example blocker
+    let expected = bishop_attacks_per_square(square, blockers);
 
-    assert_eq!(queen, expected, "Queen attacks should match rook | bishop");
+    let table = generate_bishop_magic_tables().unwrap();
+    let mask = bishop_vision_mask(square);
+    let result = table.get_attacks(square, blockers, mask);
 
-    Ok(())
+    assert_eq!(
+        result, expected,
+        "Bishop magic lookup failed at square {}",
+        square
+    );
+}
+
+#[test]
+fn test_magic_lookup_matches_scan_queen() {
+    let square = 27; // D4
+    let blockers = 0x0000_0810_0000_0000; // D6 + B6
+
+    let expected_rook = rook_attacks_per_square(square, blockers);
+    let expected_bishop = bishop_attacks_per_square(square, blockers);
+    let expected = expected_rook | expected_bishop;
+
+    let tables = MagicTables {
+        rook: generate_rook_magic_tables().unwrap(),
+        bishop: generate_bishop_magic_tables().unwrap(),
+    };
+
+    let result = tables.queen_attacks(square, blockers);
+
+    assert_eq!(
+        result, expected,
+        "Queen magic lookup failed at square {}",
+        square
+    );
 }

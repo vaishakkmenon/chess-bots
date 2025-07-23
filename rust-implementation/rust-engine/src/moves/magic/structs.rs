@@ -21,6 +21,12 @@ pub struct BishopMagicTables {
     pub entries: [MagicEntry; 64],
 }
 
+#[derive(Debug)]
+pub struct MagicTables {
+    pub rook: RookMagicTables,
+    pub bishop: BishopMagicTables,
+}
+
 impl RookMagicTables {
     /// Returns the rook attack bitboard for a given square, blockers, and vision mask.
     /// The mask should be the rook vision mask for that square.
@@ -40,6 +46,19 @@ impl BishopMagicTables {
         let masked = blockers & mask;
         let index = ((masked.wrapping_mul(entry.magic)) >> entry.shift) as usize;
         return entry.table[index];
+    }
+}
+
+impl MagicTables {
+    /// Returns queen attacks by combining rook and bishop magic lookups.
+    pub fn queen_attacks(&self, square: usize, blockers: u64) -> u64 {
+        let rook_mask = crate::moves::magic::masks::rook_vision_mask(square);
+        let bishop_mask = crate::moves::magic::masks::bishop_vision_mask(square);
+
+        let rook = self.rook.get_attacks(square, blockers, rook_mask);
+        let bishop = self.bishop.get_attacks(square, blockers, bishop_mask);
+
+        return rook | bishop;
     }
 }
 
@@ -111,5 +130,31 @@ fn test_rook_magic_lookup_matches_scan() {
     assert_eq!(
         result, expected,
         "Magic lookup result does not match scan-based rook attack generation"
+    );
+}
+
+#[test]
+fn test_queen_magic_lookup_matches_combined() {
+    use crate::moves::magic::attacks::{bishop_attacks_per_square, rook_attacks_per_square};
+    use crate::moves::magic::precompute::{
+        generate_bishop_magic_tables, generate_rook_magic_tables,
+    };
+
+    let square = 27; // D4
+    let blockers = (1u64 << 19) | (1u64 << 35) | (1u64 << 41) | (1u64 << 21);
+
+    let rook_expected = rook_attacks_per_square(square, blockers);
+    let bishop_expected = bishop_attacks_per_square(square, blockers);
+    let expected = rook_expected | bishop_expected;
+
+    let rook = generate_rook_magic_tables().unwrap();
+    let bishop = generate_bishop_magic_tables().unwrap();
+    let tables = MagicTables { rook, bishop };
+
+    let result = tables.queen_attacks(square, blockers);
+
+    assert_eq!(
+        result, expected,
+        "Queen magic lookup does not match combined scan logic"
     );
 }
