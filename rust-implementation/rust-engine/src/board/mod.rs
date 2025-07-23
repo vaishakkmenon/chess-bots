@@ -114,6 +114,7 @@ impl Board {
             fullmove_number: 1,
         }
     }
+
     pub fn new() -> Self {
         let mut b = Board::new_empty();
         // Set up white pieces
@@ -140,6 +141,7 @@ impl Board {
         b.fullmove_number = 1;
         return b;
     }
+
     pub fn occupied(&self) -> u64 {
         self.white_pawns
             | self.white_bishops
@@ -154,6 +156,7 @@ impl Board {
             | self.black_queens
             | self.black_king
     }
+
     pub fn has_castling(&self, flag: u8) -> bool {
         self.castling_rights & flag != 0
     }
@@ -184,6 +187,40 @@ impl Board {
             seen |= bb;
         }
         Ok(())
+    }
+
+    pub fn occupancy(&self, color: Color) -> u64 {
+        match color {
+            Color::White => {
+                self.white_pawns
+                    | self.white_knights
+                    | self.white_bishops
+                    | self.white_rooks
+                    | self.white_queens
+                    | self.white_king
+            }
+            Color::Black => {
+                self.black_pawns
+                    | self.black_knights
+                    | self.black_bishops
+                    | self.black_rooks
+                    | self.black_queens
+                    | self.black_king
+            }
+        }
+    }
+
+    pub fn opponent_occupancy(&self, color: Color) -> u64 {
+        self.occupancy(color.opposite())
+    }
+}
+
+impl Color {
+    pub fn opposite(self) -> Self {
+        match self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        }
     }
 }
 
