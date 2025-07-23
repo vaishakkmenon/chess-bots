@@ -3,6 +3,13 @@ use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::io::Write;
 
+fn random_sparse_u64() -> u64 {
+    // Generate a sparse 64-bit number by AND-ing three random values.
+    // This helps ensure a low number of set bits (sparse pattern),
+    // which reduces the chance of collisions in magic indexing.
+    random::<u64>() & random::<u64>() & random::<u64>()
+}
+
 pub fn is_magic_candidate_valid(blockers: &[u64], attacks: &[u64], magic: u64, shift: u32) -> bool {
     let mut seen: HashMap<u64, u64> = HashMap::new();
 
@@ -42,7 +49,7 @@ pub fn find_magic_number_for_square(blockers: &[u64], attacks: &[u64], shift: u3
             .expect("Failed to write to log file");
         }
 
-        let magic = random::<u64>() & random::<u64>() & random::<u64>();
+        let magic = random_sparse_u64();
 
         if is_magic_candidate_valid(blockers, attacks, magic, shift) {
             writeln!(
