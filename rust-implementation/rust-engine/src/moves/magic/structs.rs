@@ -1,8 +1,14 @@
+/// A single magic bitboard entry used to compute sliding piece attacks.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MagicEntry {
+    /// The magic number used to hash blocker bitboards into attack indices.
     pub magic: u64,
+
+    /// The number of bits to shift after multiplication to get the table index.
     pub shift: u32,
-    pub table: Vec<u64>,
+
+    /// The precomputed attack table indexed by (blockers * magic) >> shift.
+    pub table: Box<[u64]>,
 }
 
 #[derive(Debug)]
@@ -23,7 +29,7 @@ fn test_debug_print_rook() {
     let dummy_entry = MagicEntry {
         magic: 0x1234_5678_9ABC_DEF0,
         shift: 52,
-        table: vec![0; 4096],
+        table: vec![0; 4096].into_boxed_slice(),
     };
 
     let rook_tables = RookMagicTables {

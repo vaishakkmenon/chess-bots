@@ -113,7 +113,7 @@ where
         };
 
         let table_size = 1 << mask.count_ones();
-        let mut table = vec![0u64; table_size];
+        let mut table = vec![0u64; table_size].into_boxed_slice();
 
         for &b in &blockers {
             let idx = ((b & mask).wrapping_mul(magic)) >> shift;
