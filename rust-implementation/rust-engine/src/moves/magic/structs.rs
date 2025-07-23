@@ -28,7 +28,7 @@ impl RookMagicTables {
         let entry = &self.entries[square];
         let masked = blockers & mask;
         let index = ((masked.wrapping_mul(entry.magic)) >> entry.shift) as usize;
-        entry.table[index]
+        return entry.table[index];
     }
 }
 
@@ -39,7 +39,7 @@ impl BishopMagicTables {
         let entry = &self.entries[square];
         let masked = blockers & mask;
         let index = ((masked.wrapping_mul(entry.magic)) >> entry.shift) as usize;
-        entry.table[index]
+        return entry.table[index];
     }
 }
 
