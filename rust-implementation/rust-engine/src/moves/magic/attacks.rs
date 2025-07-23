@@ -1,62 +1,62 @@
 use crate::utils::square_index;
 
 #[inline]
+/// Scanning along an axis for available positions. Created a function to replace repeated logic.
+fn scan_ray<F>(mut rank: isize, mut file: isize, step: F, mut on_square: impl FnMut(usize) -> bool)
+where
+    F: Fn(isize, isize) -> (isize, isize),
+{
+    while (0..=7).contains(&rank) && (0..=7).contains(&file) {
+        let sq = square_index(rank as usize, file as usize);
+        if !on_square(sq) {
+            break;
+        }
+        let (new_rank, new_file) = step(rank, file);
+        rank = new_rank;
+        file = new_file;
+    }
+}
+
+#[inline]
 pub fn rook_attacks_per_square(square: usize, blockers: u64) -> u64 {
     let rank = square / 8;
     let file = square % 8;
     let mut attacks = 0u64;
 
-    // North
-    let mut r = rank + 1;
-    while r <= 7 {
-        let sq = square_index(r, file);
-        attacks |= 1u64 << sq;
-        if (blockers >> sq) & 1 != 0 {
-            break;
-        }
-        r += 1;
-    }
+    // Function to add possible attacks based blockers and current square
+    // Created as a closure to keep the function local
+    let mut add = |sq: usize| {
+        attacks |= 1 << sq;
+        (blockers >> sq) & 1 == 0 // stop if blocker found
+    };
 
-    // South
-    if let Some(mut r) = rank.checked_sub(1) {
-        while r <= 7 {
-            let sq = square_index(r, file);
-            attacks |= 1u64 << sq;
-            if (blockers >> sq) & 1 != 0 {
-                break;
-            }
-            if r == 0 {
-                break;
-            }
-            r -= 1;
-        }
-    }
+    scan_ray(
+        rank as isize + 1,
+        file as isize,
+        |r, f| (r + 1, f),
+        &mut add,
+    ); // north
 
-    // East
-    let mut f = file + 1;
-    while f <= 7 {
-        let sq = rank * 8 + f;
-        attacks |= 1u64 << sq;
-        if (blockers >> sq) & 1 != 0 {
-            break;
-        }
-        f += 1;
-    }
+    scan_ray(
+        rank as isize - 1,
+        file as isize,
+        |r, f| (r - 1, f),
+        &mut add,
+    ); // south
 
-    // West
-    if let Some(mut f) = file.checked_sub(1) {
-        while f <= 7 {
-            let sq = rank * 8 + f;
-            attacks |= 1u64 << sq;
-            if (blockers >> sq) & 1 != 0 {
-                break;
-            }
-            if f == 0 {
-                break;
-            }
-            f -= 1;
-        }
-    }
+    scan_ray(
+        rank as isize,
+        file as isize + 1,
+        |r, f| (r, f + 1),
+        &mut add,
+    ); // east
+
+    scan_ray(
+        rank as isize,
+        file as isize - 1,
+        |r, f| (r, f - 1),
+        &mut add,
+    ); // west
 
     return attacks;
 }
@@ -67,70 +67,38 @@ pub fn bishop_attacks_per_square(square: usize, blockers: u64) -> u64 {
     let file = square % 8;
     let mut attacks = 0u64;
 
-    // NE
-    let mut r = rank + 1;
-    let mut f = file + 1;
-    while r <= 7 && f <= 7 {
-        let sq = square_index(r, f);
-        attacks |= 1u64 << sq;
-        if (blockers >> sq) & 1 != 0 {
-            break;
-        }
-        r += 1;
-        f += 1;
-    }
+    let mut add = |sq: usize| {
+        attacks |= 1 << sq;
+        (blockers >> sq) & 1 == 0
+    };
 
-    // SW
-    if let Some(mut r) = rank.checked_sub(1) {
-        if let Some(mut f) = file.checked_sub(1) {
-            loop {
-                let sq = square_index(r, f);
-                attacks |= 1u64 << sq;
-                if (blockers >> sq) & 1 != 0 {
-                    break;
-                }
-                if r == 0 || f == 0 {
-                    break;
-                }
-                r -= 1;
-                f -= 1;
-            }
-        }
-    }
+    scan_ray(
+        rank as isize + 1,
+        file as isize + 1,
+        |r, f| (r + 1, f + 1),
+        &mut add,
+    ); // NE
 
-    // NW
-    let mut r = rank + 1;
-    if let Some(mut f) = file.checked_sub(1) {
-        while r <= 7 {
-            let sq = square_index(r, f);
-            attacks |= 1u64 << sq;
-            if (blockers >> sq) & 1 != 0 {
-                break;
-            }
-            r += 1;
-            if f == 0 {
-                break;
-            }
-            f -= 1;
-        }
-    }
+    scan_ray(
+        rank as isize - 1,
+        file as isize - 1,
+        |r, f| (r - 1, f - 1),
+        &mut add,
+    ); // SW
 
-    // SE
-    if let Some(mut r) = rank.checked_sub(1) {
-        let mut f = file + 1;
-        while f <= 7 {
-            let sq = square_index(r, f);
-            attacks |= 1u64 << sq;
-            if (blockers >> sq) & 1 != 0 {
-                break;
-            }
-            if r == 0 {
-                break;
-            }
-            r -= 1;
-            f += 1;
-        }
-    }
+    scan_ray(
+        rank as isize + 1,
+        file as isize - 1,
+        |r, f| (r + 1, f - 1),
+        &mut add,
+    ); // NW
+
+    scan_ray(
+        rank as isize - 1,
+        file as isize + 1,
+        |r, f| (r - 1, f + 1),
+        &mut add,
+    ); // SE
 
     return attacks;
 }
