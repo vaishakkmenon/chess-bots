@@ -427,3 +427,58 @@ fn test_set_fen_invalid_fullmove() {
     let err = b.set_fen("8/8/8/8/8/8/8/8 w - - 0 bar").unwrap_err();
     assert!(err.contains("Invalid fullmove number"));
 }
+
+#[test]
+fn test_validate_no_overlap() {
+    let b = Board::new();
+    assert!(b.validate().is_ok());
+}
+
+#[test]
+fn test_validate_with_overlap() {
+    let mut b = Board::new();
+    // Force an overlap manually:
+    b.white_pawns |= 1 << 0; // Square a1, already occupied by white rook
+    assert!(b.validate().is_err());
+}
+
+#[test]
+fn test_valid_clocks() {
+    let mut b = Board::new_empty();
+    assert!(b.parse_clocks("5", "10").is_ok());
+    assert_eq!(b.halfmove_clock, 5);
+    assert_eq!(b.fullmove_number, 10);
+}
+
+#[test]
+fn test_invalid_fullmove_zero() {
+    let mut b = Board::new_empty();
+    let res = b.parse_clocks("0", "0");
+    assert!(res.is_err());
+    assert!(res.unwrap_err().contains("must be >= 1"));
+}
+
+#[test]
+fn test_parse_fen_from_str() {
+    let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    let board: Board = fen.parse().expect("Failed to parse FEN");
+    assert_eq!(board.fullmove_number, 1);
+    assert_eq!(board.side_to_move, Color::White);
+}
+
+#[test]
+fn test_parse_fen_invalid() {
+    let fen = "invalid fen string";
+    let res: Result<Board, _> = fen.parse();
+    assert!(res.is_err());
+}
+
+#[test]
+fn test_display_fen() {
+    let board = Board::new();
+    let fen = format!("{}", board);
+    assert_eq!(
+        fen,
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    );
+}

@@ -1,138 +1,55 @@
 use crate::board::Color;
 
-pub const WHITE_PAWN_ATTACKS: [u64; 64] = [
-    0x0000000000000200, // 0
-    0x0000000000000500, // 1
-    0x0000000000000A00, // 2
-    0x0000000000001400, // 3
-    0x0000000000002800, // 4
-    0x0000000000005000, // 5
-    0x000000000000A000, // 6
-    0x0000000000004000, // 7
-    0x0000000000020000, // 8
-    0x0000000000050000, // 9
-    0x00000000000A0000, // 10
-    0x0000000000140000, // 11
-    0x0000000000280000, // 12
-    0x0000000000500000, // 13
-    0x0000000000A00000, // 14
-    0x0000000000400000, // 15
-    0x0000000002000000, // 16
-    0x0000000005000000, // 17
-    0x000000000A000000, // 18
-    0x0000000014000000, // 19
-    0x0000000028000000, // 20
-    0x0000000050000000, // 21
-    0x00000000A0000000, // 22
-    0x0000000040000000, // 23
-    0x0000000200000000, // 24
-    0x0000000500000000, // 25
-    0x0000000A00000000, // 26
-    0x0000001400000000, // 27
-    0x0000002800000000, // 28
-    0x0000005000000000, // 29
-    0x000000A000000000, // 30
-    0x0000004000000000, // 31
-    0x0000020000000000, // 32
-    0x0000050000000000, // 33
-    0x00000A0000000000, // 34
-    0x0000140000000000, // 35
-    0x0000280000000000, // 36
-    0x0000500000000000, // 37
-    0x0000A00000000000, // 38
-    0x0000400000000000, // 39
-    0x0002000000000000, // 40
-    0x0005000000000000, // 41
-    0x000A000000000000, // 42
-    0x0014000000000000, // 43
-    0x0028000000000000, // 44
-    0x0050000000000000, // 45
-    0x00A0000000000000, // 46
-    0x0040000000000000, // 47
-    0x0200000000000000, // 48
-    0x0500000000000000, // 49
-    0x0A00000000000000, // 50
-    0x1400000000000000, // 51
-    0x2800000000000000, // 52
-    0x5000000000000000, // 53
-    0xA000000000000000, // 54
-    0x4000000000000000, // 55
-    0x0000000000000000, // 56
-    0x0000000000000000, // 57
-    0x0000000000000000, // 58
-    0x0000000000000000, // 59
-    0x0000000000000000, // 60
-    0x0000000000000000, // 61
-    0x0000000000000000, // 62
-    0x0000000000000000, // 63
-];
-pub const BLACK_PAWN_ATTACKS: [u64; 64] = [
-    0x0000000000000000, // 0
-    0x0000000000000000, // 1
-    0x0000000000000000, // 2
-    0x0000000000000000, // 3
-    0x0000000000000000, // 4
-    0x0000000000000000, // 5
-    0x0000000000000000, // 6
-    0x0000000000000000, // 7
-    0x0000000000000002, // 8
-    0x0000000000000005, // 9
-    0x000000000000000A, // 10
-    0x0000000000000014, // 11
-    0x0000000000000028, // 12
-    0x0000000000000050, // 13
-    0x00000000000000A0, // 14
-    0x0000000000000040, // 15
-    0x0000000000000200, // 16
-    0x0000000000000500, // 17
-    0x0000000000000A00, // 18
-    0x0000000000001400, // 19
-    0x0000000000002800, // 20
-    0x0000000000005000, // 21
-    0x000000000000A000, // 22
-    0x0000000000004000, // 23
-    0x0000000000020000, // 24
-    0x0000000000050000, // 25
-    0x00000000000A0000, // 26
-    0x0000000000140000, // 27
-    0x0000000000280000, // 28
-    0x0000000000500000, // 29
-    0x0000000000A00000, // 30
-    0x0000000000400000, // 31
-    0x0000000002000000, // 32
-    0x0000000005000000, // 33
-    0x000000000A000000, // 34
-    0x0000000014000000, // 35
-    0x0000000028000000, // 36
-    0x0000000050000000, // 37
-    0x00000000A0000000, // 38
-    0x0000000040000000, // 39
-    0x0000000200000000, // 40
-    0x0000000500000000, // 41
-    0x0000000A00000000, // 42
-    0x0000001400000000, // 43
-    0x0000002800000000, // 44
-    0x0000005000000000, // 45
-    0x000000A000000000, // 46
-    0x0000004000000000, // 47
-    0x0000020000000000, // 48
-    0x0000050000000000, // 49
-    0x00000A0000000000, // 50
-    0x0000140000000000, // 51
-    0x0000280000000000, // 52
-    0x0000500000000000, // 53
-    0x0000A00000000000, // 54
-    0x0000400000000000, // 55
-    0x0002000000000000, // 56
-    0x0005000000000000, // 57
-    0x000A000000000000, // 58
-    0x0014000000000000, // 59
-    0x0028000000000000, // 60
-    0x0050000000000000, // 61
-    0x00A0000000000000, // 62
-    0x0040000000000000, // 63
-];
+pub const WHITE_PAWN_ATTACKS: [u64; 64] = generate_pawn_attack_table(Color::White);
+pub const BLACK_PAWN_ATTACKS: [u64; 64] = generate_pawn_attack_table(Color::Black);
 
+const fn single_pawn_attack_mask(square: u8, color: Color) -> u64 {
+    let rank = (square / 8) as i8;
+    let file = (square % 8) as i8;
+    let mut attacks = 0u64;
+
+    let deltas: [(i8, i8); 2] = match color {
+        Color::White => [(1, -1), (1, 1)],
+        Color::Black => [(-1, -1), (-1, 1)],
+    };
+
+    let mut i = 0;
+    while i < 2 {
+        let dr = deltas[i].0;
+        let df = deltas[i].1;
+
+        let r = rank + dr;
+        let f = file + df;
+        if r >= 0 && r < 8 && f >= 0 && f < 8 {
+            let dest = (r * 8 + f) as u64;
+            attacks |= 1u64 << dest;
+        }
+
+        i += 1;
+    }
+
+    return attacks;
+}
+
+const fn generate_pawn_attack_table(color: Color) -> [u64; 64] {
+    let mut table = [0u64; 64];
+    let mut square = 0;
+    while square < 64 {
+        table[square] = single_pawn_attack_mask(square as u8, color);
+        square += 1;
+    }
+    return table;
+}
+
+/// Returns the pawn attack bitboard for a given square and color, or None if the square is invalid.
+pub fn pawn_attacks_checked(square: u8, color: Color) -> Option<u64> {
+    if square >= 64 {
+        return None;
+    }
+    Some(pawn_attacks(square, color))
+}
+
+#[inline(always)]
 pub fn pawn_attacks(square: u8, color: Color) -> u64 {
     match color {
         Color::White => WHITE_PAWN_ATTACKS[square as usize],
@@ -140,14 +57,17 @@ pub fn pawn_attacks(square: u8, color: Color) -> u64 {
     }
 }
 
-#[allow(dead_code)]
-fn white_pawn_attack_mask(square: u8) -> u64 {
-    // only top-right and top-left (north-east and north-west)
+#[cfg(test)]
+fn pawn_attack_mask(square: u8, color: Color) -> u64 {
     let rank = square / 8;
     let file = square % 8;
     let mut attacks = 0u64;
 
-    let deltas: [(i8, i8); 2] = [(1, -1), (1, 1)];
+    let deltas: [(i8, i8); 2] = match color {
+        Color::White => [(1, -1), (1, 1)],
+        Color::Black => [(-1, -1), (-1, 1)],
+    };
+
     for (dr, df) in deltas {
         let r = rank as i8 + dr;
         let f = file as i8 + df;
@@ -156,45 +76,48 @@ fn white_pawn_attack_mask(square: u8) -> u64 {
             attacks |= 1u64 << dest;
         }
     }
-    return attacks;
-}
 
-#[allow(dead_code)]
-fn black_pawn_attack_mask(square: u8) -> u64 {
-    // only bottom-right and bottom-left (south-east and south-west)
-    let rank = square / 8;
-    let file = square % 8;
-    let mut attacks = 0u64;
-
-    let deltas: [(i8, i8); 2] = [(-1, -1), (-1, 1)];
-    for (dr, df) in deltas {
-        let r = rank as i8 + dr;
-        let f = file as i8 + df;
-        if (0..8).contains(&r) && (0..8).contains(&f) {
-            let dest = r * 8 + f;
-            attacks |= 1u64 << dest;
-        }
-    }
-    return attacks;
+    attacks
 }
 
 #[cfg(test)]
-mod test {
-    use super::{
-        BLACK_PAWN_ATTACKS, WHITE_PAWN_ATTACKS, black_pawn_attack_mask, white_pawn_attack_mask,
-    };
+mod tests {
+
+    use super::{BLACK_PAWN_ATTACKS, WHITE_PAWN_ATTACKS, pawn_attack_mask};
+    use crate::board::Color;
 
     #[test]
     fn dump_white_pawn_attacks() {
         for sq in 0..64 {
-            println!("0x{:016X}, // {}", white_pawn_attack_mask(sq), sq);
+            println!(
+                "0x{:016X}, // {}",
+                pawn_attack_mask(sq as u8, Color::White),
+                sq
+            );
         }
     }
 
     #[test]
     fn dump_black_pawn_attacks() {
         for sq in 0..64 {
-            println!("0x{:016X}, // {}", black_pawn_attack_mask(sq), sq);
+            println!(
+                "0x{:016X}, // {}",
+                pawn_attack_mask(sq as u8, Color::Black),
+                sq
+            );
+        }
+    }
+
+    #[test]
+    fn test_checked_matches_const() {
+        use crate::board::Color;
+
+        for square in 0..64u8 {
+            let w = super::pawn_attacks_checked(square, Color::White);
+            let b = super::pawn_attacks_checked(square, Color::Black);
+
+            assert_eq!(w, Some(super::WHITE_PAWN_ATTACKS[square as usize]));
+            assert_eq!(b, Some(super::BLACK_PAWN_ATTACKS[square as usize]));
         }
     }
 
@@ -202,7 +125,7 @@ mod test {
     fn test_white_pawn_attack_mask_d4() {
         let d4 = 3 + 8 * 3; // index 27
         let expected = (1u64 << (4 * 8 + 2)) | (1u64 << (4 * 8 + 4)); // c5 + e5
-        assert_eq!(white_pawn_attack_mask(d4), expected);
+        assert_eq!(pawn_attack_mask(d4, Color::White), expected);
     }
 
     #[test]
@@ -210,7 +133,7 @@ mod test {
         for square in 0..64 {
             assert_eq!(
                 WHITE_PAWN_ATTACKS[square],
-                white_pawn_attack_mask(square as u8),
+                pawn_attack_mask(square as u8, Color::White),
                 "Mismatch at square {}",
                 square
             );
@@ -222,10 +145,30 @@ mod test {
         for square in 0..64 {
             assert_eq!(
                 BLACK_PAWN_ATTACKS[square],
-                black_pawn_attack_mask(square as u8),
+                pawn_attack_mask(square as u8, Color::Black),
                 "Mismatch at square {}",
                 square
             );
         }
+    }
+
+    #[test]
+    fn test_pawn_attacks_checked() {
+        use crate::board::Color;
+
+        assert_eq!(
+            super::pawn_attacks_checked(27, Color::White),
+            Some(super::WHITE_PAWN_ATTACKS[27])
+        );
+        assert_eq!(
+            super::pawn_attacks_checked(64, Color::Black),
+            None,
+            "Square 64 should return None"
+        );
+        assert_eq!(
+            super::pawn_attacks_checked(255, Color::White),
+            None,
+            "Out-of-bounds square should return None"
+        );
     }
 }
