@@ -5,10 +5,12 @@ pub struct MagicEntry {
     pub table: Vec<u64>,
 }
 
+#[derive(Debug)]
 pub struct RookMagicTables {
     pub entries: [MagicEntry; 64],
 }
 
+#[derive(Debug)]
 pub struct BishopMagicTables {
     pub entries: [MagicEntry; 64],
 }
