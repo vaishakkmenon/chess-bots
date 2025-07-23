@@ -213,6 +213,23 @@ impl Board {
     pub fn opponent_occupancy(&self, color: Color) -> u64 {
         self.occupancy(color.opposite())
     }
+
+    pub fn pieces(&self, piece: Piece, color: Color) -> u64 {
+        match (piece, color) {
+            (Piece::Pawn, Color::White) => self.white_pawns,
+            (Piece::Knight, Color::White) => self.white_knights,
+            (Piece::Bishop, Color::White) => self.white_bishops,
+            (Piece::Rook, Color::White) => self.white_rooks,
+            (Piece::Queen, Color::White) => self.white_queens,
+            (Piece::King, Color::White) => self.white_king,
+            (Piece::Pawn, Color::Black) => self.black_pawns,
+            (Piece::Knight, Color::Black) => self.black_knights,
+            (Piece::Bishop, Color::Black) => self.black_bishops,
+            (Piece::Rook, Color::Black) => self.black_rooks,
+            (Piece::Queen, Color::Black) => self.black_queens,
+            (Piece::King, Color::Black) => self.black_king,
+        }
+    }
 }
 
 impl Color {
@@ -249,5 +266,4 @@ impl fmt::Display for Board {
 }
 
 #[cfg(test)]
-// #[path = "board_tests.rs"]
 mod tests;
