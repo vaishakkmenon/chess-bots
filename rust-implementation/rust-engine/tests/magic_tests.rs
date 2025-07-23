@@ -311,109 +311,107 @@ fn test_bishop_all_same_attack_always_valid() {
 }
 
 #[test]
-fn test_find_magic_for_rook_d4_real_search() {
+fn test_find_magic_for_rook_d4_real_search() -> Result<(), String> {
     let d4 = 3 + 3 * 8;
     let blockers = generate_rook_blockers(d4);
     let attacks = get_rook_attack_bitboards(d4, &blockers);
     let shift = 64 - rook_vision_mask(d4).count_ones();
 
-    let magic = find_magic_number_for_square(&blockers, &attacks, shift);
+    let magic = find_magic_number_for_square(&blockers, &attacks, shift)?;
     let valid = is_magic_candidate_valid(&blockers, &attacks, magic, shift);
     assert!(valid, "The found rook magic must be valid");
+
+    Ok(())
 }
 
 #[test]
-fn test_find_magic_for_bishop_d4_real_search() {
+fn test_find_magic_for_bishop_d4_real_search() -> Result<(), String> {
     let d4 = 3 + 3 * 8;
     let blockers = generate_bishop_blockers(d4);
     let attacks = get_bishop_attack_bitboards(d4, &blockers);
     let shift = 64 - bishop_vision_mask(d4).count_ones();
 
-    let magic = find_magic_number_for_square(&blockers, &attacks, shift);
+    let magic = find_magic_number_for_square(&blockers, &attacks, shift)?;
     let valid = is_magic_candidate_valid(&blockers, &attacks, magic, shift);
     assert!(valid, "The found bishop magic must be valid");
+
+    Ok(())
 }
 
 #[test]
-fn test_runtime_rook_attacks_matches_per_square() {
+fn test_runtime_rook_attacks_matches_per_square() -> Result<(), String> {
     let d4 = 3 + 3 * 8;
-
     let blockers = generate_rook_blockers(d4);
     let attacks = get_rook_attack_bitboards(d4, &blockers);
     let shift = 64 - rook_vision_mask(d4).count_ones();
-    let magic = find_magic_number_for_square(&blockers, &attacks, shift);
+    let magic = find_magic_number_for_square(&blockers, &attacks, shift)?;
 
-    // Precompute table
     let mut table = vec![0u64; attacks.len()];
     for (i, &b) in blockers.iter().enumerate() {
         let idx = (b.wrapping_mul(magic)) >> shift;
         table[idx as usize] = attacks[i];
     }
 
-    // Verify all blocker configurations produce same attack
     for (i, &b) in blockers.iter().enumerate() {
         let expected = attacks[i];
         let lookup = rook_attacks(d4, b, magic, shift, &table);
         assert_eq!(lookup, expected, "Mismatch for blocker subset {}", i);
     }
+
+    Ok(())
 }
 
 #[test]
-fn test_runtime_bishop_attacks_matches_per_square() {
+fn test_runtime_bishop_attacks_matches_per_square() -> Result<(), String> {
     let d4 = 3 + 3 * 8;
-
     let blockers = generate_bishop_blockers(d4);
     let attacks = get_bishop_attack_bitboards(d4, &blockers);
     let shift = 64 - bishop_vision_mask(d4).count_ones();
-    let magic = find_magic_number_for_square(&blockers, &attacks, shift);
+    let magic = find_magic_number_for_square(&blockers, &attacks, shift)?;
 
-    // Build precomputed table
     let mut table = vec![0u64; attacks.len()];
     for (i, &b) in blockers.iter().enumerate() {
         let idx = (b.wrapping_mul(magic)) >> shift;
         table[idx as usize] = attacks[i];
     }
 
-    // Verify all blockers produce identical results
     for (i, &b) in blockers.iter().enumerate() {
         let expected = attacks[i];
         let lookup = bishop_attacks(d4, b, magic, shift, &table);
         assert_eq!(lookup, expected, "Mismatch for blocker subset {}", i);
     }
+
+    Ok(())
 }
 
 #[test]
-fn test_runtime_queen_attacks_matches_per_square() {
+fn test_runtime_queen_attacks_matches_per_square() -> Result<(), String> {
     let d4 = 3 + 3 * 8;
 
-    // Rook setup
     let rook_blockers = generate_rook_blockers(d4);
-    let rook_attacks = get_rook_attack_bitboards(d4, &rook_blockers);
+    let rook_attacks_vec = get_rook_attack_bitboards(d4, &rook_blockers);
     let rook_shift = 64 - rook_vision_mask(d4).count_ones();
-    let rook_magic = find_magic_number_for_square(&rook_blockers, &rook_attacks, rook_shift);
+    let rook_magic = find_magic_number_for_square(&rook_blockers, &rook_attacks_vec, rook_shift)?;
 
-    let mut rook_table = vec![0u64; rook_attacks.len()];
+    let mut rook_table = vec![0u64; rook_attacks_vec.len()];
     for (i, &b) in rook_blockers.iter().enumerate() {
         let idx = (b.wrapping_mul(rook_magic)) >> rook_shift;
-        rook_table[idx as usize] = rook_attacks[i];
+        rook_table[idx as usize] = rook_attacks_vec[i];
     }
 
-    // Bishop setup
     let bishop_blockers = generate_bishop_blockers(d4);
-    let bishop_attacks = get_bishop_attack_bitboards(d4, &bishop_blockers);
+    let bishop_attacks_vec = get_bishop_attack_bitboards(d4, &bishop_blockers);
     let bishop_shift = 64 - bishop_vision_mask(d4).count_ones();
     let bishop_magic =
-        find_magic_number_for_square(&bishop_blockers, &bishop_attacks, bishop_shift);
+        find_magic_number_for_square(&bishop_blockers, &bishop_attacks_vec, bishop_shift)?;
 
-    let mut bishop_table = vec![0u64; bishop_attacks.len()];
+    let mut bishop_table = vec![0u64; bishop_attacks_vec.len()];
     for (i, &b) in bishop_blockers.iter().enumerate() {
         let idx = (b.wrapping_mul(bishop_magic)) >> bishop_shift;
-        bishop_table[idx as usize] = bishop_attacks[i];
+        bishop_table[idx as usize] = bishop_attacks_vec[i];
     }
 
-    // Simple occupancy: no blockers
     let occupied = 0;
-
     let queen = queen_attacks(
         d4,
         occupied,
@@ -428,4 +426,6 @@ fn test_runtime_queen_attacks_matches_per_square() {
     let expected = rook_attacks_per_square(d4, occupied) | bishop_attacks_per_square(d4, occupied);
 
     assert_eq!(queen, expected, "Queen attacks should match rook | bishop");
+
+    Ok(())
 }

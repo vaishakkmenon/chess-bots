@@ -85,7 +85,7 @@ fn generate_magic_entries<FBlockers, FAttacks, FMask, FPerSquare>(
     get_attacks: FAttacks,
     get_mask: FMask,
     attacks_per_square: FPerSquare,
-) -> [MagicEntry; 64]
+) -> Result<[MagicEntry; 64], String>
 where
     FBlockers: Fn(usize) -> Vec<u64>,
     FAttacks: Fn(usize, &[u64]) -> Vec<u64>,
@@ -101,18 +101,19 @@ where
         let attacks = get_attacks(square, &blockers);
         let mask = get_mask(square);
         let shift = 64 - mask.count_ones();
-        let magic = find_magic_number_for_square(&blockers, &attacks, shift);
+
+        let magic = match find_magic_number_for_square(&blockers, &attacks, shift) {
+            Ok(magic) => {
+                println!("Magic number: {:#018x}", magic);
+                magic
+            }
+            Err(e) => {
+                return Err(format!("Square {}: {}", square, e));
+            }
+        };
 
         let table_size = 1 << mask.count_ones();
         let mut table = vec![0u64; table_size];
-
-        // Magic indexing step:
-        // 1. Mask the blockers to extract only the relevant bits.
-        // 2. Multiply by the magic number (a carefully chosen constant).
-        // 3. Shift right by `shift` to get a compact, unique index into the table.
-        //
-        // This ensures each blocker configuration maps to a unique entry,
-        // provided the magic number avoids collisions (found via brute force).
 
         for &b in &blockers {
             let idx = ((b & mask).wrapping_mul(magic)) >> shift;
@@ -126,33 +127,33 @@ where
         });
     }
 
-    entries_vec
+    Ok(entries_vec
         .try_into()
-        .expect("Expected 64 entries for magic generation")
+        .expect("Expected 64 entries for magic generation"))
 }
 
-pub fn generate_rook_magic_tables() -> RookMagicTables {
-    RookMagicTables {
-        entries: generate_magic_entries(
-            "rook",
-            generate_rook_blockers,
-            get_rook_attack_bitboards,
-            rook_vision_mask,
-            rook_attacks_per_square,
-        ),
-    }
+pub fn generate_rook_magic_tables() -> Result<RookMagicTables, String> {
+    let entries = generate_magic_entries(
+        "rook",
+        generate_rook_blockers,
+        get_rook_attack_bitboards,
+        rook_vision_mask,
+        rook_attacks_per_square,
+    )?;
+
+    Ok(RookMagicTables { entries })
 }
 
-pub fn generate_bishop_magic_tables() -> BishopMagicTables {
-    BishopMagicTables {
-        entries: generate_magic_entries(
-            "bishop",
-            generate_bishop_blockers,
-            get_bishop_attack_bitboards,
-            bishop_vision_mask,
-            bishop_attacks_per_square,
-        ),
-    }
+pub fn generate_bishop_magic_tables() -> Result<BishopMagicTables, String> {
+    let entries = generate_magic_entries(
+        "bishop",
+        generate_bishop_blockers,
+        get_bishop_attack_bitboards,
+        bishop_vision_mask,
+        bishop_attacks_per_square,
+    )?;
+
+    Ok(BishopMagicTables { entries })
 }
 
 #[cfg(test)]
@@ -168,8 +169,8 @@ mod tests {
     }
 
     #[test]
-    fn test_rook_attacks_e4_no_blockers() {
-        let tables = generate_rook_magic_tables();
+    fn test_rook_attacks_e4_no_blockers() -> Result<(), String> {
+        let tables = generate_rook_magic_tables()?;
         let square = square_from_str("e4");
         let blockers = 0u64;
 
@@ -189,33 +190,23 @@ mod tests {
             bitboard_to_string(expected),
             bitboard_to_string(actual)
         );
+
+        Ok(())
     }
 
     #[test]
-    fn test_bishop_attacks_c1_with_e3_blocker() {
-        // Build the bishop magic tables
-        let tables = generate_bishop_magic_tables();
-
-        // Square indices
+    fn test_bishop_attacks_c1_with_e3_blocker() -> Result<(), String> {
+        let tables = generate_bishop_magic_tables()?;
         let square = square_from_str("c1"); // bishop origin
         let blocker_square = square_index(2, 4); // e3  (rank 2, file 4)
-
-        // Bitboard containing just the blocker on e3
         let blockers = 1u64 << blocker_square;
 
-        // Look up the pre-computed attack bitboard via the magic table
         let entry = &tables.entries[square];
         let idx =
             ((blockers & bishop_vision_mask(square)).wrapping_mul(entry.magic)) >> entry.shift;
         let actual = entry.table[idx as usize];
 
-        // ─────────────────────────────────────────────────────────────
-        // Expected attack squares from c1 with a blocker on e3:
-        //   NE: d2  (rank 1, file 3)
-        //       e3  (rank 2, file 4)  ← blocker square, capture allowed
-        //   NW: b2  (rank 1, file 1)
-        //       a3  (rank 2, file 0)
-        // ─────────────────────────────────────────────────────────────
+        // Expected attack squares from c1 with a blocker on e3
         let mut expected = 0u64;
         expected |= 1u64 << square_index(1, 3); // d2
         expected |= 1u64 << square_index(2, 4); // e3
@@ -229,5 +220,7 @@ mod tests {
             bitboard_to_string(expected),
             bitboard_to_string(actual)
         );
+
+        Ok(())
     }
 }
