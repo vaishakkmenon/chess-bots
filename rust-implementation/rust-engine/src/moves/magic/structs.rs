@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
+
 /// A single magic bitboard entry used to compute sliding piece attacks.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MagicEntry {
     /// The magic number used to hash blocker bitboards into attack indices.
     pub magic: u64,
@@ -11,17 +13,17 @@ pub struct MagicEntry {
     pub table: Box<[u64]>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RookMagicTables {
-    pub entries: [MagicEntry; 64],
+    pub entries: Vec<MagicEntry>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BishopMagicTables {
-    pub entries: [MagicEntry; 64],
+    pub entries: Vec<MagicEntry>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct MagicTables {
     pub rook: RookMagicTables,
     pub bishop: BishopMagicTables,
@@ -65,8 +67,6 @@ impl MagicTables {
 #[cfg(test)]
 #[test]
 fn test_debug_print_rook() {
-    use std::array;
-
     let dummy_entry = MagicEntry {
         magic: 0x1234_5678_9ABC_DEF0,
         shift: 52,
@@ -74,7 +74,7 @@ fn test_debug_print_rook() {
     };
 
     let rook_tables = RookMagicTables {
-        entries: array::from_fn(|_| dummy_entry.clone()),
+        entries: vec![dummy_entry; 64],
     };
 
     println!("{:?}", rook_tables); // Should compile and print without issues
