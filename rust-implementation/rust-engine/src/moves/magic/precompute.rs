@@ -85,7 +85,7 @@ fn generate_magic_entries<FBlockers, FAttacks, FMask, FPerSquare>(
     get_attacks: FAttacks,
     get_mask: FMask,
     attacks_per_square: FPerSquare,
-) -> Result<[MagicEntry; 64], String>
+) -> Result<Vec<MagicEntry>, String>
 where
     FBlockers: Fn(usize) -> Vec<u64>,
     FAttacks: Fn(usize, &[u64]) -> Vec<u64>,
@@ -127,13 +127,11 @@ where
         });
     }
 
-    Ok(entries_vec
-        .try_into()
-        .expect("Expected 64 entries for magic generation"))
+    Ok(entries_vec)
 }
 
 pub fn generate_rook_magic_tables() -> Result<RookMagicTables, String> {
-    let entries = generate_magic_entries(
+    let entries: Vec<MagicEntry> = generate_magic_entries(
         "rook",
         generate_rook_blockers,
         get_rook_attack_bitboards,
@@ -154,6 +152,13 @@ pub fn generate_bishop_magic_tables() -> Result<BishopMagicTables, String> {
     )?;
 
     Ok(BishopMagicTables { entries })
+}
+
+pub fn generate_magic_tables() -> Result<MagicTables, String> {
+    let rook = generate_rook_magic_tables()?;
+    let bishop = generate_bishop_magic_tables()?;
+
+    Ok(MagicTables { rook, bishop })
 }
 
 #[cfg(test)]
