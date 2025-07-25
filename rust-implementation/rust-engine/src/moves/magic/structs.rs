@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
+
 /// A single magic bitboard entry used to compute sliding piece attacks.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MagicEntry {
     /// The magic number used to hash blocker bitboards into attack indices.
     pub magic: u64,
@@ -11,17 +13,17 @@ pub struct MagicEntry {
     pub table: Box<[u64]>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RookMagicTables {
-    pub entries: [MagicEntry; 64],
+    pub entries: Vec<MagicEntry>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BishopMagicTables {
-    pub entries: [MagicEntry; 64],
+    pub entries: Vec<MagicEntry>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct MagicTables {
     pub rook: RookMagicTables,
     pub bishop: BishopMagicTables,
@@ -63,98 +65,89 @@ impl MagicTables {
 }
 
 #[cfg(test)]
-#[test]
-fn test_debug_print_rook() {
-    use std::array;
-
-    let dummy_entry = MagicEntry {
-        magic: 0x1234_5678_9ABC_DEF0,
-        shift: 52,
-        table: vec![0; 4096].into_boxed_slice(),
-    };
-
-    let rook_tables = RookMagicTables {
-        entries: array::from_fn(|_| dummy_entry.clone()),
-    };
-
-    println!("{:?}", rook_tables); // Should compile and print without issues
-}
-
-#[test]
-fn test_bishop_magic_lookup_matches_scan() {
-    use crate::moves::magic::attacks::bishop_attacks_per_square;
-    use crate::moves::magic::masks::bishop_vision_mask;
-    use crate::moves::magic::precompute::generate_bishop_magic_tables;
-
-    // Pick a test square: D4 (index 27)
-    let square = 27;
-
-    // Place hypothetical blockers along diagonals
-    let blockers = (1u64 << 41) | // B6
-    (1u64 << 21); // F2
-
-    // Get vision mask for the square (used in indexing)
-    let mask = bishop_vision_mask(square);
-
-    // Ground truth using scan-based attack generator
-    let expected = bishop_attacks_per_square(square, blockers);
-
-    // Load the actual bishop magic tables
-    let table = generate_bishop_magic_tables().expect("Failed to generate bishop magic table");
-
-    // Do magic lookup
-    let result = table.get_attacks(square, blockers, mask);
-
-    assert_eq!(
-        result, expected,
-        "Magic lookup result does not match scan-based bishop attack generation"
-    );
-}
-
-#[test]
-fn test_rook_magic_lookup_matches_scan() {
-    use crate::moves::magic::attacks::rook_attacks_per_square;
-    use crate::moves::magic::masks::rook_vision_mask;
-    use crate::moves::magic::precompute::generate_rook_magic_tables;
-
-    let square = 27; // D4
-    let blockers = (1u64 << 19) | (1u64 << 35); // D3 and D6
-    let mask = rook_vision_mask(square);
-
-    let expected = rook_attacks_per_square(square, blockers);
-
-    let table = generate_rook_magic_tables().expect("Failed to generate rook magic table");
-
-    let result = table.get_attacks(square, blockers, mask);
-
-    assert_eq!(
-        result, expected,
-        "Magic lookup result does not match scan-based rook attack generation"
-    );
-}
-
-#[test]
-fn test_queen_magic_lookup_matches_combined() {
+mod tests {
+    use super::*;
     use crate::moves::magic::attacks::{bishop_attacks_per_square, rook_attacks_per_square};
-    use crate::moves::magic::precompute::{
-        generate_bishop_magic_tables, generate_rook_magic_tables,
-    };
+    use crate::moves::magic::masks::{bishop_vision_mask, rook_vision_mask};
+    use crate::moves::magic::precompute::{MagicTableSeed, generate_magic_tables};
 
-    let square = 27; // D4
-    let blockers = (1u64 << 19) | (1u64 << 35) | (1u64 << 41) | (1u64 << 21);
+    /// One constant seed for repeatable results (0x45 == 69 decimal)
+    const TEST_SEED: u64 = 0x45;
 
-    let rook_expected = rook_attacks_per_square(square, blockers);
-    let bishop_expected = bishop_attacks_per_square(square, blockers);
-    let expected = rook_expected | bishop_expected;
+    /// Build **both** magic tables once per test
+    fn build_tables() -> MagicTables {
+        generate_magic_tables(MagicTableSeed::Fixed(TEST_SEED))
+            .expect("Failed to generate magic tables")
+    }
 
-    let rook = generate_rook_magic_tables().unwrap();
-    let bishop = generate_bishop_magic_tables().unwrap();
-    let tables = MagicTables { rook, bishop };
+    // ──────────────────────────────────────────────────────────────────────────
+    //  1.  Debug print still compiles
+    // ──────────────────────────────────────────────────────────────────────────
+    #[test]
+    fn test_debug_print_rook() {
+        let tables = build_tables();
+        println!("{:?}", tables.rook); // just needs to compile / run
+    }
 
-    let result = tables.queen_attacks(square, blockers);
+    // ──────────────────────────────────────────────────────────────────────────
+    //  2.  Bishop magic lookup matches scan generator
+    // ──────────────────────────────────────────────────────────────────────────
+    #[test]
+    fn test_bishop_magic_lookup_matches_scan() {
+        // square d4  (3 + 3*8) == 27
+        let square = 27;
+        let blockers = (1u64 << 41) | (1u64 << 21); // B6 + F2
+        let mask = bishop_vision_mask(square);
 
-    assert_eq!(
-        result, expected,
-        "Queen magic lookup does not match combined scan logic"
-    );
+        let expected = bishop_attacks_per_square(square, blockers);
+
+        let tables = build_tables();
+        let result = tables.bishop.get_attacks(square, blockers, mask);
+
+        assert_eq!(
+            result, expected,
+            "Magic lookup result does not match scan-based bishop attack generation"
+        );
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    //  3.  Rook magic lookup matches scan generator
+    // ──────────────────────────────────────────────────────────────────────────
+    #[test]
+    fn test_rook_magic_lookup_matches_scan() {
+        let square = 27; // d4
+        let blockers = (1u64 << 19) | (1u64 << 35); // d3 + d6
+        let mask = rook_vision_mask(square);
+
+        let expected = rook_attacks_per_square(square, blockers);
+
+        let tables = build_tables();
+        let result = tables.rook.get_attacks(square, blockers, mask);
+
+        assert_eq!(
+            result, expected,
+            "Magic lookup result does not match scan-based rook attack generation"
+        );
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    //  4.  Queen attacks == rook ∪ bishop
+    // ──────────────────────────────────────────────────────────────────────────
+    #[test]
+    fn test_queen_magic_lookup_matches_combined() {
+        let square = 27; // d4
+        let blockers = (1u64 << 19) | (1u64 << 35) | (1u64 << 41) | (1u64 << 21);
+
+        let rook_expected = rook_attacks_per_square(square, blockers);
+        let bishop_expected = bishop_attacks_per_square(square, blockers);
+        let expected = rook_expected | bishop_expected;
+
+        let tables = build_tables();
+        let result = tables.queen_attacks(square, blockers);
+
+        assert_eq!(
+            result, expected,
+            "Queen magic lookup does not match combined scan logic"
+        );
+    }
 }

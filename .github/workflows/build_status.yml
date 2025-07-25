@@ -99,4 +99,4 @@ jobs:
 
       - name: "Run tests: rust-engine"
         working-directory: rust-implementation/rust-engine
-        run: cargo test --verbose
+        run: cargo test --features deterministic-magic -- --nocapture
