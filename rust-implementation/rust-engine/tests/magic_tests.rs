@@ -1,3 +1,5 @@
+use rand::{SeedableRng, rngs::StdRng};
+
 use rust_engine::moves::magic::attacks::{
     bishop_attacks_per_square, get_bishop_attack_bitboards, get_rook_attack_bitboards,
     rook_attacks_per_square,
@@ -9,8 +11,16 @@ use rust_engine::moves::magic::precompute::{
     generate_bishop_magic_tables, generate_rook_magic_tables, precompute_bishop_attacks,
     precompute_rook_attacks,
 };
+
 use rust_engine::moves::magic::search::{find_magic_number_for_square, is_magic_candidate_valid};
 use rust_engine::moves::magic::structs::MagicTables;
+
+// 0x45 == 69₁₀; keeps the literal “69” out of the source
+const TEST_SEED: u64 = 0x45;
+
+fn seeded_rng() -> StdRng {
+    StdRng::seed_from_u64(TEST_SEED)
+}
 
 /// Helper: Pretty-print a bitboard
 fn print_bitboard(mask: u64) {
@@ -323,7 +333,9 @@ fn test_find_magic_for_rook_d4_real_search() -> Result<(), String> {
     let attacks = get_rook_attack_bitboards(d4, &blockers);
     let shift = 64 - rook_vision_mask(d4).count_ones();
 
-    let magic = find_magic_number_for_square(&blockers, &attacks, shift)?;
+    let mut rng = seeded_rng();
+    let magic = find_magic_number_for_square(&blockers, &attacks, shift, &mut rng)?;
+
     let valid = is_magic_candidate_valid(&blockers, &attacks, magic, shift);
     assert!(valid, "The found rook magic must be valid");
 
@@ -337,7 +349,9 @@ fn test_find_magic_for_bishop_d4_real_search() -> Result<(), String> {
     let attacks = get_bishop_attack_bitboards(d4, &blockers);
     let shift = 64 - bishop_vision_mask(d4).count_ones();
 
-    let magic = find_magic_number_for_square(&blockers, &attacks, shift)?;
+    let mut rng = seeded_rng();
+    let magic = find_magic_number_for_square(&blockers, &attacks, shift, &mut rng)?;
+
     let valid = is_magic_candidate_valid(&blockers, &attacks, magic, shift);
     assert!(valid, "The found bishop magic must be valid");
 
@@ -350,7 +364,9 @@ fn test_magic_lookup_matches_scan_rook() {
     let blockers = 0x0000_0800_0000_0000; // D6, example blocker
     let expected = rook_attacks_per_square(square, blockers);
 
-    let table = generate_rook_magic_tables().unwrap();
+    let table =
+        generate_rook_magic_tables(&mut seeded_rng()).expect("Failed to generate rook magic table");
+
     let mask = rook_vision_mask(square);
     let result = table.get_attacks(square, blockers, mask);
 
@@ -367,7 +383,9 @@ fn test_magic_lookup_matches_scan_bishop() {
     let blockers = 0x0000_0010_0000_0000; // B6, example blocker
     let expected = bishop_attacks_per_square(square, blockers);
 
-    let table = generate_bishop_magic_tables().unwrap();
+    let table = generate_bishop_magic_tables(&mut seeded_rng())
+        .expect("Failed to generate bishop magic table");
+
     let mask = bishop_vision_mask(square);
     let result = table.get_attacks(square, blockers, mask);
 
@@ -387,10 +405,10 @@ fn test_magic_lookup_matches_scan_queen() {
     let expected_bishop = bishop_attacks_per_square(square, blockers);
     let expected = expected_rook | expected_bishop;
 
-    let tables = MagicTables {
-        rook: generate_rook_magic_tables().unwrap(),
-        bishop: generate_bishop_magic_tables().unwrap(),
-    };
+    let mut rng = seeded_rng();
+    let rook = generate_rook_magic_tables(&mut rng).unwrap();
+    let bishop = generate_bishop_magic_tables(&mut rng).unwrap();
+    let tables = MagicTables { rook, bishop };
 
     let result = tables.queen_attacks(square, blockers);
 

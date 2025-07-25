@@ -3,6 +3,9 @@ use super::masks::*;
 use super::search::*;
 use super::structs::*;
 use crate::utils::enumerate_subsets;
+use rand::RngCore;
+use rand::SeedableRng;
+use rand::rngs::StdRng;
 
 pub fn precompute_rook_attacks() -> Vec<Vec<u64>> {
     let mut table = Vec::with_capacity(64);
@@ -79,18 +82,20 @@ pub fn precompute_bishop_attacks() -> Vec<Vec<u64>> {
 /// Panics if the final `Vec<MagicEntry>` does not contain exactly 64 entries. This
 /// would indicate a logic error in how blockers were generated or processed.
 
-fn generate_magic_entries<FBlockers, FAttacks, FMask, FPerSquare>(
+fn generate_magic_entries<FBlockers, FAttacks, FMask, FPerSquare, R>(
     piece_name: &str,
     gen_blockers: FBlockers,
     get_attacks: FAttacks,
     get_mask: FMask,
     attacks_per_square: FPerSquare,
+    rng: &mut R,
 ) -> Result<Vec<MagicEntry>, String>
 where
     FBlockers: Fn(usize) -> Vec<u64>,
     FAttacks: Fn(usize, &[u64]) -> Vec<u64>,
     FMask: Fn(usize) -> u64,
     FPerSquare: Fn(usize, u64) -> u64,
+    R: RngCore,
 {
     let mut entries_vec = Vec::with_capacity(64);
 
@@ -102,7 +107,7 @@ where
         let mask = get_mask(square);
         let shift = 64 - mask.count_ones();
 
-        let magic = match find_magic_number_for_square(&blockers, &attacks, shift) {
+        let magic = match find_magic_number_for_square(&blockers, &attacks, shift, rng) {
             Ok(magic) => {
                 println!("Magic number: {:#018x}", magic);
                 magic
@@ -130,33 +135,52 @@ where
     Ok(entries_vec)
 }
 
-pub fn generate_rook_magic_tables() -> Result<RookMagicTables, String> {
+pub fn generate_rook_magic_tables<R: RngCore>(rng: &mut R) -> Result<RookMagicTables, String> {
     let entries: Vec<MagicEntry> = generate_magic_entries(
         "rook",
         generate_rook_blockers,
         get_rook_attack_bitboards,
         rook_vision_mask,
         rook_attacks_per_square,
+        rng,
     )?;
 
     Ok(RookMagicTables { entries })
 }
 
-pub fn generate_bishop_magic_tables() -> Result<BishopMagicTables, String> {
+pub fn generate_bishop_magic_tables<R: RngCore>(rng: &mut R) -> Result<BishopMagicTables, String> {
     let entries = generate_magic_entries(
         "bishop",
         generate_bishop_blockers,
         get_bishop_attack_bitboards,
         bishop_vision_mask,
         bishop_attacks_per_square,
+        rng,
     )?;
 
     Ok(BishopMagicTables { entries })
 }
 
-pub fn generate_magic_tables() -> Result<MagicTables, String> {
-    let rook = generate_rook_magic_tables()?;
-    let bishop = generate_bishop_magic_tables()?;
+pub enum MagicTableSeed {
+    Randomized,
+    Fixed(u64),
+}
+
+pub fn generate_magic_tables(seed_mode: MagicTableSeed) -> Result<MagicTables, String> {
+    // 1) Initialize the StdRng according to the seed mode
+    let mut rng = match seed_mode {
+        MagicTableSeed::Fixed(seed) => StdRng::seed_from_u64(seed),
+
+        MagicTableSeed::Randomized => {
+            let mut entropy = rand::rng();
+            let seed = entropy.next_u64();
+            StdRng::seed_from_u64(seed)
+        }
+    };
+
+    // 2) Pass the same seeded RNG to both generators
+    let rook = generate_rook_magic_tables(&mut rng)?;
+    let bishop = generate_bishop_magic_tables(&mut rng)?;
 
     Ok(MagicTables { rook, bishop })
 }
@@ -167,24 +191,33 @@ mod tests {
     use crate::moves::magic::masks::{bishop_vision_mask, rook_vision_mask};
     use crate::utils::{bitboard_to_string, square_index};
 
+    /// Same seed for every run so CI is repeatable
+    const TEST_SEED: u64 = 0b100_0101;
+
+    /// Helper: convert "e4" → 27, etc.
     fn square_from_str(sq: &str) -> usize {
         let file = (sq.as_bytes()[0] - b'a') as usize;
         let rank = (sq.as_bytes()[1] - b'1') as usize;
         square_index(rank, file)
     }
 
+    /// Helper: build all magic tables once per test
+    fn build_tables() -> Result<MagicTables, String> {
+        generate_magic_tables(MagicTableSeed::Fixed(TEST_SEED))
+    }
+
     #[test]
     fn test_rook_attacks_e4_no_blockers() -> Result<(), String> {
-        let tables = generate_rook_magic_tables()?;
+        let tables = build_tables()?; // ← deterministic
         let square = square_from_str("e4");
         let blockers = 0u64;
 
-        let entry = &tables.entries[square];
+        let entry = &tables.rook.entries[square];
         let idx = ((blockers & rook_vision_mask(square)).wrapping_mul(entry.magic)) >> entry.shift;
         let actual = entry.table[idx as usize];
 
         // Expected: file e + rank 4, minus the square itself
-        let file_mask = 0x0101010101010101u64 << (square % 8);
+        let file_mask = 0x0101_0101_0101_0101u64 << (square % 8);
         let rank_mask = 0xFFu64 << (8 * (square / 8));
         let expected = (file_mask | rank_mask) & !(1u64 << square);
 
@@ -195,18 +228,17 @@ mod tests {
             bitboard_to_string(expected),
             bitboard_to_string(actual)
         );
-
         Ok(())
     }
 
     #[test]
     fn test_bishop_attacks_c1_with_e3_blocker() -> Result<(), String> {
-        let tables = generate_bishop_magic_tables()?;
-        let square = square_from_str("c1"); // bishop origin
-        let blocker_square = square_index(2, 4); // e3  (rank 2, file 4)
+        let tables = build_tables()?; // ← same seed
+        let square = square_from_str("c1");
+        let blocker_square = square_index(2, 4); // e3
         let blockers = 1u64 << blocker_square;
 
-        let entry = &tables.entries[square];
+        let entry = &tables.bishop.entries[square];
         let idx =
             ((blockers & bishop_vision_mask(square)).wrapping_mul(entry.magic)) >> entry.shift;
         let actual = entry.table[idx as usize];
@@ -225,7 +257,6 @@ mod tests {
             bitboard_to_string(expected),
             bitboard_to_string(actual)
         );
-
         Ok(())
     }
 }
