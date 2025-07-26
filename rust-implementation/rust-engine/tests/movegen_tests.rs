@@ -1,6 +1,7 @@
 use rust_engine::board::{Board, Color};
 use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::movegen::generate_bishop_moves;
+use rust_engine::moves::movegen::generate_king_moves;
 use rust_engine::moves::movegen::generate_knight_moves;
 use rust_engine::moves::movegen::generate_queen_moves;
 use rust_engine::moves::movegen::generate_rook_moves;
@@ -444,5 +445,87 @@ fn no_queens_yields_no_moves() {
     let mut moves = Vec::new();
     generate_queen_moves(&board, &magic_tables, &mut moves);
 
+    assert!(moves.is_empty());
+}
+
+#[test]
+fn king_moves_from_center_e4() {
+    let mut board = Board::new_empty();
+    let e4 = 4 + 8 * 3; // index 28
+    board.white_king = 1 << e4;
+    board.side_to_move = Color::White;
+
+    let mut moves = Vec::new();
+    generate_king_moves(&board, &mut moves);
+
+    let expected_dests = [19, 20, 21, 27, 29, 35, 36, 37];
+
+    assert_eq!(moves.len(), expected_dests.len());
+    for &dest in &expected_dests {
+        assert!(
+            moves.iter().any(|m| m.to.index() == dest),
+            "Expected move to {} not found",
+            dest
+        );
+    }
+}
+
+#[test]
+fn king_moves_from_corner_a1() {
+    let mut board = Board::new_empty();
+    let a1 = 0;
+    board.white_king = 1 << a1;
+    board.side_to_move = Color::White;
+
+    let mut moves = Vec::new();
+    generate_king_moves(&board, &mut moves);
+
+    let expected_dests = [1, 8, 9];
+    assert_eq!(moves.len(), expected_dests.len());
+    for &to in &expected_dests {
+        assert!(moves.iter().any(|m| m.to.index() == to));
+    }
+}
+
+#[test]
+fn king_blocked_by_friendly_piece() {
+    let mut board = Board::new_empty();
+    let e4 = 28;
+    board.white_king = 1 << e4;
+    board.white_pawns = 1 << 29; // friendly block to the right
+    board.side_to_move = Color::White;
+
+    let mut moves = Vec::new();
+    generate_king_moves(&board, &mut moves);
+
+    assert!(!moves.iter().any(|m| m.to.index() == 29));
+    assert_eq!(moves.len(), 7);
+}
+
+#[test]
+fn king_captures_enemy_piece() {
+    let mut board = Board::new_empty();
+    let e4 = 28;
+    board.white_king = 1 << e4;
+    board.black_rooks = 1 << 36; // e5
+    board.side_to_move = Color::White;
+
+    let mut moves = Vec::new();
+    generate_king_moves(&board, &mut moves);
+
+    let mv = moves
+        .iter()
+        .find(|m| m.to.index() == 36)
+        .expect("Missing capture move to e5");
+    assert!(mv.is_capture);
+}
+
+#[test]
+fn no_king_yields_no_moves() {
+    let mut board = Board::new_empty();
+    board.side_to_move = Color::White;
+
+    let mut moves = Vec::new();
+    generate_king_moves(&board, &mut moves);
     assert!(moves.is_empty());
 }
