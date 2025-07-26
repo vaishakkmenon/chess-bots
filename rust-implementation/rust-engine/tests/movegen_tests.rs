@@ -2,6 +2,7 @@ use rust_engine::board::{Board, Color};
 use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::movegen::generate_bishop_moves;
 use rust_engine::moves::movegen::generate_knight_moves;
+use rust_engine::moves::movegen::generate_queen_moves;
 use rust_engine::moves::movegen::generate_rook_moves;
 
 #[test]
@@ -324,6 +325,124 @@ fn no_rooks_yields_no_moves() {
     let magic_tables = load_magic_tables();
     let mut moves = Vec::new();
     generate_rook_moves(&board, &magic_tables.rook, &mut moves);
+
+    assert!(moves.is_empty());
+}
+
+#[test]
+fn queen_moves_from_d4_empty_board() {
+    let mut board = Board::new_empty();
+    let d4 = 27;
+    board.white_queens = 1 << d4;
+    board.side_to_move = Color::White;
+
+    let magic_tables = load_magic_tables();
+    let mut moves = Vec::new();
+    generate_queen_moves(&board, &magic_tables, &mut moves);
+
+    // Rook moves: 26,25,24,28,29,30,31,35,43,51,59,19,11,3 (14)
+    // Bishop moves: 18,20,9,0,36,45,54,63,34,41,48,6,13 (13)
+    // Total = 27 unique squares
+    let expected_dests = [
+        26, 25, 24, 28, 29, 30, 31, 35, 43, 51, 59, 19, 11, 3, // rook
+        18, 20, 9, 0, 36, 45, 54, 63, 34, 41, 48, 6, 13, // bishop
+    ];
+
+    assert_eq!(moves.len(), expected_dests.len());
+    for &to in &expected_dests {
+        assert!(
+            moves.iter().any(|m| m.to.index() == to),
+            "Missing move to square {}",
+            to
+        );
+    }
+}
+
+#[test]
+fn queen_moves_from_corner_a1() {
+    let mut board = Board::new_empty();
+    let a1 = 0;
+    board.white_queens = 1 << a1;
+    board.side_to_move = Color::White;
+
+    let magic_tables = load_magic_tables();
+    let mut moves = Vec::new();
+    generate_queen_moves(&board, &magic_tables, &mut moves);
+
+    // Rook: a2–a8 (8–56 by 8), b1–h1 (1–7)
+    // Bishop: b2 (9), c3 (18), d4 (27), e5 (36), f6 (45), g7 (54), h8 (63)
+    let expected_dests = [
+        1, 2, 3, 4, 5, 6, 7, // horizontal
+        8, 16, 24, 32, 40, 48, 56, // vertical
+        9, 18, 27, 36, 45, 54, 63, // diagonal
+    ];
+
+    assert_eq!(moves.len(), expected_dests.len());
+    for &to in &expected_dests {
+        assert!(
+            moves.iter().any(|m| m.to.index() == to),
+            "Missing move to square {}",
+            to
+        );
+    }
+}
+
+#[test]
+fn queen_blocked_by_friendly_piece() {
+    let mut board = Board::new_empty();
+    let d4 = 27;
+    board.white_queens = 1 << d4;
+    board.white_rooks = 1 << 28; // block e4
+    board.side_to_move = Color::White;
+
+    let magic_tables = load_magic_tables();
+    let mut moves = Vec::new();
+    generate_queen_moves(&board, &magic_tables, &mut moves);
+
+    assert!(!moves.iter().any(|m| m.to.index() == 28));
+    assert!(moves.len() < 27);
+}
+
+#[test]
+fn queen_captures_enemy_piece() {
+    let mut board = Board::new_empty();
+    let d4 = 27;
+    board.white_queens = 1 << d4;
+    board.black_knights = 1 << 28; // e4
+    board.side_to_move = Color::White;
+
+    let magic_tables = load_magic_tables();
+    let mut moves = Vec::new();
+    generate_queen_moves(&board, &magic_tables, &mut moves);
+
+    let capture = moves.iter().find(|m| m.to.index() == 28);
+    assert!(capture.is_some(), "Expected capture move to e4 (28)");
+    assert!(capture.unwrap().is_capture);
+}
+
+#[test]
+fn multiple_queens_generate_moves() {
+    let mut board = Board::new_empty();
+    board.white_queens = (1 << 0) | (1 << 63); // a1 and h8
+    board.side_to_move = Color::White;
+
+    let magic_tables = load_magic_tables();
+    let mut moves = Vec::new();
+    generate_queen_moves(&board, &magic_tables, &mut moves);
+
+    assert!(moves.iter().any(|m| m.from.index() == 0));
+    assert!(moves.iter().any(|m| m.from.index() == 63));
+    assert!(moves.len() > 0);
+}
+
+#[test]
+fn no_queens_yields_no_moves() {
+    let mut board = Board::new_empty();
+    board.side_to_move = Color::White;
+
+    let magic_tables = load_magic_tables();
+    let mut moves = Vec::new();
+    generate_queen_moves(&board, &magic_tables, &mut moves);
 
     assert!(moves.is_empty());
 }
