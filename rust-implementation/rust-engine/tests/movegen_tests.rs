@@ -2,6 +2,7 @@ use rust_engine::board::{Board, Color};
 use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::movegen::generate_bishop_moves;
 use rust_engine::moves::movegen::generate_knight_moves;
+use rust_engine::moves::movegen::generate_rook_moves;
 
 #[test]
 fn knight_moves_from_d4() {
@@ -207,6 +208,122 @@ fn no_bishops_yields_no_moves() {
     let magic_tables = load_magic_tables();
     let mut moves = Vec::new();
     generate_bishop_moves(&board, &magic_tables.bishop, &mut moves);
+
+    assert!(moves.is_empty());
+}
+
+#[test]
+fn rook_moves_from_d4_empty_board() {
+    let mut board = Board::new_empty();
+    let d4 = 27;
+    board.white_rooks = 1 << d4;
+    board.side_to_move = Color::White;
+
+    let magic_tables = load_magic_tables();
+    let mut moves = Vec::new();
+    generate_rook_moves(&board, &magic_tables.rook, &mut moves);
+
+    // Horizontal (rank 4): c4 (26), b4 (25), a4 (24), e4 (28), f4 (29), g4 (30), h4 (31)
+    // Vertical (file d): d5 (35), d6 (43), d7 (51), d8 (59), d3 (19), d2 (11), d1 (3)
+    let expected_dests = [
+        26, 25, 24, 28, 29, 30, 31, // rank
+        35, 43, 51, 59, 19, 11, 3, // file
+    ];
+
+    assert_eq!(moves.len(), expected_dests.len());
+    for &to in &expected_dests {
+        assert!(
+            moves.iter().any(|m| m.to.index() == to),
+            "Missing move to square {}",
+            to
+        );
+    }
+}
+
+#[test]
+fn rook_moves_from_corner_a1() {
+    let mut board = Board::new_empty();
+    let a1 = 0;
+    board.white_rooks = 1 << a1;
+    board.side_to_move = Color::White;
+
+    let magic_tables = load_magic_tables();
+    let mut moves = Vec::new();
+    generate_rook_moves(&board, &magic_tables.rook, &mut moves);
+
+    // Vertical: a2 (8) to a8 (56) = +8 steps
+    // Horizontal: b1 (1) to h1 (7) = +1 steps
+    let expected_dests: Vec<u8> = (1..8)
+        .chain((1..8).map(|i| i * 8))
+        .map(|i| i as u8)
+        .collect();
+    assert_eq!(moves.len(), expected_dests.len());
+    for to in expected_dests {
+        assert!(
+            moves.iter().any(|m| m.to.index() == to),
+            "Missing move to square {}",
+            to
+        );
+    }
+}
+
+#[test]
+fn rook_blocked_by_friendly_piece() {
+    let mut board = Board::new_empty();
+    let d4 = 27;
+    board.white_rooks = 1 << d4;
+    board.white_pawns = 1 << 28; // friendly on e4
+    board.side_to_move = Color::White;
+
+    let magic_tables = load_magic_tables();
+    let mut moves = Vec::new();
+    generate_rook_moves(&board, &magic_tables.rook, &mut moves);
+
+    // Normally D4 has 14 targets; 28 blocked => expect fewer
+    assert!(!moves.iter().any(|m| m.to.index() == 28));
+    assert!(moves.len() < 14);
+}
+
+#[test]
+fn rook_captures_enemy_piece() {
+    let mut board = Board::new_empty();
+    let d4 = 27;
+    board.white_rooks = 1 << d4;
+    board.black_knights = 1 << 28; // enemy on e4
+    board.side_to_move = Color::White;
+
+    let magic_tables = load_magic_tables();
+    let mut moves = Vec::new();
+    generate_rook_moves(&board, &magic_tables.rook, &mut moves);
+
+    let capture = moves.iter().find(|m| m.to.index() == 28);
+    assert!(capture.is_some(), "Expected capture move to e4 (28)");
+    assert!(capture.unwrap().is_capture);
+}
+
+#[test]
+fn multiple_rooks_generate_moves() {
+    let mut board = Board::new_empty();
+    board.white_rooks = (1 << 0) | (1 << 56); // a1 and a8
+    board.side_to_move = Color::White;
+
+    let magic_tables = load_magic_tables();
+    let mut moves = Vec::new();
+    generate_rook_moves(&board, &magic_tables.rook, &mut moves);
+
+    assert!(moves.iter().any(|m| m.from.index() == 0));
+    assert!(moves.iter().any(|m| m.from.index() == 56));
+    assert!(moves.len() > 0);
+}
+
+#[test]
+fn no_rooks_yields_no_moves() {
+    let mut board = Board::new_empty();
+    board.side_to_move = Color::White;
+
+    let magic_tables = load_magic_tables();
+    let mut moves = Vec::new();
+    generate_rook_moves(&board, &magic_tables.rook, &mut moves);
 
     assert!(moves.is_empty());
 }
