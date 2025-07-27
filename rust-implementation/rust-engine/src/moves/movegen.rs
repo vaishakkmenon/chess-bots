@@ -1,9 +1,10 @@
-use crate::board::{Board, Piece};
+use crate::board::{Board, Color, Piece};
 use crate::moves::king::KING_ATTACKS;
 use crate::moves::knight::KNIGHT_ATTACKS;
 use crate::moves::magic::MagicTables;
 use crate::moves::magic::masks::{bishop_vision_mask, rook_vision_mask};
 use crate::moves::magic::structs::{BishopMagicTables, RookMagicTables};
+use crate::moves::pawn::{BLACK_PAWN_ATTACKS, WHITE_PAWN_ATTACKS};
 use crate::moves::types::Move;
 use crate::square::Square;
 
@@ -163,5 +164,68 @@ pub fn generate_king_moves(board: &Board, moves: &mut Vec<Move>) {
             is_en_passant: false,
             is_castling: false,
         });
+    }
+}
+
+pub fn generate_pawn_moves(board: &Board, moves: &mut Vec<Move>) {
+    let color = board.side_to_move;
+    let pawns = board.pieces(Piece::Pawn, color);
+    // let friendly = board.occupancy(color);
+    let enemy = board.opponent_occupancy(color);
+    let empty = !board.occupied();
+
+    // --- Forward single pushes ---
+    let single_pushes = match color {
+        Color::White => (pawns << 8) & empty,
+        Color::Black => (pawns >> 8) & empty,
+    };
+
+    let mut bb = single_pushes;
+    while bb != 0 {
+        let to = bb.trailing_zeros() as u8;
+        bb &= bb - 1;
+
+        let from = match color {
+            Color::White => to - 8,
+            Color::Black => to + 8,
+        };
+
+        moves.push(Move {
+            from: Square::from_index(from),
+            to: Square::from_index(to),
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        });
+    }
+
+    // --- Diagonal captures ---
+    let mut attackers = pawns;
+    while attackers != 0 {
+        let from = attackers.trailing_zeros() as u8;
+        attackers &= attackers - 1;
+
+        let attack_mask = match color {
+            Color::White => WHITE_PAWN_ATTACKS[from as usize],
+            Color::Black => BLACK_PAWN_ATTACKS[from as usize],
+        };
+
+        let targets = attack_mask & enemy;
+
+        let mut targets_bb = targets;
+        while targets_bb != 0 {
+            let to = targets_bb.trailing_zeros() as u8;
+            targets_bb &= targets_bb - 1;
+
+            moves.push(Move {
+                from: Square::from_index(from),
+                to: Square::from_index(to),
+                promotion: None,
+                is_capture: true,
+                is_en_passant: false,
+                is_castling: false,
+            });
+        }
     }
 }

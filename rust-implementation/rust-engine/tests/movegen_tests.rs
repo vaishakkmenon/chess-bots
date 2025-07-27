@@ -3,6 +3,7 @@ use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::movegen::generate_bishop_moves;
 use rust_engine::moves::movegen::generate_king_moves;
 use rust_engine::moves::movegen::generate_knight_moves;
+use rust_engine::moves::movegen::generate_pawn_moves;
 use rust_engine::moves::movegen::generate_queen_moves;
 use rust_engine::moves::movegen::generate_rook_moves;
 
@@ -527,5 +528,170 @@ fn no_king_yields_no_moves() {
 
     let mut moves = Vec::new();
     generate_king_moves(&board, &mut moves);
+    assert!(moves.is_empty());
+}
+
+#[test]
+fn pawn_push_from_d2() {
+    let mut board = Board::new_empty();
+    let d2 = 11;
+    board.white_pawns = 1 << d2;
+    board.side_to_move = Color::White;
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+
+    let expected_dests = [19]; // d3
+    assert_eq!(moves.len(), expected_dests.len());
+
+    for &to in &expected_dests {
+        assert!(moves.iter().any(|m| m.to.index() == to));
+    }
+}
+
+#[test]
+fn pawn_blocked_by_piece() {
+    let mut board = Board::new_empty();
+    let d2 = 11;
+    let d3 = 19;
+    board.white_pawns = 1 << d2;
+    board.white_rooks = 1 << d3; // friendly piece blocks forward push
+    board.side_to_move = Color::White;
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+
+    assert!(moves.is_empty());
+}
+
+#[test]
+fn pawn_captures_diagonally() {
+    let mut board = Board::new_empty();
+    let d4 = 27;
+    board.white_pawns = 1 << d4;
+    board.black_rooks = (1 << 34) | (1 << 36) | (1 << 35); // e5 and c5 and d5 is a blocker to test only captures
+    board.side_to_move = Color::White;
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+    println!("{:#?}", moves);
+
+    let expected_dests = [34, 36];
+    assert_eq!(moves.len(), expected_dests.len());
+
+    for &to in &expected_dests {
+        let mv = moves.iter().find(|m| m.to.index() == to);
+        assert!(mv.unwrap().is_capture);
+        assert!(mv.is_some(), "Missing capture to {}", to);
+    }
+}
+
+#[test]
+fn multiple_pawns_generate_moves() {
+    let mut board = Board::new_empty();
+    board.white_pawns = (1 << 11) | (1 << 27); // d2 and d4
+    board.side_to_move = Color::White;
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+
+    let expected_dests = [19, 35]; // d3 and d5
+    assert_eq!(moves.len(), expected_dests.len());
+
+    for &to in &expected_dests {
+        assert!(moves.iter().any(|m| m.to.index() == to));
+    }
+}
+
+#[test]
+fn no_pawns_yields_no_moves() {
+    let mut board = Board::new_empty();
+    board.side_to_move = Color::White;
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+
+    assert!(moves.is_empty());
+}
+
+#[test]
+fn black_pawn_push_from_d7() {
+    let mut board = Board::new_empty();
+    let d7 = 51;
+    board.black_pawns = 1 << d7;
+    board.side_to_move = Color::Black;
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+
+    let expected_dests = [43]; // d6
+    assert_eq!(moves.len(), expected_dests.len());
+
+    for &to in &expected_dests {
+        assert!(moves.iter().any(|m| m.to.index() == to));
+    }
+}
+
+#[test]
+fn black_pawn_blocked_by_piece() {
+    let mut board = Board::new_empty();
+    let d7 = 51;
+    let d6 = 43;
+    board.black_pawns = 1 << d7;
+    board.black_rooks = 1 << d6; // blocked by friendly piece
+    board.side_to_move = Color::Black;
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+
+    assert!(moves.is_empty());
+}
+
+#[test]
+fn black_pawn_captures_diagonally() {
+    let mut board = Board::new_empty();
+    let d5 = 35;
+    board.black_pawns = 1 << d5;
+    board.white_knights = (1 << 26) | (1 << 27) | (1 << 28); // c4 and e4, d4 is a blocker to test only captures
+    board.side_to_move = Color::Black;
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+
+    let expected_dests = [26, 28];
+    assert_eq!(moves.len(), expected_dests.len());
+
+    for &to in &expected_dests {
+        let mv = moves.iter().find(|m| m.to.index() == to);
+        assert!(mv.is_some(), "Missing capture to {}", to);
+        assert!(mv.unwrap().is_capture);
+    }
+}
+
+#[test]
+fn multiple_black_pawns_generate_moves() {
+    let mut board = Board::new_empty();
+    board.black_pawns = (1 << 51) | (1 << 35); // d7 and d5
+    board.side_to_move = Color::Black;
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+
+    let expected_dests = [43, 27]; // d6 and d4
+    assert_eq!(moves.len(), expected_dests.len());
+
+    for &to in &expected_dests {
+        assert!(moves.iter().any(|m| m.to.index() == to));
+    }
+}
+
+#[test]
+fn no_black_pawns_yields_no_moves() {
+    let mut board = Board::new_empty();
+    board.side_to_move = Color::Black;
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+
     assert!(moves.is_empty());
 }
