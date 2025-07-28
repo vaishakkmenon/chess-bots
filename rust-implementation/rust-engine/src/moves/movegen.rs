@@ -33,7 +33,7 @@ fn push_piece_moves(from: u8, mut targets: u64, enemy: u64, move_list: &mut Vec<
             from: Square::from_index(from),
             to: Square::from_index(to),
             promotion: None,
-            is_capture: ((1u64 << to) & enemy) != 0,
+            is_capture: (enemy >> to) & 1 != 0,
             is_en_passant: false,
             is_castling: false,
         });
@@ -298,7 +298,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
 
             for &promo_piece in PROMOS.iter() {
                 move_list.push(Move {
-                    from: Square::from_index(from as u8),
+                    from: Square::from_index(from),
                     to: Square::from_index(to),
                     promotion: Some(promo_piece),
                     is_capture: true,
