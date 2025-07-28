@@ -8,6 +8,9 @@ use crate::moves::pawn::{BLACK_PAWN_ATTACKS, WHITE_PAWN_ATTACKS};
 use crate::moves::types::Move;
 use crate::square::Square;
 
+const WHITE_PAWN_START_RANK: u64 = 0x0000_0000_0000_FF00;
+const BLACK_PAWN_START_RANK: u64 = 0x00FF_0000_0000_0000;
+
 pub fn generate_knight_moves(board: &Board, moves: &mut Vec<Move>) {
     let color = board.side_to_move;
     let knights = board.pieces(Piece::Knight, color);
@@ -188,6 +191,32 @@ pub fn generate_pawn_moves(board: &Board, moves: &mut Vec<Move>) {
         let from = match color {
             Color::White => to - 8,
             Color::Black => to + 8,
+        };
+
+        moves.push(Move {
+            from: Square::from_index(from),
+            to: Square::from_index(to),
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        });
+    }
+
+    // --- Double forward pushes ---
+    let double_push = match color {
+        Color::White => ((pawns & WHITE_PAWN_START_RANK) << 8 & empty) << 8 & empty,
+        Color::Black => ((pawns & BLACK_PAWN_START_RANK) >> 8 & empty) >> 8 & empty,
+    };
+
+    let mut bb = double_push;
+    while bb != 0 {
+        let to = bb.trailing_zeros() as u8;
+        bb &= bb - 1;
+
+        let from = match color {
+            Color::White => to - 16,
+            Color::Black => to + 16,
         };
 
         moves.push(Move {

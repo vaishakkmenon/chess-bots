@@ -541,7 +541,7 @@ fn pawn_push_from_d2() {
     let mut moves = Vec::new();
     generate_pawn_moves(&board, &mut moves);
 
-    let expected_dests = [19]; // d3
+    let expected_dests = [19, 27]; // d3
     assert_eq!(moves.len(), expected_dests.len());
 
     for &to in &expected_dests {
@@ -624,7 +624,7 @@ fn black_pawn_push_from_d7() {
     let mut moves = Vec::new();
     generate_pawn_moves(&board, &mut moves);
 
-    let expected_dests = [43]; // d6
+    let expected_dests = [43, 35]; // d6
     assert_eq!(moves.len(), expected_dests.len());
 
     for &to in &expected_dests {
@@ -694,4 +694,40 @@ fn no_black_pawns_yields_no_moves() {
     generate_pawn_moves(&board, &mut moves);
 
     assert!(moves.is_empty());
+}
+
+#[test]
+fn white_pawn_does_not_capture_friendly_piece() {
+    let mut board = Board::new_empty();
+    let d4 = 27;
+    board.white_pawns = 1 << d4;
+    board.white_knights = (1 << 34) | (1 << 36); // e5 and c5 — friendly pieces
+    board.side_to_move = Color::White;
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+
+    // Should not generate any diagonal captures
+    assert!(
+        moves.iter().all(|m| !m.is_capture),
+        "Should not capture friendly pieces"
+    );
+}
+
+#[test]
+fn black_pawn_does_not_capture_friendly_piece() {
+    let mut board = Board::new_empty();
+    let d5 = 35;
+    board.black_pawns = 1 << d5;
+    board.black_bishops = (1 << 26) | (1 << 28); // c4 and e4 — friendly pieces
+    board.side_to_move = Color::Black;
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+
+    // Should not generate any diagonal captures
+    assert!(
+        moves.iter().all(|m| !m.is_capture),
+        "Should not capture friendly pieces"
+    );
 }
