@@ -30,3 +30,12 @@ pub fn bitboard_to_string(bb: u64) -> String {
     }
     s
 }
+
+#[inline(always)]
+pub fn pop_lsb(bb: &mut u64) -> u8 {
+    debug_assert_ne!(*bb, 0, "Called pop_lsb on empty bitboard");
+
+    let idx = bb.trailing_zeros() as u8; // 0‥63
+    *bb &= *bb - 1; // clear that bit
+    return idx;
+}

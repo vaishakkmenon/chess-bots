@@ -7,13 +7,31 @@ use crate::moves::magic::structs::{BishopMagicTables, RookMagicTables};
 use crate::moves::pawn::{BLACK_PAWN_ATTACKS, WHITE_PAWN_ATTACKS};
 use crate::moves::types::Move;
 use crate::square::Square;
+use crate::utils::pop_lsb;
 
 const RANK1: u64 = 0x0000_0000_0000_00FF;
 const RANK2: u64 = 0x0000_0000_0000_FF00;
 const RANK7: u64 = 0x00FF_0000_0000_0000;
 const RANK8: u64 = 0xFF00_0000_0000_0000;
+const PROMOS: [Piece; 4] = [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight];
 
-pub fn generate_knight_moves(board: &Board, moves: &mut Vec<Move>) {
+/// Helper functionality to push latest found move
+#[inline(always)]
+fn push_piece_moves(from: u8, mut targets: u64, enemy: u64, move_list: &mut Vec<Move>) {
+    while targets != 0 {
+        let to = pop_lsb(&mut targets);
+        move_list.push(Move {
+            from: Square::from_index(from),
+            to: Square::from_index(to),
+            promotion: None,
+            is_capture: ((1u64 << to) & enemy) != 0,
+            is_en_passant: false,
+            is_castling: false,
+        });
+    }
+}
+
+pub fn generate_knight_moves(board: &Board, move_list: &mut Vec<Move>) {
     let color = board.side_to_move;
     let knights = board.pieces(Piece::Knight, color);
     let friendly = board.occupancy(color);
@@ -21,29 +39,13 @@ pub fn generate_knight_moves(board: &Board, moves: &mut Vec<Move>) {
 
     let mut bb = knights;
     while bb != 0 {
-        let from = bb.trailing_zeros() as u8;
-        bb &= bb - 1;
-
+        let from = pop_lsb(&mut bb);
         let targets = KNIGHT_ATTACKS[from as usize] & !friendly;
-
-        let mut targets_bb = targets;
-        while targets_bb != 0 {
-            let to = targets_bb.trailing_zeros() as u8;
-            targets_bb &= targets_bb - 1;
-
-            moves.push(Move {
-                from: Square::from_index(from),
-                to: Square::from_index(to),
-                promotion: None,
-                is_capture: (1u64 << to) & enemy != 0,
-                is_en_passant: false,
-                is_castling: false,
-            });
-        }
+        push_piece_moves(from, targets, enemy, move_list);
     }
 }
 
-pub fn generate_bishop_moves(board: &Board, tables: &BishopMagicTables, moves: &mut Vec<Move>) {
+pub fn generate_bishop_moves(board: &Board, tables: &BishopMagicTables, move_list: &mut Vec<Move>) {
     let color = board.side_to_move;
     let bishops = board.pieces(Piece::Bishop, color);
     let friendly = board.occupancy(color);
@@ -52,31 +54,15 @@ pub fn generate_bishop_moves(board: &Board, tables: &BishopMagicTables, moves: &
 
     let mut bb = bishops;
     while bb != 0 {
-        let from = bb.trailing_zeros() as u8;
-        bb &= bb - 1;
-
+        let from = pop_lsb(&mut bb);
         let mask = bishop_vision_mask(from as usize);
         let attacks = tables.get_attacks(from as usize, blockers, mask);
-
         let targets = attacks & !friendly;
-        let mut targets_bb = targets;
-        while targets_bb != 0 {
-            let to = targets_bb.trailing_zeros() as u8;
-            targets_bb &= targets_bb - 1;
-
-            moves.push(Move {
-                from: Square::from_index(from),
-                to: Square::from_index(to),
-                promotion: None,
-                is_capture: (1u64 << to) & enemy != 0,
-                is_en_passant: false,
-                is_castling: false,
-            });
-        }
+        push_piece_moves(from, targets, enemy, move_list);
     }
 }
 
-pub fn generate_rook_moves(board: &Board, tables: &RookMagicTables, moves: &mut Vec<Move>) {
+pub fn generate_rook_moves(board: &Board, tables: &RookMagicTables, move_list: &mut Vec<Move>) {
     let color = board.side_to_move;
     let rooks: u64 = board.pieces(Piece::Rook, color);
     let friendly = board.occupancy(color);
@@ -85,31 +71,15 @@ pub fn generate_rook_moves(board: &Board, tables: &RookMagicTables, moves: &mut 
 
     let mut bb = rooks;
     while bb != 0 {
-        let from = bb.trailing_zeros() as u8;
-        bb &= bb - 1;
-
+        let from = pop_lsb(&mut bb);
         let mask = rook_vision_mask(from as usize);
         let attacks = tables.get_attacks(from as usize, blockers, mask);
-
         let targets = attacks & !friendly;
-        let mut targets_bb = targets;
-        while targets_bb != 0 {
-            let to = targets_bb.trailing_zeros() as u8;
-            targets_bb &= targets_bb - 1;
-
-            moves.push(Move {
-                from: Square::from_index(from),
-                to: Square::from_index(to),
-                promotion: None,
-                is_capture: (1u64 << to) & enemy != 0,
-                is_en_passant: false,
-                is_castling: false,
-            });
-        }
+        push_piece_moves(from, targets, enemy, move_list);
     }
 }
 
-pub fn generate_queen_moves(board: &Board, tables: &MagicTables, moves: &mut Vec<Move>) {
+pub fn generate_queen_moves(board: &Board, tables: &MagicTables, move_list: &mut Vec<Move>) {
     let color = board.side_to_move;
     let queens: u64 = board.pieces(Piece::Queen, color);
     let friendly = board.occupancy(color);
@@ -118,61 +88,30 @@ pub fn generate_queen_moves(board: &Board, tables: &MagicTables, moves: &mut Vec
 
     let mut bb = queens;
     while bb != 0 {
-        let from = bb.trailing_zeros() as u8;
-        bb &= bb - 1;
-
+        let from = pop_lsb(&mut bb);
         let attacks = tables.queen_attacks(from as usize, blockers);
         let targets = attacks & !friendly;
-        let mut targets_bb = targets;
-        while targets_bb != 0 {
-            let to = targets_bb.trailing_zeros() as u8;
-            targets_bb &= targets_bb - 1;
-
-            moves.push(Move {
-                from: Square::from_index(from),
-                to: Square::from_index(to),
-                promotion: None,
-                is_capture: (1u64 << to) & enemy != 0,
-                is_en_passant: false,
-                is_castling: false,
-            });
-        }
+        push_piece_moves(from, targets, enemy, move_list);
     }
 }
 
-pub fn generate_king_moves(board: &Board, moves: &mut Vec<Move>) {
+pub fn generate_king_moves(board: &Board, move_list: &mut Vec<Move>) {
     let color = board.side_to_move;
     let king_bb = board.pieces(Piece::King, color);
 
     if king_bb == 0 {
-        return; // should never happen in a legal position
-    }
+        return;
+    } // illegal position safeguard
 
-    let from = king_bb.trailing_zeros() as u8;
-
-    let attacks = KING_ATTACKS[from as usize];
+    let from = king_bb.trailing_zeros() as u8; // only one king
     let friendly = board.occupancy(color);
     let enemy = board.opponent_occupancy(color);
 
-    let targets = attacks & !friendly;
-
-    let mut targets_bb = targets;
-    while targets_bb != 0 {
-        let to = targets_bb.trailing_zeros() as u8;
-        targets_bb &= targets_bb - 1;
-
-        moves.push(Move {
-            from: Square::from_index(from),
-            to: Square::from_index(to),
-            promotion: None,
-            is_capture: (1u64 << to) & enemy != 0,
-            is_en_passant: false,
-            is_castling: false,
-        });
-    }
+    let targets = KING_ATTACKS[from as usize] & !friendly;
+    push_piece_moves(from, targets, enemy, move_list);
 }
 
-pub fn generate_pawn_moves(board: &Board, moves: &mut Vec<Move>) {
+pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
     let color = board.side_to_move;
     let pawns = board.pieces(Piece::Pawn, color);
     // let friendly = board.occupancy(color);
@@ -195,7 +134,7 @@ pub fn generate_pawn_moves(board: &Board, moves: &mut Vec<Move>) {
             Color::Black => to + 8,
         };
 
-        moves.push(Move {
+        move_list.push(Move {
             from: Square::from_index(from),
             to: Square::from_index(to),
             promotion: None,
@@ -223,7 +162,7 @@ pub fn generate_pawn_moves(board: &Board, moves: &mut Vec<Move>) {
             Color::Black => to + 16,
         };
 
-        moves.push(Move {
+        move_list.push(Move {
             from: Square::from_index(from),
             to: Square::from_index(to),
             promotion: None,
@@ -254,7 +193,7 @@ pub fn generate_pawn_moves(board: &Board, moves: &mut Vec<Move>) {
             let to = targets_bb.trailing_zeros() as u8;
             targets_bb &= targets_bb - 1;
 
-            moves.push(Move {
+            move_list.push(Move {
                 from: Square::from_index(from),
                 to: Square::from_index(to),
                 promotion: None,
@@ -271,7 +210,7 @@ pub fn generate_pawn_moves(board: &Board, moves: &mut Vec<Move>) {
         Color::Black => (RANK2, RANK1, -8, |sq| BLACK_PAWN_ATTACKS[sq]),
     };
 
-    let shift = push_shift.unsigned_abs();
+    let shift = push_shift.abs() as u8;
 
     let promo_pawns = if push_shift > 0 {
         (pawns & start) << shift as u8 & empty
@@ -290,8 +229,8 @@ pub fn generate_pawn_moves(board: &Board, moves: &mut Vec<Move>) {
             to + shift as u8
         };
 
-        for promo_piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
-            moves.push(Move {
+        for &promo_piece in PROMOS.iter() {
+            move_list.push(Move {
                 from: Square::from_index(from),
                 to: Square::from_index(to),
                 promotion: Some(promo_piece),
@@ -314,8 +253,8 @@ pub fn generate_pawn_moves(board: &Board, moves: &mut Vec<Move>) {
             let to = target_bb.trailing_zeros() as u8;
             target_bb &= target_bb - 1;
 
-            for promo_piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
-                moves.push(Move {
+            for &promo_piece in PROMOS.iter() {
+                move_list.push(Move {
                     from: Square::from_index(from as u8),
                     to: Square::from_index(to),
                     promotion: Some(promo_piece),
@@ -343,7 +282,7 @@ pub fn generate_pawn_moves(board: &Board, moves: &mut Vec<Move>) {
 
             // Check if this pawn attacks the en passant square
             if attack_mask & (1 << ep_index) != 0 {
-                moves.push(Move {
+                move_list.push(Move {
                     from: Square::from_index(from),
                     to: Square::from_index(ep_index),
                     promotion: None,
