@@ -9,10 +9,19 @@ use crate::moves::types::Move;
 use crate::square::Square;
 use crate::utils::pop_lsb;
 
+// Predefined Rank Constants
 const RANK1: u64 = 0x0000_0000_0000_00FF;
 const RANK2: u64 = 0x0000_0000_0000_FF00;
 const RANK7: u64 = 0x00FF_0000_0000_0000;
 const RANK8: u64 = 0xFF00_0000_0000_0000;
+
+// Castling Constants
+const WHITE_KINGSIDE_BETWEEN: u64 = 0x0000_0000_0000_0060;
+const WHITE_QUEENSIDE_BETWEEN: u64 = 0x0000_0000_0000_000E;
+const BLACK_KINGSIDE_BETWEEN: u64 = 0x6000_0000_0000_0000;
+const BLACK_QUEENSIDE_BETWEEN: u64 = 0x0E00_0000_0000_0000;
+
+// Promotion Array
 const PROMOS: [Piece; 4] = [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight];
 
 /// Helper functionality to push latest found move
@@ -28,6 +37,24 @@ fn push_piece_moves(from: u8, mut targets: u64, enemy: u64, move_list: &mut Vec<
             is_en_passant: false,
             is_castling: false,
         });
+    }
+}
+
+/// Function to determine which squares to check for kingside castling
+#[inline(always)]
+fn kingside_between(color: Color) -> u64 {
+    match color {
+        Color::White => WHITE_KINGSIDE_BETWEEN,
+        Color::Black => BLACK_KINGSIDE_BETWEEN,
+    }
+}
+
+/// Function to determine which squares to check for queenside castling
+#[inline(always)]
+fn queenside_between(color: Color) -> u64 {
+    match color {
+        Color::White => WHITE_QUEENSIDE_BETWEEN,
+        Color::Black => BLACK_QUEENSIDE_BETWEEN,
     }
 }
 
@@ -109,6 +136,32 @@ pub fn generate_king_moves(board: &Board, move_list: &mut Vec<Move>) {
 
     let targets = KING_ATTACKS[from as usize] & !friendly;
     push_piece_moves(from, targets, enemy, move_list);
+
+    let occ = board.occupied();
+
+    // King-side castle
+    if board.has_kingside_castle(color) && (occ & kingside_between(color)) == 0 {
+        move_list.push(Move {
+            from: Square::from_index(from),
+            to: Square::from_index(from + 2), // g-file
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: true,
+        });
+    }
+
+    // Queen-side castle
+    if board.has_queenside_castle(color) && (occ & queenside_between(color)) == 0 {
+        move_list.push(Move {
+            from: Square::from_index(from),
+            to: Square::from_index(from - 2), // c-file
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: true,
+        });
+    }
 }
 
 pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
@@ -126,9 +179,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
 
     let mut bb = single_pushes;
     while bb != 0 {
-        let to = bb.trailing_zeros() as u8;
-        bb &= bb - 1;
-
+        let to = pop_lsb(&mut bb);
         let from = match color {
             Color::White => to - 8,
             Color::Black => to + 8,
@@ -148,15 +199,13 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
     let double_push = match color {
         // Rank 2 is the white pawn starting rank
         // Rank 7 is the black pawn starting rank
-        Color::White => ((pawns & RANK2) << 8 & empty) << 8 & empty,
-        Color::Black => ((pawns & RANK7) >> 8 & empty) >> 8 & empty,
+        Color::White => (((pawns & RANK2) << 8) & empty) << 8 & empty,
+        Color::Black => (((pawns & RANK7) >> 8) & empty) >> 8 & empty,
     };
 
     let mut bb = double_push;
     while bb != 0 {
-        let to = bb.trailing_zeros() as u8;
-        bb &= bb - 1;
-
+        let to = pop_lsb(&mut bb);
         let from = match color {
             Color::White => to - 16,
             Color::Black => to + 16,
@@ -175,9 +224,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
     // --- Diagonal captures ---
     let mut attackers = pawns;
     while attackers != 0 {
-        let from = attackers.trailing_zeros() as u8;
-        attackers &= attackers - 1;
-
+        let from = pop_lsb(&mut attackers);
         let attack_mask = match color {
             Color::White => WHITE_PAWN_ATTACKS[from as usize],
             Color::Black => BLACK_PAWN_ATTACKS[from as usize],
@@ -190,8 +237,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
 
         let mut targets_bb = targets;
         while targets_bb != 0 {
-            let to = targets_bb.trailing_zeros() as u8;
-            targets_bb &= targets_bb - 1;
+            let to = pop_lsb(&mut targets_bb);
 
             move_list.push(Move {
                 from: Square::from_index(from),
@@ -220,8 +266,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
 
     let mut bb = promo_pawns;
     while bb != 0 {
-        let to = bb.trailing_zeros() as u8;
-        bb &= bb - 1;
+        let to = pop_lsb(&mut bb);
 
         let from = if push_shift > 0 {
             to - shift as u8
@@ -243,15 +288,13 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
 
     let mut attackers = pawns & start;
     while attackers != 0 {
-        let from = attackers.trailing_zeros() as usize;
-        attackers &= attackers - 1;
+        let from = pop_lsb(&mut attackers);
 
-        let targets = attacks_fn(from) & enemy & end;
+        let targets = attacks_fn(from as usize) & enemy & end;
 
         let mut target_bb = targets;
         while target_bb != 0 {
-            let to = target_bb.trailing_zeros() as u8;
-            target_bb &= target_bb - 1;
+            let to = pop_lsb(&mut target_bb);
 
             for &promo_piece in PROMOS.iter() {
                 move_list.push(Move {
@@ -272,8 +315,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
 
         let mut attackers = pawns;
         while attackers != 0 {
-            let from = attackers.trailing_zeros() as u8;
-            attackers &= attackers - 1;
+            let from = pop_lsb(&mut attackers);
 
             let attack_mask = match color {
                 Color::White => WHITE_PAWN_ATTACKS[from as usize],

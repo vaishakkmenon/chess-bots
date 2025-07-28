@@ -6,6 +6,7 @@ use rust_engine::moves::movegen::generate_knight_moves;
 use rust_engine::moves::movegen::generate_pawn_moves;
 use rust_engine::moves::movegen::generate_queen_moves;
 use rust_engine::moves::movegen::generate_rook_moves;
+use rust_engine::moves::types::Move;
 use rust_engine::square::Square;
 
 #[test]
@@ -885,5 +886,78 @@ fn no_en_passant_when_not_set() {
     assert!(
         moves.iter().all(|m| !m.is_en_passant),
         "No en passant move expected"
+    );
+}
+
+/// Helper to look for a castling move that lands on `to`
+fn has_castle(moves: &[Move], to: u8) -> bool {
+    moves.iter().any(|m| m.is_castling && m.to.index() == to)
+}
+
+#[test]
+fn white_kingside_castle_generated() {
+    let mut b = Board::new_empty();
+    b.white_king = 1 << 4; // e1
+    b.white_rooks = 1 << 7; // h1
+    b.castling_rights = 0b0001; // CASTLE_WK
+    b.side_to_move = Color::White;
+
+    let mut moves = Vec::new();
+    generate_king_moves(&b, &mut moves);
+
+    assert!(
+        has_castle(&moves, 6),
+        "White KS castle (to g1) not generated"
+    );
+}
+
+#[test]
+fn white_queenside_castle_generated() {
+    let mut b = Board::new_empty();
+    b.white_king = 1 << 4; // e1
+    b.white_rooks = 1 << 0; // a1
+    b.castling_rights = 0b0010; // CASTLE_WQ
+    b.side_to_move = Color::White;
+
+    let mut moves = Vec::new();
+    generate_king_moves(&b, &mut moves);
+
+    assert!(
+        has_castle(&moves, 2),
+        "White QS castle (to c1) not generated"
+    );
+}
+
+#[test]
+fn black_kingside_castle_generated() {
+    let mut b = Board::new_empty();
+    b.black_king = 1 << 60; // e8
+    b.black_rooks = 1 << 63; // h8
+    b.castling_rights = 0b0100; // CASTLE_BK
+    b.side_to_move = Color::Black;
+
+    let mut moves = Vec::new();
+    generate_king_moves(&b, &mut moves);
+
+    assert!(
+        has_castle(&moves, 62),
+        "Black KS castle (to g8) not generated"
+    );
+}
+
+#[test]
+fn black_queenside_castle_generated() {
+    let mut b = Board::new_empty();
+    b.black_king = 1 << 60; // e8
+    b.black_rooks = 1 << 56; // a8
+    b.castling_rights = 0b1000; // CASTLE_BQ
+    b.side_to_move = Color::Black;
+
+    let mut moves = Vec::new();
+    generate_king_moves(&b, &mut moves);
+
+    assert!(
+        has_castle(&moves, 58),
+        "Black QS castle (to c8) not generated"
     );
 }
