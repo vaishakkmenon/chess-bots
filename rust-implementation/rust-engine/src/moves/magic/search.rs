@@ -20,17 +20,17 @@ pub fn is_magic_candidate_valid(blockers: &[u64], attacks: &[u64], magic: u64, s
         let product = blocker.wrapping_mul(magic);
         let index = product >> shift;
 
-        if seen.contains_key(&index) {
+        if let std::collections::hash_map::Entry::Vacant(e) = seen.entry(index) {
+            e.insert(attack);
+        } else {
             let existing_attack = seen[&index];
             if existing_attack != attack {
                 return false;
             }
-        } else {
-            seen.insert(index, attack);
         }
     }
 
-    return true;
+    true
 }
 
 pub fn find_magic_number_for_square<R: RngCore>(

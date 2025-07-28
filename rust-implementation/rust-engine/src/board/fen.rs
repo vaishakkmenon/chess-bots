@@ -67,7 +67,7 @@ impl Board {
                 fen.push('/');
             }
         }
-        return fen;
+        fen
     }
 
     pub fn castling_fen(&self) -> String {
@@ -90,7 +90,7 @@ impl Board {
             s.push('-');
         }
 
-        return s;
+        s
     }
 
     pub fn en_passant_fen(&self) -> String {
@@ -209,7 +209,7 @@ impl Board {
                 }
             }
         }
-        return Ok(());
+        Ok(())
     }
 
     /// Parse the en_passant field, is it a valid square or empty

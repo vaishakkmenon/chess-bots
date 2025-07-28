@@ -139,7 +139,7 @@ impl Board {
         b.en_passant = None;
         b.halfmove_clock = 0;
         b.fullmove_number = 1;
-        return b;
+        b
     }
 
     pub fn occupied(&self) -> u64 {

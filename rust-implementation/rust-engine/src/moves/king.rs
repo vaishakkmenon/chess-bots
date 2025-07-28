@@ -25,7 +25,7 @@ const fn king_attacks(square: u8) -> u64 {
         dr += 1;
     }
 
-    return attacks;
+    attacks
 }
 
 const fn generate_king_table() -> [u64; 64] {
@@ -36,7 +36,8 @@ const fn generate_king_table() -> [u64; 64] {
         table[i] = king_attacks(i as u8);
         i += 1;
     }
-    return table;
+
+    table
 }
 
 /// Returns the king attack bitboard for a given square and color, or None if the square is invalid.

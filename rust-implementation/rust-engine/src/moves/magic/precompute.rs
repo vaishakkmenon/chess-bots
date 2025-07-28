@@ -28,7 +28,7 @@ pub fn precompute_rook_attacks() -> Vec<Vec<u64>> {
         table.push(attacks_for_square);
     }
 
-    return table;
+    table
 }
 
 pub fn precompute_bishop_attacks() -> Vec<Vec<u64>> {
@@ -52,7 +52,7 @@ pub fn precompute_bishop_attacks() -> Vec<Vec<u64>> {
         table.push(attacks_for_square);
     }
 
-    return table;
+    table
 }
 
 /// Generates a full set of 64 `MagicEntry`s for a sliding piece (e.g. rook or bishop)
@@ -81,7 +81,6 @@ pub fn precompute_bishop_attacks() -> Vec<Vec<u64>> {
 /// # Panics
 /// Panics if the final `Vec<MagicEntry>` does not contain exactly 64 entries. This
 /// would indicate a logic error in how blockers were generated or processed.
-
 fn generate_magic_entries<FBlockers, FAttacks, FMask, FPerSquare, R>(
     piece_name: &str,
     gen_blockers: FBlockers,
