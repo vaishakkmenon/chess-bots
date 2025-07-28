@@ -326,4 +326,32 @@ pub fn generate_pawn_moves(board: &Board, moves: &mut Vec<Move>) {
             }
         }
     }
+
+    if let Some(ep_square) = board.en_passant {
+        let ep_index = ep_square.index();
+        let pawns = board.pieces(Piece::Pawn, color);
+
+        let mut attackers = pawns;
+        while attackers != 0 {
+            let from = attackers.trailing_zeros() as u8;
+            attackers &= attackers - 1;
+
+            let attack_mask = match color {
+                Color::White => WHITE_PAWN_ATTACKS[from as usize],
+                Color::Black => BLACK_PAWN_ATTACKS[from as usize],
+            };
+
+            // Check if this pawn attacks the en passant square
+            if attack_mask & (1 << ep_index) != 0 {
+                moves.push(Move {
+                    from: Square::from_index(from),
+                    to: Square::from_index(ep_index),
+                    promotion: None,
+                    is_capture: true,
+                    is_en_passant: true,
+                    is_castling: false,
+                });
+            }
+        }
+    }
 }

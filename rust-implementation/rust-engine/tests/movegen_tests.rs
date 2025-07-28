@@ -6,6 +6,7 @@ use rust_engine::moves::movegen::generate_knight_moves;
 use rust_engine::moves::movegen::generate_pawn_moves;
 use rust_engine::moves::movegen::generate_queen_moves;
 use rust_engine::moves::movegen::generate_rook_moves;
+use rust_engine::square::Square;
 
 #[test]
 fn knight_moves_from_d4() {
@@ -815,4 +816,74 @@ fn black_promotion_captures() {
                 && m.is_capture));
         }
     }
+}
+
+#[test]
+fn white_en_passant_capture() {
+    let mut board = Board::new_empty();
+
+    let e5 = 36; // White pawn on e5
+    board.white_pawns = 1 << e5;
+
+    let d5 = 35; // Black pawn that double-pushed to d5
+    board.black_pawns = 1 << d5;
+
+    board.side_to_move = Color::White;
+    board.en_passant = Some(Square::from_index(43)); // d6 is the square behind the pawn that double-pushed
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+    println!("{:#?}", moves);
+
+    let ep_move = moves.iter().find(|m| m.is_en_passant);
+    assert!(ep_move.is_some(), "Expected en passant move");
+
+    let m = ep_move.unwrap();
+    assert_eq!(m.from.index(), e5);
+    assert_eq!(m.to.index(), 43); // d6
+    assert!(m.is_capture);
+}
+
+#[test]
+fn black_en_passant_capture() {
+    let mut board = Board::new_empty();
+
+    let d4 = 27; // Black pawn on d4
+    board.black_pawns = 1 << d4;
+
+    let e2 = 28; // White pawn that double-pushed to e4
+    board.white_pawns = 1 << e2;
+
+    board.side_to_move = Color::Black;
+    board.en_passant = Some(Square::from_index(20)); // e3
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+    println!("{:#?}", moves);
+
+    let ep_move = moves.iter().find(|m| m.is_en_passant);
+    assert!(ep_move.is_some(), "Expected en passant move");
+
+    let m = ep_move.unwrap();
+    assert_eq!(m.from.index(), d4);
+    assert_eq!(m.to.index(), 20); // e3
+    assert!(m.is_capture);
+}
+
+#[test]
+fn no_en_passant_when_not_set() {
+    let mut board = Board::new_empty();
+
+    board.white_pawns = 1 << 28; // e5
+    board.black_pawns = 1 << 27; // d5
+    board.side_to_move = Color::White;
+    board.en_passant = None;
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+
+    assert!(
+        moves.iter().all(|m| !m.is_en_passant),
+        "No en passant move expected"
+    );
 }
