@@ -193,18 +193,18 @@ fn test_bishop_attacks_blockers_first_square() {
 fn test_rook_attack_table_counts() {
     let table = precompute_rook_attacks();
 
-    for square in 0..64 {
+    for (square, entry) in table.iter().enumerate() {
         let mask = rook_vision_mask(square);
         let bit_count = mask.count_ones();
         let expected_len = 1 << bit_count;
 
         assert_eq!(
-            table[square].len(),
+            entry.len(),
             expected_len as usize,
             "Square {}: expected {} entries, got {}",
             square,
             expected_len,
-            table[square].len()
+            entry.len()
         );
     }
 }
@@ -213,18 +213,18 @@ fn test_rook_attack_table_counts() {
 fn test_bishop_attack_table_counts() {
     let table = precompute_bishop_attacks();
 
-    for square in 0..64 {
+    for (square, entry) in table.iter().enumerate() {
         let mask = bishop_vision_mask(square);
-        let bit_count = mask.count_ones();
-        let expected_len = 1 << bit_count;
+        let bit_count = mask.count_ones(); // bits in the vision mask
+        let expected_len = 1 << bit_count; // 2^n blocker patterns
 
         assert_eq!(
-            table[square].len(),
+            entry.len(),
             expected_len as usize,
             "Square {}: expected {} entries, got {}",
             square,
             expected_len,
-            table[square].len()
+            entry.len()
         );
     }
 }

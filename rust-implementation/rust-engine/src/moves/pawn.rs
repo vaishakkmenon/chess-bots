@@ -130,25 +130,15 @@ mod tests {
 
     #[test]
     fn test_white_attacks_match_reference() {
-        for square in 0..64 {
-            assert_eq!(
-                WHITE_PAWN_ATTACKS[square],
-                pawn_attack_mask(square as u8, Color::White),
-                "Mismatch at square {}",
-                square
-            );
+        for (square, &attack) in WHITE_PAWN_ATTACKS.iter().enumerate() {
+            assert_eq!(attack, pawn_attack_mask(square as u8, Color::White));
         }
     }
 
     #[test]
     fn test_black_attacks_match_reference() {
-        for square in 0..64 {
-            assert_eq!(
-                BLACK_PAWN_ATTACKS[square],
-                pawn_attack_mask(square as u8, Color::Black),
-                "Mismatch at square {}",
-                square
-            );
+        for (square, &attack) in BLACK_PAWN_ATTACKS.iter().enumerate() {
+            assert_eq!(attack, pawn_attack_mask(square as u8, Color::Black));
         }
     }
 
