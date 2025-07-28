@@ -115,7 +115,7 @@ mod tests {
     #[test]
     fn black_pawn_attacks_edge() {
         let t = tables();
-        let a5 = 0 + 8 * 4;
+        let a5 = 8 * 4;
         assert_eq!(
             attacks_from(Piece::Pawn, Color::Black, a5, 0, &t),
             pawn::pawn_attacks(a5, Color::Black)

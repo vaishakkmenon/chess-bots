@@ -202,7 +202,7 @@ fn multiple_bishops_generate_moves() {
 
     assert!(moves.iter().any(|m| m.from.index() == 2));
     assert!(moves.iter().any(|m| m.from.index() == 20));
-    assert!(moves.len() > 0);
+    assert!(!moves.is_empty());
 }
 
 #[test]
@@ -318,7 +318,7 @@ fn multiple_rooks_generate_moves() {
 
     assert!(moves.iter().any(|m| m.from.index() == 0));
     assert!(moves.iter().any(|m| m.from.index() == 56));
-    assert!(moves.len() > 0);
+    assert!(!moves.is_empty());
 }
 
 #[test]
@@ -436,7 +436,7 @@ fn multiple_queens_generate_moves() {
 
     assert!(moves.iter().any(|m| m.from.index() == 0));
     assert!(moves.iter().any(|m| m.from.index() == 63));
-    assert!(moves.len() > 0);
+    assert!(!moves.is_empty());
 }
 
 #[test]

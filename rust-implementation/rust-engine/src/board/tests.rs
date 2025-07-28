@@ -44,7 +44,7 @@ fn assert_empty_board(b: &Board) {
 
 fn assert_empty_castling(b: &Board) {
     for &bb in &[CASTLE_WK, CASTLE_WQ, CASTLE_BK, CASTLE_BQ] {
-        assert_eq!(b.has_castling(bb), false);
+        assert!(!b.has_castling(bb));
     }
 }
 
