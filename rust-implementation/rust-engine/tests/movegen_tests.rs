@@ -1,4 +1,4 @@
-use rust_engine::board::{Board, Color};
+use rust_engine::board::{Board, Color, Piece};
 use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::movegen::generate_bishop_moves;
 use rust_engine::moves::movegen::generate_king_moves;
@@ -730,4 +730,89 @@ fn black_pawn_does_not_capture_friendly_piece() {
         moves.iter().all(|m| !m.is_capture),
         "Should not capture friendly pieces"
     );
+}
+
+#[test]
+fn white_promotion_push() {
+    let mut board = Board::new_empty();
+    let a7 = 48;
+    board.white_pawns = 1 << a7;
+    board.side_to_move = Color::White;
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+
+    let expected_to = 56;
+    assert_eq!(moves.len(), 4); // Q, R, B, N
+    for piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
+        assert!(moves.iter().any(|m| m.from.index() == a7
+            && m.to.index() == expected_to
+            && m.promotion == Some(piece)
+            && !m.is_capture));
+    }
+}
+
+#[test]
+fn white_promotion_captures() {
+    let mut board = Board::new_empty();
+    let d7 = 51;
+    board.white_pawns = 1 << d7;
+    board.black_knights = (1 << 58) | (1 << 60); // c8 and e8
+    board.side_to_move = Color::White;
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+
+    assert_eq!(moves.len(), 12); // 2 targets × 4 promos
+    for &to in [58, 60].iter() {
+        for piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
+            assert!(moves.iter().any(|m| m.from.index() == d7
+                && m.to.index() == to
+                && m.promotion == Some(piece)
+                && m.is_capture));
+        }
+    }
+}
+
+#[test]
+fn black_promotion_push() {
+    let mut board = Board::new_empty();
+    let a2 = 8;
+    board.black_pawns = 1 << a2;
+    board.side_to_move = Color::Black;
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+
+    let expected_to = 0;
+    assert_eq!(moves.len(), 4); // Q, R, B, N
+    for piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
+        assert!(moves.iter().any(|m| m.from.index() == a2
+            && m.to.index() == expected_to
+            && m.promotion == Some(piece)
+            && !m.is_capture));
+    }
+}
+
+#[test]
+fn black_promotion_captures() {
+    let mut board = Board::new_empty();
+    let d2 = 11;
+    board.black_pawns = 1 << d2;
+    board.white_knights = (1 << 2) | (1 << 4); // c1 and e1
+    board.side_to_move = Color::Black;
+
+    let mut moves = Vec::new();
+    generate_pawn_moves(&board, &mut moves);
+    println!("{:#?}", moves);
+
+    assert_eq!(moves.len(), 12); // 2 targets × 4 promos
+    for &to in [2, 4].iter() {
+        for piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
+            assert!(moves.iter().any(|m| m.from.index() == d2
+                && m.to.index() == to
+                && m.promotion == Some(piece)
+                && m.is_capture));
+        }
+    }
 }

@@ -8,8 +8,10 @@ use crate::moves::pawn::{BLACK_PAWN_ATTACKS, WHITE_PAWN_ATTACKS};
 use crate::moves::types::Move;
 use crate::square::Square;
 
-const WHITE_PAWN_START_RANK: u64 = 0x0000_0000_0000_FF00;
-const BLACK_PAWN_START_RANK: u64 = 0x00FF_0000_0000_0000;
+const RANK1: u64 = 0x0000_0000_0000_00FF;
+const RANK2: u64 = 0x0000_0000_0000_FF00;
+const RANK7: u64 = 0x00FF_0000_0000_0000;
+const RANK8: u64 = 0xFF00_0000_0000_0000;
 
 pub fn generate_knight_moves(board: &Board, moves: &mut Vec<Move>) {
     let color = board.side_to_move;
@@ -179,8 +181,8 @@ pub fn generate_pawn_moves(board: &Board, moves: &mut Vec<Move>) {
 
     // --- Forward single pushes ---
     let single_pushes = match color {
-        Color::White => (pawns << 8) & empty,
-        Color::Black => (pawns >> 8) & empty,
+        Color::White => ((pawns << 8) & empty) & !RANK8,
+        Color::Black => ((pawns >> 8) & empty) & !RANK1,
     };
 
     let mut bb = single_pushes;
@@ -205,8 +207,10 @@ pub fn generate_pawn_moves(board: &Board, moves: &mut Vec<Move>) {
 
     // --- Double forward pushes ---
     let double_push = match color {
-        Color::White => ((pawns & WHITE_PAWN_START_RANK) << 8 & empty) << 8 & empty,
-        Color::Black => ((pawns & BLACK_PAWN_START_RANK) >> 8 & empty) >> 8 & empty,
+        // Rank 2 is the white pawn starting rank
+        // Rank 7 is the black pawn starting rank
+        Color::White => ((pawns & RANK2) << 8 & empty) << 8 & empty,
+        Color::Black => ((pawns & RANK7) >> 8 & empty) >> 8 & empty,
     };
 
     let mut bb = double_push;
@@ -240,7 +244,10 @@ pub fn generate_pawn_moves(board: &Board, moves: &mut Vec<Move>) {
             Color::Black => BLACK_PAWN_ATTACKS[from as usize],
         };
 
-        let targets = attack_mask & enemy;
+        let targets = match color {
+            Color::White => attack_mask & enemy & !RANK8,
+            Color::Black => attack_mask & enemy & !RANK1,
+        };
 
         let mut targets_bb = targets;
         while targets_bb != 0 {
@@ -255,6 +262,68 @@ pub fn generate_pawn_moves(board: &Board, moves: &mut Vec<Move>) {
                 is_en_passant: false,
                 is_castling: false,
             });
+        }
+    }
+
+    // --- Promotion Logic ---
+    let (start, end, push_shift, attacks_fn): (u64, u64, i8, fn(usize) -> u64) = match color {
+        Color::White => (RANK7, RANK8, 8, |sq| WHITE_PAWN_ATTACKS[sq]),
+        Color::Black => (RANK2, RANK1, -8, |sq| BLACK_PAWN_ATTACKS[sq]),
+    };
+
+    let shift = push_shift.unsigned_abs();
+
+    let promo_pawns = if push_shift > 0 {
+        (pawns & start) << shift as u8 & empty
+    } else {
+        (pawns & start) >> shift as u8 & empty
+    };
+
+    let mut bb = promo_pawns;
+    while bb != 0 {
+        let to = bb.trailing_zeros() as u8;
+        bb &= bb - 1;
+
+        let from = if push_shift > 0 {
+            to - shift as u8
+        } else {
+            to + shift as u8
+        };
+
+        for promo_piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
+            moves.push(Move {
+                from: Square::from_index(from),
+                to: Square::from_index(to),
+                promotion: Some(promo_piece),
+                is_capture: false,
+                is_en_passant: false,
+                is_castling: false,
+            });
+        }
+    }
+
+    let mut attackers = pawns & start;
+    while attackers != 0 {
+        let from = attackers.trailing_zeros() as usize;
+        attackers &= attackers - 1;
+
+        let targets = attacks_fn(from) & enemy & end;
+
+        let mut target_bb = targets;
+        while target_bb != 0 {
+            let to = target_bb.trailing_zeros() as u8;
+            target_bb &= target_bb - 1;
+
+            for promo_piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
+                moves.push(Move {
+                    from: Square::from_index(from as u8),
+                    to: Square::from_index(to),
+                    promotion: Some(promo_piece),
+                    is_capture: true,
+                    is_en_passant: false,
+                    is_castling: false,
+                });
+            }
         }
     }
 }
