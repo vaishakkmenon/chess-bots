@@ -256,12 +256,12 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
         Color::Black => (RANK2, RANK1, -8, |sq| BLACK_PAWN_ATTACKS[sq]),
     };
 
-    let shift = push_shift.abs() as u8;
+    let shift = push_shift.unsigned_abs();
 
     let promo_pawns = if push_shift > 0 {
-        (pawns & start) << shift as u8 & empty
+        (pawns & start) << shift & empty
     } else {
-        (pawns & start) >> shift as u8 & empty
+        (pawns & start) >> shift & empty
     };
 
     let mut bb = promo_pawns;
@@ -269,9 +269,9 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
         let to = pop_lsb(&mut bb);
 
         let from = if push_shift > 0 {
-            to - shift as u8
+            to - shift
         } else {
-            to + shift as u8
+            to + shift
         };
 
         for &promo_piece in PROMOS.iter() {

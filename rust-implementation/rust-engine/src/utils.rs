@@ -37,5 +37,5 @@ pub fn pop_lsb(bb: &mut u64) -> u8 {
 
     let idx = bb.trailing_zeros() as u8; // 0‥63
     *bb &= *bb - 1; // clear that bit
-    return idx;
+    idx
 }

@@ -28,7 +28,7 @@ const fn single_pawn_attack_mask(square: u8, color: Color) -> u64 {
         i += 1;
     }
 
-    return attacks;
+    attacks
 }
 
 const fn generate_pawn_attack_table(color: Color) -> [u64; 64] {
@@ -38,7 +38,7 @@ const fn generate_pawn_attack_table(color: Color) -> [u64; 64] {
         table[square] = single_pawn_attack_mask(square as u8, color);
         square += 1;
     }
-    return table;
+    table
 }
 
 /// Returns the pawn attack bitboard for a given square and color, or None if the square is invalid.
