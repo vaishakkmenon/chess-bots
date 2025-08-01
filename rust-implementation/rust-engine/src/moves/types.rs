@@ -5,6 +5,7 @@ use crate::square::Square;
 pub struct Move {
     pub from: Square,
     pub to: Square,
+    pub piece: Piece,
     pub promotion: Option<Piece>,
     pub is_capture: bool,
     pub is_en_passant: bool,

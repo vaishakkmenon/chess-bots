@@ -1,5 +1,6 @@
 mod fen;
 
+use crate::bitboard::BitboardExt;
 use crate::square::Square;
 use std::fmt;
 use std::str::FromStr;
@@ -46,6 +47,7 @@ const CASTLE_BQ: u8 = 0b1000;
 
 /// Which side is to move.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 pub enum Color {
     White,
     Black,
@@ -53,6 +55,7 @@ pub enum Color {
 
 /// Piece enum to hold all types of pieces
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 pub enum Piece {
     Pawn,
     Knight,
@@ -65,20 +68,25 @@ pub enum Piece {
 /// Core board representation using bitboards.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Board {
-    /// White Pieces
-    pub white_pawns: u64,
-    pub white_knights: u64,
-    pub white_bishops: u64,
-    pub white_rooks: u64,
-    pub white_queens: u64,
-    pub white_king: u64,
-    pub black_pawns: u64,
-    /// Black Pieces
-    pub black_knights: u64,
-    pub black_bishops: u64,
-    pub black_rooks: u64,
-    pub black_queens: u64,
-    pub black_king: u64,
+    // /// White Pieces
+    // pub white_pawns: u64,
+    // pub white_knights: u64,
+    // pub white_bishops: u64,
+    // pub white_rooks: u64,
+    // pub white_queens: u64,
+    // pub white_king: u64,
+    // pub black_pawns: u64,
+    // /// Black Pieces
+    // pub black_knights: u64,
+    // pub black_bishops: u64,
+    // pub black_rooks: u64,
+    // pub black_queens: u64,
+    // pub black_king: u64,
+    pub piece_bb: [[u64; 6]; 2],
+    /// Occupancy fields
+    pub occ_white: u64,
+    pub occ_black: u64,
+    pub occ_all: u64,
     /// White or Black to move
     pub side_to_move: Color,
     /// Castling rights: bit 0=White kingside, 1=White queenside, 2=Black kingside, 3=Black queenside
@@ -92,21 +100,23 @@ pub struct Board {
 }
 
 impl Board {
+    #[inline(always)]
+    fn bb(&self, color: Color, piece: Piece) -> u64 {
+        self.piece_bb[color as usize][piece as usize]
+    }
+
+    #[inline(always)]
+    fn set_bb(&mut self, color: Color, piece: Piece, bits: u64) {
+        self.piece_bb[color as usize][piece as usize] = bits;
+    }
+
     /// Create an empty board (all bitboards zero, White to move).
     pub fn new_empty() -> Self {
         Board {
-            white_pawns: 0,
-            white_knights: 0,
-            white_bishops: 0,
-            white_rooks: 0,
-            white_queens: 0,
-            white_king: 0,
-            black_pawns: 0,
-            black_knights: 0,
-            black_bishops: 0,
-            black_rooks: 0,
-            black_queens: 0,
-            black_king: 0,
+            piece_bb: [[0u64; 6]; 2],
+            occ_white: 0,
+            occ_black: 0,
+            occ_all: 0,
             side_to_move: Color::White,
             castling_rights: 0,
             en_passant: None,
@@ -118,20 +128,24 @@ impl Board {
     pub fn new() -> Self {
         let mut b = Board::new_empty();
         // Set up white pieces
-        b.white_pawns = WHITE_PAWN_MASK;
-        b.white_bishops = WHITE_BISHOP_MASK;
-        b.white_knights = WHITE_KNIGHT_MASK;
-        b.white_rooks = WHITE_ROOK_MASK;
-        b.white_queens = WHITE_QUEEN_MASK;
-        b.white_king = WHITE_KING_MASK;
+        b.set_bb(Color::White, Piece::Pawn, WHITE_PAWN_MASK);
+        b.set_bb(Color::White, Piece::Bishop, WHITE_BISHOP_MASK);
+        b.set_bb(Color::White, Piece::Knight, WHITE_KNIGHT_MASK);
+        b.set_bb(Color::White, Piece::Rook, WHITE_ROOK_MASK);
+        b.set_bb(Color::White, Piece::Queen, WHITE_QUEEN_MASK);
+        b.set_bb(Color::White, Piece::King, WHITE_KING_MASK);
 
         // Set up black pieces
-        b.black_pawns = BLACK_PAWN_MASK;
-        b.black_rooks = BLACK_ROOK_MASK;
-        b.black_knights = BLACK_KNIGHT_MASK;
-        b.black_bishops = BLACK_BISHOP_MASK;
-        b.black_queens = BLACK_QUEEN_MASK;
-        b.black_king = BLACK_KING_MASK;
+        b.set_bb(Color::Black, Piece::Pawn, BLACK_PAWN_MASK);
+        b.set_bb(Color::Black, Piece::Bishop, BLACK_BISHOP_MASK);
+        b.set_bb(Color::Black, Piece::Knight, BLACK_KNIGHT_MASK);
+        b.set_bb(Color::Black, Piece::Rook, BLACK_ROOK_MASK);
+        b.set_bb(Color::Black, Piece::Queen, BLACK_QUEEN_MASK);
+        b.set_bb(Color::Black, Piece::King, BLACK_KING_MASK);
+
+        b.occ_white = b.occupancy(Color::White);
+        b.occ_black = b.occupancy(Color::Black);
+        b.occ_all = b.occ_white | b.occ_black;
 
         // Setup side to move and other important information
         b.side_to_move = Color::White;
@@ -142,21 +156,13 @@ impl Board {
         b
     }
 
+    #[inline(always)]
+    /// Bitboard of all pieces (both colors).
     pub fn occupied(&self) -> u64 {
-        self.white_pawns
-            | self.white_bishops
-            | self.white_knights
-            | self.white_rooks
-            | self.white_queens
-            | self.white_king
-            | self.black_pawns
-            | self.black_bishops
-            | self.black_knights
-            | self.black_rooks
-            | self.black_queens
-            | self.black_king
+        self.occ_all
     }
 
+    #[inline(always)]
     pub fn has_castling(&self, flag: u8) -> bool {
         self.castling_rights & flag != 0
     }
@@ -165,18 +171,18 @@ impl Board {
     /// Returns Ok if valid, Err describing the overlap if invalid.
     pub fn validate(&self) -> Result<(), String> {
         let bitboards = [
-            ("white_pawns", self.white_pawns),
-            ("white_knights", self.white_knights),
-            ("white_bishops", self.white_bishops),
-            ("white_rooks", self.white_rooks),
-            ("white_queens", self.white_queens),
-            ("white_king", self.white_king),
-            ("black_pawns", self.black_pawns),
-            ("black_knights", self.black_knights),
-            ("black_bishops", self.black_bishops),
-            ("black_rooks", self.black_rooks),
-            ("black_queens", self.black_queens),
-            ("black_king", self.black_king),
+            ("white_pawns", self.bb(Color::White, Piece::Pawn)),
+            ("white_knights", self.bb(Color::White, Piece::Knight)),
+            ("white_bishops", self.bb(Color::White, Piece::Bishop)),
+            ("white_rooks", self.bb(Color::White, Piece::Rook)),
+            ("white_queens", self.bb(Color::White, Piece::Queen)),
+            ("white_king", self.bb(Color::White, Piece::King)),
+            ("black_pawns", self.bb(Color::Black, Piece::Pawn)),
+            ("black_knights", self.bb(Color::Black, Piece::Knight)),
+            ("black_bishops", self.bb(Color::Black, Piece::Bishop)),
+            ("black_rooks", self.bb(Color::Black, Piece::Rook)),
+            ("black_queens", self.bb(Color::Black, Piece::Queen)),
+            ("black_king", self.bb(Color::Black, Piece::King)),
         ];
 
         let mut seen: u64 = 0;
@@ -189,53 +195,33 @@ impl Board {
         Ok(())
     }
 
+    #[inline(always)]
+    /// Bitboard of all pieces for one side.
     pub fn occupancy(&self, color: Color) -> u64 {
         match color {
-            Color::White => {
-                self.white_pawns
-                    | self.white_knights
-                    | self.white_bishops
-                    | self.white_rooks
-                    | self.white_queens
-                    | self.white_king
-            }
-            Color::Black => {
-                self.black_pawns
-                    | self.black_knights
-                    | self.black_bishops
-                    | self.black_rooks
-                    | self.black_queens
-                    | self.black_king
-            }
+            Color::White => self.occ_white,
+            Color::Black => self.occ_black,
         }
     }
 
+    /// Shorthand for the opponent’s occupancy.
     pub fn opponent_occupancy(&self, color: Color) -> u64 {
         self.occupancy(color.opposite())
     }
 
+    #[inline(always)]
+    /// Single‐slot accessor for a given piece & color.
     pub fn pieces(&self, piece: Piece, color: Color) -> u64 {
-        match (piece, color) {
-            (Piece::Pawn, Color::White) => self.white_pawns,
-            (Piece::Knight, Color::White) => self.white_knights,
-            (Piece::Bishop, Color::White) => self.white_bishops,
-            (Piece::Rook, Color::White) => self.white_rooks,
-            (Piece::Queen, Color::White) => self.white_queens,
-            (Piece::King, Color::White) => self.white_king,
-            (Piece::Pawn, Color::Black) => self.black_pawns,
-            (Piece::Knight, Color::Black) => self.black_knights,
-            (Piece::Bishop, Color::Black) => self.black_bishops,
-            (Piece::Rook, Color::Black) => self.black_rooks,
-            (Piece::Queen, Color::Black) => self.black_queens,
-            (Piece::King, Color::Black) => self.black_king,
-        }
+        self.bb(color, piece)
     }
 
     // Utility Aliases
+    #[inline(always)]
     pub fn en_passant_target(&self) -> Option<Square> {
         self.en_passant
     }
 
+    #[inline(always)]
     pub fn has_kingside_castle(&self, color: Color) -> bool {
         match color {
             Color::White => self.castling_rights & 0b0001 != 0,
@@ -243,11 +229,19 @@ impl Board {
         }
     }
 
+    #[inline(always)]
     pub fn has_queenside_castle(&self, color: Color) -> bool {
         match color {
             Color::White => self.castling_rights & 0b0010 != 0,
             Color::Black => self.castling_rights & 0b1000 != 0,
         }
+    }
+
+    /// Function to get exactly what square the king sits on
+    #[inline(always)]
+    pub fn king_square(&self, color: Color) -> Square {
+        let king_bb = self.pieces(Piece::King, color);
+        Square::try_from(king_bb.lsb()).expect("Invalid king bitboard")
     }
 }
 

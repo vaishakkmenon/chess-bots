@@ -26,12 +26,19 @@ const PROMOS: [Piece; 4] = [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Kni
 
 /// Helper functionality to push latest found move
 #[inline(always)]
-fn push_piece_moves(from: u8, mut targets: u64, enemy: u64, move_list: &mut Vec<Move>) {
+fn push_piece_moves(
+    from: u8,
+    mut targets: u64,
+    enemy: u64,
+    move_piece: Piece,
+    move_list: &mut Vec<Move>,
+) {
     while targets != 0 {
         let to = pop_lsb(&mut targets);
         move_list.push(Move {
             from: Square::from_index(from),
             to: Square::from_index(to),
+            piece: move_piece,
             promotion: None,
             is_capture: (enemy >> to) & 1 != 0,
             is_en_passant: false,
@@ -68,7 +75,7 @@ pub fn generate_knight_moves(board: &Board, move_list: &mut Vec<Move>) {
     while bb != 0 {
         let from = pop_lsb(&mut bb);
         let targets = KNIGHT_ATTACKS[from as usize] & !friendly;
-        push_piece_moves(from, targets, enemy, move_list);
+        push_piece_moves(from, targets, enemy, Piece::Knight, move_list);
     }
 }
 
@@ -85,7 +92,7 @@ pub fn generate_bishop_moves(board: &Board, tables: &BishopMagicTables, move_lis
         let mask = bishop_vision_mask(from as usize);
         let attacks = tables.get_attacks(from as usize, blockers, mask);
         let targets = attacks & !friendly;
-        push_piece_moves(from, targets, enemy, move_list);
+        push_piece_moves(from, targets, enemy, Piece::Bishop, move_list);
     }
 }
 
@@ -102,7 +109,7 @@ pub fn generate_rook_moves(board: &Board, tables: &RookMagicTables, move_list: &
         let mask = rook_vision_mask(from as usize);
         let attacks = tables.get_attacks(from as usize, blockers, mask);
         let targets = attacks & !friendly;
-        push_piece_moves(from, targets, enemy, move_list);
+        push_piece_moves(from, targets, enemy, Piece::Rook, move_list);
     }
 }
 
@@ -118,7 +125,7 @@ pub fn generate_queen_moves(board: &Board, tables: &MagicTables, move_list: &mut
         let from = pop_lsb(&mut bb);
         let attacks = tables.queen_attacks(from as usize, blockers);
         let targets = attacks & !friendly;
-        push_piece_moves(from, targets, enemy, move_list);
+        push_piece_moves(from, targets, enemy, Piece::Queen, move_list);
     }
 }
 
@@ -135,7 +142,7 @@ pub fn generate_king_moves(board: &Board, move_list: &mut Vec<Move>) {
     let enemy = board.opponent_occupancy(color);
 
     let targets = KING_ATTACKS[from as usize] & !friendly;
-    push_piece_moves(from, targets, enemy, move_list);
+    push_piece_moves(from, targets, enemy, Piece::King, move_list);
 
     let occ = board.occupied();
 
@@ -144,6 +151,7 @@ pub fn generate_king_moves(board: &Board, move_list: &mut Vec<Move>) {
         move_list.push(Move {
             from: Square::from_index(from),
             to: Square::from_index(from + 2), // g-file
+            piece: Piece::King,
             promotion: None,
             is_capture: false,
             is_en_passant: false,
@@ -156,6 +164,7 @@ pub fn generate_king_moves(board: &Board, move_list: &mut Vec<Move>) {
         move_list.push(Move {
             from: Square::from_index(from),
             to: Square::from_index(from - 2), // c-file
+            piece: Piece::King,
             promotion: None,
             is_capture: false,
             is_en_passant: false,
@@ -188,6 +197,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
         move_list.push(Move {
             from: Square::from_index(from),
             to: Square::from_index(to),
+            piece: Piece::Pawn,
             promotion: None,
             is_capture: false,
             is_en_passant: false,
@@ -214,6 +224,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
         move_list.push(Move {
             from: Square::from_index(from),
             to: Square::from_index(to),
+            piece: Piece::Pawn,
             promotion: None,
             is_capture: false,
             is_en_passant: false,
@@ -242,6 +253,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
             move_list.push(Move {
                 from: Square::from_index(from),
                 to: Square::from_index(to),
+                piece: Piece::Pawn,
                 promotion: None,
                 is_capture: true,
                 is_en_passant: false,
@@ -278,6 +290,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
             move_list.push(Move {
                 from: Square::from_index(from),
                 to: Square::from_index(to),
+                piece: Piece::Pawn,
                 promotion: Some(promo_piece),
                 is_capture: false,
                 is_en_passant: false,
@@ -300,6 +313,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
                 move_list.push(Move {
                     from: Square::from_index(from),
                     to: Square::from_index(to),
+                    piece: Piece::Pawn,
                     promotion: Some(promo_piece),
                     is_capture: true,
                     is_en_passant: false,
@@ -327,6 +341,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
                 move_list.push(Move {
                     from: Square::from_index(from),
                     to: Square::from_index(ep_index),
+                    piece: Piece::Pawn,
                     promotion: None,
                     is_capture: true,
                     is_en_passant: true,
