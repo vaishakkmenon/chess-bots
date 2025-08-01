@@ -2,7 +2,6 @@ use crate::board::{Board, Color, Piece};
 use crate::moves::king::KING_ATTACKS;
 use crate::moves::knight::KNIGHT_ATTACKS;
 use crate::moves::magic::MagicTables;
-use crate::moves::magic::loader::load_magic_tables;
 use crate::moves::magic::masks::{bishop_vision_mask, rook_vision_mask};
 use crate::moves::pawn::pawn_attacks;
 use crate::square::Square;
