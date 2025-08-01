@@ -1,9 +1,11 @@
-use crate::board::{Color, Piece};
+use crate::board::{Board, Color, Piece};
 use crate::moves::king::KING_ATTACKS;
 use crate::moves::knight::KNIGHT_ATTACKS;
 use crate::moves::magic::MagicTables;
+use crate::moves::magic::loader::load_magic_tables;
 use crate::moves::magic::masks::{bishop_vision_mask, rook_vision_mask};
 use crate::moves::pawn::pawn_attacks;
+use crate::square::Square;
 
 /// Returns a bitboard showing all the squares that *piece* could attack from *square*
 pub fn attacks_from(
@@ -35,6 +37,47 @@ pub fn attacks_from(
             b | r
         }
     }
+}
+
+fn is_square_attacked(
+    board: &Board,
+    square: Square,
+    attacker: Color,
+    tables: &MagicTables,
+) -> bool {
+    let index = square.index();
+    if pawn_attacks(index, attacker) & board.pieces(Piece::Pawn, attacker) != 0 {
+        return true;
+    }
+    if KNIGHT_ATTACKS[index as usize] & board.pieces(Piece::Knight, attacker) != 0 {
+        return true;
+    }
+    if KING_ATTACKS[index as usize] & board.pieces(Piece::King, attacker) != 0 {
+        return true;
+    }
+
+    let occupied = board.occupied();
+
+    let rook_mask = rook_vision_mask(index as usize);
+    let rook_attacks = tables.rook.get_attacks(index as usize, occupied, rook_mask);
+    if rook_attacks & board.pieces(Piece::Rook, attacker) != 0 {
+        return true;
+    }
+
+    let bishop_mask = bishop_vision_mask(index as usize);
+    let bishop_attacks = tables
+        .bishop
+        .get_attacks(index as usize, occupied, bishop_mask);
+    if bishop_attacks & board.pieces(Piece::Bishop, attacker) != 0 {
+        return true;
+    }
+
+    let queen_attacks = tables.queen_attacks(index as usize, occupied);
+    if queen_attacks & board.pieces(Piece::Queen, attacker) != 0 {
+        return true;
+    }
+
+    false
 }
 
 // pub fn in_check(board: &Board, color: Color) -> bool {
