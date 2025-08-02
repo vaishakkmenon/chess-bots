@@ -24,21 +24,27 @@ fn test_new_empty_board() {
 
 // Helper in tests:
 fn assert_empty_board(b: &Board) {
-    for &bb in &[
-        b.white_pawns,
-        b.white_knights,
-        b.white_bishops,
-        b.white_rooks,
-        b.white_queens,
-        b.white_king,
-        b.black_pawns,
-        b.black_knights,
-        b.black_bishops,
-        b.black_rooks,
-        b.black_queens,
-        b.black_king,
+    for &(piece, color) in &[
+        (Piece::Pawn, Color::White),
+        (Piece::Knight, Color::White),
+        (Piece::Bishop, Color::White),
+        (Piece::Rook, Color::White),
+        (Piece::Queen, Color::White),
+        (Piece::King, Color::White),
+        (Piece::Pawn, Color::Black),
+        (Piece::Knight, Color::Black),
+        (Piece::Bishop, Color::Black),
+        (Piece::Rook, Color::Black),
+        (Piece::Queen, Color::Black),
+        (Piece::King, Color::Black),
     ] {
-        assert_eq!(bb, 0);
+        assert_eq!(
+            b.pieces(piece, color),
+            0,
+            "Expected no {:?} of color {:?}",
+            piece,
+            color
+        );
     }
 }
 
@@ -51,30 +57,30 @@ fn assert_empty_castling(b: &Board) {
 #[test]
 fn test_starting_position_pawns() {
     let b = Board::new();
-    assert_eq!(b.white_pawns, WHITE_PAWN_MASK);
-    assert_eq!(b.black_pawns, BLACK_PAWN_MASK);
+    assert_eq!(b.pieces(Piece::Pawn, Color::White), WHITE_PAWN_MASK);
+    assert_eq!(b.pieces(Piece::Pawn, Color::Black), BLACK_PAWN_MASK);
 }
 
 #[test]
 fn test_starting_position_white_backrank() {
     let b = Board::new();
     // Verify individual back-rank pieces
-    assert_eq!(b.white_rooks, WHITE_ROOK_MASK);
-    assert_eq!(b.white_knights, WHITE_KNIGHT_MASK);
-    assert_eq!(b.white_bishops, WHITE_BISHOP_MASK);
-    assert_eq!(b.white_queens, WHITE_QUEEN_MASK);
-    assert_eq!(b.white_king, WHITE_KING_MASK);
+    assert_eq!(b.pieces(Piece::Knight, Color::White), WHITE_KNIGHT_MASK);
+    assert_eq!(b.pieces(Piece::Bishop, Color::White), WHITE_BISHOP_MASK);
+    assert_eq!(b.pieces(Piece::Rook, Color::White), WHITE_ROOK_MASK);
+    assert_eq!(b.pieces(Piece::Queen, Color::White), WHITE_QUEEN_MASK);
+    assert_eq!(b.pieces(Piece::King, Color::White), WHITE_KING_MASK);
 }
 
 #[test]
 fn test_starting_position_black_backrank() {
     let b = Board::new();
     // Verify individual back-rank pieces
-    assert_eq!(b.black_rooks, BLACK_ROOK_MASK);
-    assert_eq!(b.black_knights, BLACK_KNIGHT_MASK);
-    assert_eq!(b.black_bishops, BLACK_BISHOP_MASK);
-    assert_eq!(b.black_queens, BLACK_QUEEN_MASK);
-    assert_eq!(b.black_king, BLACK_KING_MASK);
+    assert_eq!(b.pieces(Piece::Knight, Color::Black), BLACK_KNIGHT_MASK);
+    assert_eq!(b.pieces(Piece::Bishop, Color::Black), BLACK_BISHOP_MASK);
+    assert_eq!(b.pieces(Piece::Rook, Color::Black), BLACK_ROOK_MASK);
+    assert_eq!(b.pieces(Piece::Queen, Color::Black), BLACK_QUEEN_MASK);
+    assert_eq!(b.pieces(Piece::King, Color::Black), BLACK_KING_MASK);
 }
 
 #[test]
@@ -96,19 +102,20 @@ fn test_full_starting_position() {
         | BLACK_KING_MASK;
 
     // Check each side’s pieces
-    assert_eq!(b.white_pawns, WHITE_PAWN_MASK);
-    assert_eq!(b.white_rooks, WHITE_ROOK_MASK);
-    assert_eq!(b.white_knights, WHITE_KNIGHT_MASK);
-    assert_eq!(b.white_bishops, WHITE_BISHOP_MASK);
-    assert_eq!(b.white_queens, WHITE_QUEEN_MASK);
-    assert_eq!(b.white_king, WHITE_KING_MASK);
 
-    assert_eq!(b.black_pawns, BLACK_PAWN_MASK);
-    assert_eq!(b.black_rooks, BLACK_ROOK_MASK);
-    assert_eq!(b.black_knights, BLACK_KNIGHT_MASK);
-    assert_eq!(b.black_bishops, BLACK_BISHOP_MASK);
-    assert_eq!(b.black_queens, BLACK_QUEEN_MASK);
-    assert_eq!(b.black_king, BLACK_KING_MASK);
+    assert_eq!(b.pieces(Piece::Pawn, Color::White), WHITE_PAWN_MASK);
+    assert_eq!(b.pieces(Piece::Knight, Color::White), WHITE_KNIGHT_MASK);
+    assert_eq!(b.pieces(Piece::Bishop, Color::White), WHITE_BISHOP_MASK);
+    assert_eq!(b.pieces(Piece::Rook, Color::White), WHITE_ROOK_MASK);
+    assert_eq!(b.pieces(Piece::Queen, Color::White), WHITE_QUEEN_MASK);
+    assert_eq!(b.pieces(Piece::King, Color::White), WHITE_KING_MASK);
+
+    assert_eq!(b.pieces(Piece::Pawn, Color::Black), BLACK_PAWN_MASK);
+    assert_eq!(b.pieces(Piece::Knight, Color::Black), BLACK_KNIGHT_MASK);
+    assert_eq!(b.pieces(Piece::Bishop, Color::Black), BLACK_BISHOP_MASK);
+    assert_eq!(b.pieces(Piece::Rook, Color::Black), BLACK_ROOK_MASK);
+    assert_eq!(b.pieces(Piece::Queen, Color::Black), BLACK_QUEEN_MASK);
+    assert_eq!(b.pieces(Piece::King, Color::Black), BLACK_KING_MASK);
 
     // And ensure the overall occupied mask covers both sides
     assert_eq!(b.occupied(), white_expected | black_expected);
@@ -253,8 +260,8 @@ fn test_parse_placement_starting() {
     let placement = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
     b.parse_placement(placement).unwrap();
     // Check a couple of bitboards:
-    assert_eq!(b.white_pawns, WHITE_PAWN_MASK);
-    assert_eq!(b.black_rooks, BLACK_ROOK_MASK);
+    assert_eq!(b.pieces(Piece::Pawn, Color::White), WHITE_PAWN_MASK);
+    assert_eq!(b.pieces(Piece::Pawn, Color::Black), BLACK_PAWN_MASK);
     // And ensure placement_fen reproduces it
     assert_eq!(b.placement_fen(), placement);
 }
@@ -437,8 +444,10 @@ fn test_validate_no_overlap() {
 #[test]
 fn test_validate_with_overlap() {
     let mut b = Board::new();
-    // Force an overlap manually:
-    b.white_pawns |= 1 << 0; // Square a1, already occupied by white rook
+    // Force an overlap on a1 (bit 0) by OR’ing into the pawn bitboard:
+    let mut pawns = b.pieces(Piece::Pawn, Color::White);
+    pawns |= 1 << 0;
+    b.set_bb(Color::White, Piece::Pawn, pawns);
     assert!(b.validate().is_err());
 }
 

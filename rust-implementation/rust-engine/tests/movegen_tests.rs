@@ -9,13 +9,37 @@ use rust_engine::moves::movegen::generate_rook_moves;
 use rust_engine::moves::types::Move;
 use rust_engine::square::Square;
 
+/// Set the bitboard for (color, piece) to exactly `mask`, then recompute occupancies.
+fn set_piece_mask(board: &mut Board, color: Color, piece: Piece, mask: u64) {
+    // 1) Overwrite that piece’s bitboard with the given mask:
+    board.piece_bb[color as usize][piece as usize] = mask;
+
+    // 2) Recompute White’s occupancy by OR‐ing together all White piece bitboards:
+    let mut white_occ = 0u64;
+    for &wbb in &board.piece_bb[Color::White as usize] {
+        white_occ |= wbb;
+    }
+    board.occ_white = white_occ;
+
+    // 3) Recompute Black’s occupancy in the same way:
+    let mut black_occ = 0u64;
+    for &bbb in &board.piece_bb[Color::Black as usize] {
+        black_occ |= bbb;
+    }
+    board.occ_black = black_occ;
+
+    // 4) Finally, global occupancy is the union of both:
+    board.occ_all = board.occ_white | board.occ_black;
+}
+
 #[test]
 fn knight_moves_from_d4() {
     let mut board = Board::new_empty();
     let d4 = 27; // square index 27
 
     // Place a knight at d4 for White
-    board.white_knights = 1u64 << d4;
+    let piece_mask = 1u64 << d4;
+    set_piece_mask(&mut board, Color::White, Piece::Knight, piece_mask);
     board.side_to_move = Color::White;
 
     let mut moves = Vec::new();
@@ -37,7 +61,8 @@ fn knight_moves_from_d4() {
 fn knight_moves_from_corner_a1() {
     let mut board = Board::new_empty();
     let a1 = 0;
-    board.white_knights = 1 << a1;
+    let piece_mask = 1u64 << a1;
+    set_piece_mask(&mut board, Color::White, Piece::Knight, piece_mask);
     board.side_to_move = Color::White;
 
     let mut moves = Vec::new();
@@ -55,8 +80,11 @@ fn knight_moves_from_corner_a1() {
 fn knight_blocked_by_friendly_piece() {
     let mut board = Board::new_empty();
     let d4 = 27;
-    board.white_knights = 1 << d4;
-    board.white_pawns = 1 << 44; // Put pawn at one destination square
+    let mut piece_mask = 1u64 << d4;
+    set_piece_mask(&mut board, Color::White, Piece::Knight, piece_mask);
+
+    piece_mask = 1 << 44;
+    set_piece_mask(&mut board, Color::White, Piece::Pawn, piece_mask);
     board.side_to_move = Color::White;
 
     let mut moves = Vec::new();
@@ -71,8 +99,11 @@ fn knight_blocked_by_friendly_piece() {
 fn knight_captures_enemy_piece() {
     let mut board = Board::new_empty();
     let d4 = 27;
-    board.white_knights = 1 << d4;
-    board.black_rooks = 1 << 33; // valid knight destination
+    let piece_mask = 1u64 << d4;
+    set_piece_mask(&mut board, Color::White, Piece::Knight, piece_mask);
+
+    let piece_mask = 1 << 33;
+    set_piece_mask(&mut board, Color::Black, Piece::Rook, piece_mask);
     board.side_to_move = Color::White;
 
     let mut moves = Vec::new();
@@ -88,12 +119,12 @@ fn knight_captures_enemy_piece() {
 #[test]
 fn multiple_knights_generate_moves() {
     let mut board = Board::new_empty();
-    board.white_knights = (1 << 1) | (1 << 18); // b1 and c3
+    let piece_mask = (1 << 1) | (1 << 18);
+    set_piece_mask(&mut board, Color::White, Piece::Knight, piece_mask);
     board.side_to_move = Color::White;
 
     let mut moves = Vec::new();
     generate_knight_moves(&board, &mut moves);
-    println!("{:#?}", moves);
     // b1 has 2 moves, c3 has 8 → total 10
     assert_eq!(moves.len(), 9);
     assert!(moves.iter().any(|m| m.from.index() == 1));
@@ -115,7 +146,8 @@ fn no_knights_yields_no_moves() {
 fn bishop_moves_from_d4_empty_board() {
     let mut board = Board::new_empty();
     let d4 = 27;
-    board.white_bishops = 1 << d4;
+    let piece_mask = 1u64 << d4;
+    set_piece_mask(&mut board, Color::White, Piece::Bishop, piece_mask);
     board.side_to_move = Color::White;
 
     let magic_tables = load_magic_tables();
@@ -138,7 +170,8 @@ fn bishop_moves_from_d4_empty_board() {
 fn bishop_moves_from_corner_a1() {
     let mut board = Board::new_empty();
     let a1 = 0;
-    board.white_bishops = 1 << a1;
+    let piece_mask = 1u64 << a1;
+    set_piece_mask(&mut board, Color::White, Piece::Bishop, piece_mask);
     board.side_to_move = Color::White;
 
     let magic_tables = load_magic_tables();
@@ -157,8 +190,11 @@ fn bishop_moves_from_corner_a1() {
 fn bishop_blocked_by_friendly_piece() {
     let mut board = Board::new_empty();
     let d4 = 27;
-    board.white_bishops = 1 << d4;
-    board.white_pawns = 1 << 36; //  piece blocks one path
+    let piece_mask = 1u64 << d4;
+    set_piece_mask(&mut board, Color::White, Piece::Bishop, piece_mask);
+
+    let piece_mask = 1 << 36;
+    set_piece_mask(&mut board, Color::White, Piece::Pawn, piece_mask);
     board.side_to_move = Color::White;
 
     let magic_tables = load_magic_tables();
@@ -175,8 +211,11 @@ fn bishop_blocked_by_friendly_piece() {
 fn bishop_captures_enemy_piece() {
     let mut board = Board::new_empty();
     let d4 = 27;
-    board.white_bishops = 1 << d4;
-    board.black_rooks = 1 << 36;
+    let piece_mask = 1u64 << d4;
+    set_piece_mask(&mut board, Color::White, Piece::Bishop, piece_mask);
+
+    let piece_mask = 1 << 36;
+    set_piece_mask(&mut board, Color::Black, Piece::Rook, piece_mask);
     board.side_to_move = Color::White;
 
     let magic_tables = load_magic_tables();
@@ -193,7 +232,8 @@ fn bishop_captures_enemy_piece() {
 #[test]
 fn multiple_bishops_generate_moves() {
     let mut board = Board::new_empty();
-    board.white_bishops = (1 << 2) | (1 << 20); // c1 and e3
+    let piece_mask = (1 << 2) | (1 << 20);
+    set_piece_mask(&mut board, Color::White, Piece::Bishop, piece_mask);
     board.side_to_move = Color::White;
 
     let magic_tables = load_magic_tables();
@@ -221,7 +261,8 @@ fn no_bishops_yields_no_moves() {
 fn rook_moves_from_d4_empty_board() {
     let mut board = Board::new_empty();
     let d4 = 27;
-    board.white_rooks = 1 << d4;
+    let piece_mask = 1u64 << d4;
+    set_piece_mask(&mut board, Color::White, Piece::Rook, piece_mask);
     board.side_to_move = Color::White;
 
     let magic_tables = load_magic_tables();
@@ -249,7 +290,8 @@ fn rook_moves_from_d4_empty_board() {
 fn rook_moves_from_corner_a1() {
     let mut board = Board::new_empty();
     let a1 = 0;
-    board.white_rooks = 1 << a1;
+    let piece_mask = 1u64 << a1;
+    set_piece_mask(&mut board, Color::White, Piece::Rook, piece_mask);
     board.side_to_move = Color::White;
 
     let magic_tables = load_magic_tables();
@@ -276,8 +318,11 @@ fn rook_moves_from_corner_a1() {
 fn rook_blocked_by_friendly_piece() {
     let mut board = Board::new_empty();
     let d4 = 27;
-    board.white_rooks = 1 << d4;
-    board.white_pawns = 1 << 28; // friendly on e4
+    let piece_mask = 1u64 << d4;
+    set_piece_mask(&mut board, Color::White, Piece::Rook, piece_mask);
+
+    let piece_mask = 1 << 28;
+    set_piece_mask(&mut board, Color::White, Piece::Bishop, piece_mask);
     board.side_to_move = Color::White;
 
     let magic_tables = load_magic_tables();
@@ -293,8 +338,11 @@ fn rook_blocked_by_friendly_piece() {
 fn rook_captures_enemy_piece() {
     let mut board = Board::new_empty();
     let d4 = 27;
-    board.white_rooks = 1 << d4;
-    board.black_knights = 1 << 28; // enemy on e4
+    let piece_mask = 1u64 << d4;
+    set_piece_mask(&mut board, Color::White, Piece::Rook, piece_mask);
+
+    let piece_mask = 1 << 28;
+    set_piece_mask(&mut board, Color::Black, Piece::Knight, piece_mask);
     board.side_to_move = Color::White;
 
     let magic_tables = load_magic_tables();
@@ -309,7 +357,8 @@ fn rook_captures_enemy_piece() {
 #[test]
 fn multiple_rooks_generate_moves() {
     let mut board = Board::new_empty();
-    board.white_rooks = (1 << 0) | (1 << 56); // a1 and a8
+    let piece_mask = (1 << 0) | (1 << 56);
+    set_piece_mask(&mut board, Color::White, Piece::Rook, piece_mask);
     board.side_to_move = Color::White;
 
     let magic_tables = load_magic_tables();
@@ -337,7 +386,8 @@ fn no_rooks_yields_no_moves() {
 fn queen_moves_from_d4_empty_board() {
     let mut board = Board::new_empty();
     let d4 = 27;
-    board.white_queens = 1 << d4;
+    let piece_mask = 1u64 << d4;
+    set_piece_mask(&mut board, Color::White, Piece::Queen, piece_mask);
     board.side_to_move = Color::White;
 
     let magic_tables = load_magic_tables();
@@ -366,7 +416,8 @@ fn queen_moves_from_d4_empty_board() {
 fn queen_moves_from_corner_a1() {
     let mut board = Board::new_empty();
     let a1 = 0;
-    board.white_queens = 1 << a1;
+    let piece_mask = 1u64 << a1;
+    set_piece_mask(&mut board, Color::White, Piece::Queen, piece_mask);
     board.side_to_move = Color::White;
 
     let magic_tables = load_magic_tables();
@@ -395,8 +446,11 @@ fn queen_moves_from_corner_a1() {
 fn queen_blocked_by_friendly_piece() {
     let mut board = Board::new_empty();
     let d4 = 27;
-    board.white_queens = 1 << d4;
-    board.white_rooks = 1 << 28; // block e4
+    let piece_mask = 1u64 << d4;
+    set_piece_mask(&mut board, Color::White, Piece::Queen, piece_mask);
+
+    let piece_mask = 1 << 28;
+    set_piece_mask(&mut board, Color::White, Piece::Rook, piece_mask);
     board.side_to_move = Color::White;
 
     let magic_tables = load_magic_tables();
@@ -411,8 +465,11 @@ fn queen_blocked_by_friendly_piece() {
 fn queen_captures_enemy_piece() {
     let mut board = Board::new_empty();
     let d4 = 27;
-    board.white_queens = 1 << d4;
-    board.black_knights = 1 << 28; // e4
+    let piece_mask = 1u64 << d4;
+    set_piece_mask(&mut board, Color::White, Piece::Queen, piece_mask);
+
+    let piece_mask = 1 << 28;
+    set_piece_mask(&mut board, Color::Black, Piece::Knight, piece_mask);
     board.side_to_move = Color::White;
 
     let magic_tables = load_magic_tables();
@@ -427,8 +484,8 @@ fn queen_captures_enemy_piece() {
 #[test]
 fn multiple_queens_generate_moves() {
     let mut board = Board::new_empty();
-    board.white_queens = (1 << 0) | (1 << 63); // a1 and h8
-    board.side_to_move = Color::White;
+    let piece_mask = (1 << 0) | (1 << 63); // a1 and h8
+    set_piece_mask(&mut board, Color::White, Piece::Queen, piece_mask);
 
     let magic_tables = load_magic_tables();
     let mut moves = Vec::new();
@@ -455,7 +512,8 @@ fn no_queens_yields_no_moves() {
 fn king_moves_from_center_e4() {
     let mut board = Board::new_empty();
     let e4 = 4 + 8 * 3; // index 28
-    board.white_king = 1 << e4;
+    let piece_mask = 1u64 << e4;
+    set_piece_mask(&mut board, Color::White, Piece::King, piece_mask);
     board.side_to_move = Color::White;
 
     let mut moves = Vec::new();
@@ -477,7 +535,8 @@ fn king_moves_from_center_e4() {
 fn king_moves_from_corner_a1() {
     let mut board = Board::new_empty();
     let a1 = 0;
-    board.white_king = 1 << a1;
+    let piece_mask = 1u64 << a1;
+    set_piece_mask(&mut board, Color::White, Piece::King, piece_mask);
     board.side_to_move = Color::White;
 
     let mut moves = Vec::new();
@@ -494,8 +553,11 @@ fn king_moves_from_corner_a1() {
 fn king_blocked_by_friendly_piece() {
     let mut board = Board::new_empty();
     let e4 = 28;
-    board.white_king = 1 << e4;
-    board.white_pawns = 1 << 29; // friendly block to the right
+    let piece_mask = 1u64 << e4;
+    set_piece_mask(&mut board, Color::White, Piece::King, piece_mask);
+
+    let piece_mask = 1 << 29;
+    set_piece_mask(&mut board, Color::White, Piece::Knight, piece_mask);
     board.side_to_move = Color::White;
 
     let mut moves = Vec::new();
@@ -509,8 +571,11 @@ fn king_blocked_by_friendly_piece() {
 fn king_captures_enemy_piece() {
     let mut board = Board::new_empty();
     let e4 = 28;
-    board.white_king = 1 << e4;
-    board.black_rooks = 1 << 36; // e5
+    let piece_mask = 1u64 << e4;
+    set_piece_mask(&mut board, Color::White, Piece::King, piece_mask);
+
+    let piece_mask = 1 << 36;
+    set_piece_mask(&mut board, Color::Black, Piece::Knight, piece_mask);
     board.side_to_move = Color::White;
 
     let mut moves = Vec::new();
@@ -537,7 +602,8 @@ fn no_king_yields_no_moves() {
 fn pawn_push_from_d2() {
     let mut board = Board::new_empty();
     let d2 = 11;
-    board.white_pawns = 1 << d2;
+    let piece_mask = 1u64 << d2;
+    set_piece_mask(&mut board, Color::White, Piece::Pawn, piece_mask);
     board.side_to_move = Color::White;
 
     let mut moves = Vec::new();
@@ -556,8 +622,11 @@ fn pawn_blocked_by_piece() {
     let mut board = Board::new_empty();
     let d2 = 11;
     let d3 = 19;
-    board.white_pawns = 1 << d2;
-    board.white_rooks = 1 << d3; // friendly piece blocks forward push
+    let piece_mask = 1u64 << d2;
+    set_piece_mask(&mut board, Color::White, Piece::Pawn, piece_mask);
+
+    let piece_mask = 1u64 << d3;
+    set_piece_mask(&mut board, Color::White, Piece::Rook, piece_mask);
     board.side_to_move = Color::White;
 
     let mut moves = Vec::new();
@@ -570,8 +639,11 @@ fn pawn_blocked_by_piece() {
 fn pawn_captures_diagonally() {
     let mut board = Board::new_empty();
     let d4 = 27;
-    board.white_pawns = 1 << d4;
-    board.black_rooks = (1 << 34) | (1 << 36) | (1 << 35); // e5 and c5 and d5 is a blocker to test only captures
+    let piece_mask = 1u64 << d4;
+    set_piece_mask(&mut board, Color::White, Piece::Pawn, piece_mask);
+
+    let piece_mask = (1 << 34) | (1 << 36) | (1 << 35);
+    set_piece_mask(&mut board, Color::Black, Piece::Rook, piece_mask);
     board.side_to_move = Color::White;
 
     let mut moves = Vec::new();
@@ -591,7 +663,8 @@ fn pawn_captures_diagonally() {
 #[test]
 fn multiple_pawns_generate_moves() {
     let mut board = Board::new_empty();
-    board.white_pawns = (1 << 11) | (1 << 27); // d2 and d4
+    let piece_mask = (1 << 11) | (1 << 27); // d2 and d4
+    set_piece_mask(&mut board, Color::White, Piece::Pawn, piece_mask);
     board.side_to_move = Color::White;
 
     let mut moves = Vec::new();
@@ -620,7 +693,8 @@ fn no_pawns_yields_no_moves() {
 fn black_pawn_push_from_d7() {
     let mut board = Board::new_empty();
     let d7 = 51;
-    board.black_pawns = 1 << d7;
+    let piece_mask = 1u64 << d7;
+    set_piece_mask(&mut board, Color::Black, Piece::Pawn, piece_mask);
     board.side_to_move = Color::Black;
 
     let mut moves = Vec::new();
@@ -639,8 +713,11 @@ fn black_pawn_blocked_by_piece() {
     let mut board = Board::new_empty();
     let d7 = 51;
     let d6 = 43;
-    board.black_pawns = 1 << d7;
-    board.black_rooks = 1 << d6; // blocked by friendly piece
+    let piece_mask = 1u64 << d7;
+    set_piece_mask(&mut board, Color::White, Piece::Pawn, piece_mask);
+
+    let piece_mask = 1u64 << d6;
+    set_piece_mask(&mut board, Color::White, Piece::Pawn, piece_mask);
     board.side_to_move = Color::Black;
 
     let mut moves = Vec::new();
@@ -653,8 +730,10 @@ fn black_pawn_blocked_by_piece() {
 fn black_pawn_captures_diagonally() {
     let mut board = Board::new_empty();
     let d5 = 35;
-    board.black_pawns = 1 << d5;
-    board.white_knights = (1 << 26) | (1 << 27) | (1 << 28); // c4 and e4, d4 is a blocker to test only captures
+    let piece_mask = 1u64 << d5;
+    set_piece_mask(&mut board, Color::Black, Piece::Pawn, piece_mask);
+    let piece_mask = (1 << 26) | (1 << 27) | (1 << 28);
+    set_piece_mask(&mut board, Color::White, Piece::Pawn, piece_mask);
     board.side_to_move = Color::Black;
 
     let mut moves = Vec::new();
@@ -673,7 +752,8 @@ fn black_pawn_captures_diagonally() {
 #[test]
 fn multiple_black_pawns_generate_moves() {
     let mut board = Board::new_empty();
-    board.black_pawns = (1 << 51) | (1 << 35); // d7 and d5
+    let piece_mask = (1 << 51) | (1 << 35); // d7 and d5
+    set_piece_mask(&mut board, Color::Black, Piece::Pawn, piece_mask);
     board.side_to_move = Color::Black;
 
     let mut moves = Vec::new();
@@ -702,8 +782,10 @@ fn no_black_pawns_yields_no_moves() {
 fn white_pawn_does_not_capture_friendly_piece() {
     let mut board = Board::new_empty();
     let d4 = 27;
-    board.white_pawns = 1 << d4;
-    board.white_knights = (1 << 34) | (1 << 36); // e5 and c5 — friendly pieces
+    let piece_mask = 1u64 << d4;
+    set_piece_mask(&mut board, Color::White, Piece::Pawn, piece_mask);
+    let piece_mask = (1 << 34) | (1 << 36);
+    set_piece_mask(&mut board, Color::White, Piece::Knight, piece_mask);
     board.side_to_move = Color::White;
 
     let mut moves = Vec::new();
@@ -720,8 +802,10 @@ fn white_pawn_does_not_capture_friendly_piece() {
 fn black_pawn_does_not_capture_friendly_piece() {
     let mut board = Board::new_empty();
     let d5 = 35;
-    board.black_pawns = 1 << d5;
-    board.black_bishops = (1 << 26) | (1 << 28); // c4 and e4 — friendly pieces
+    let piece_mask = 1u64 << d5;
+    set_piece_mask(&mut board, Color::Black, Piece::Pawn, piece_mask);
+    let piece_mask = (1 << 26) | (1 << 28);
+    set_piece_mask(&mut board, Color::Black, Piece::Knight, piece_mask);
     board.side_to_move = Color::Black;
 
     let mut moves = Vec::new();
@@ -738,7 +822,8 @@ fn black_pawn_does_not_capture_friendly_piece() {
 fn white_promotion_push() {
     let mut board = Board::new_empty();
     let a7 = 48;
-    board.white_pawns = 1 << a7;
+    let piece_mask = 1u64 << a7;
+    set_piece_mask(&mut board, Color::White, Piece::Pawn, piece_mask);
     board.side_to_move = Color::White;
 
     let mut moves = Vec::new();
@@ -758,8 +843,10 @@ fn white_promotion_push() {
 fn white_promotion_captures() {
     let mut board = Board::new_empty();
     let d7 = 51;
-    board.white_pawns = 1 << d7;
-    board.black_knights = (1 << 58) | (1 << 60); // c8 and e8
+    let piece_mask = 1u64 << d7;
+    set_piece_mask(&mut board, Color::White, Piece::Pawn, piece_mask);
+    let piece_mask = (1 << 58) | (1 << 60);
+    set_piece_mask(&mut board, Color::Black, Piece::Knight, piece_mask);
     board.side_to_move = Color::White;
 
     let mut moves = Vec::new();
@@ -780,7 +867,8 @@ fn white_promotion_captures() {
 fn black_promotion_push() {
     let mut board = Board::new_empty();
     let a2 = 8;
-    board.black_pawns = 1 << a2;
+    let piece_mask = 1u64 << a2;
+    set_piece_mask(&mut board, Color::Black, Piece::Pawn, piece_mask);
     board.side_to_move = Color::Black;
 
     let mut moves = Vec::new();
@@ -800,8 +888,10 @@ fn black_promotion_push() {
 fn black_promotion_captures() {
     let mut board = Board::new_empty();
     let d2 = 11;
-    board.black_pawns = 1 << d2;
-    board.white_knights = (1 << 2) | (1 << 4); // c1 and e1
+    let piece_mask = 1u64 << d2;
+    set_piece_mask(&mut board, Color::Black, Piece::Pawn, piece_mask);
+    let piece_mask = (1 << 2) | (1 << 4); // c1 and e1
+    set_piece_mask(&mut board, Color::White, Piece::Knight, piece_mask);
     board.side_to_move = Color::Black;
 
     let mut moves = Vec::new();
@@ -824,10 +914,12 @@ fn white_en_passant_capture() {
     let mut board = Board::new_empty();
 
     let e5 = 36; // White pawn on e5
-    board.white_pawns = 1 << e5;
+    let piece_mask = 1u64 << e5;
+    set_piece_mask(&mut board, Color::White, Piece::Pawn, piece_mask);
 
     let d5 = 35; // Black pawn that double-pushed to d5
-    board.black_pawns = 1 << d5;
+    let piece_mask = 1u64 << d5;
+    set_piece_mask(&mut board, Color::Black, Piece::Pawn, piece_mask);
 
     board.side_to_move = Color::White;
     board.en_passant = Some(Square::from_index(43)); // d6 is the square behind the pawn that double-pushed
@@ -850,10 +942,12 @@ fn black_en_passant_capture() {
     let mut board = Board::new_empty();
 
     let d4 = 27; // Black pawn on d4
-    board.black_pawns = 1 << d4;
+    let piece_mask = 1u64 << d4;
+    set_piece_mask(&mut board, Color::Black, Piece::Pawn, piece_mask);
 
     let e2 = 28; // White pawn that double-pushed to e4
-    board.white_pawns = 1 << e2;
+    let piece_mask = 1u64 << e2;
+    set_piece_mask(&mut board, Color::White, Piece::Pawn, piece_mask);
 
     board.side_to_move = Color::Black;
     board.en_passant = Some(Square::from_index(20)); // e3
@@ -875,8 +969,10 @@ fn black_en_passant_capture() {
 fn no_en_passant_when_not_set() {
     let mut board = Board::new_empty();
 
-    board.white_pawns = 1 << 28; // e5
-    board.black_pawns = 1 << 27; // d5
+    let piece_mask = 1 << 28;
+    set_piece_mask(&mut board, Color::White, Piece::Pawn, piece_mask);
+    let piece_mask = 1 << 27;
+    set_piece_mask(&mut board, Color::Black, Piece::Pawn, piece_mask);
     board.side_to_move = Color::White;
     board.en_passant = None;
 
@@ -897,8 +993,10 @@ fn has_castle(moves: &[Move], to: u8) -> bool {
 #[test]
 fn white_kingside_castle_generated() {
     let mut b = Board::new_empty();
-    b.white_king = 1 << 4; // e1
-    b.white_rooks = 1 << 7; // h1
+    let piece_mask = 1u64 << 4;
+    set_piece_mask(&mut b, Color::White, Piece::King, piece_mask);
+    let piece_mask = 1u64 << 7;
+    set_piece_mask(&mut b, Color::White, Piece::Rook, piece_mask);
     b.castling_rights = 0b0001; // CASTLE_WK
     b.side_to_move = Color::White;
 
@@ -914,8 +1012,10 @@ fn white_kingside_castle_generated() {
 #[test]
 fn white_queenside_castle_generated() {
     let mut b = Board::new_empty();
-    b.white_king = 1 << 4; // e1
-    b.white_rooks = 1 << 0; // a1
+    let piece_mask = 1u64 << 4;
+    set_piece_mask(&mut b, Color::White, Piece::King, piece_mask);
+    let piece_mask = 1u64 << 0;
+    set_piece_mask(&mut b, Color::White, Piece::Rook, piece_mask);
     b.castling_rights = 0b0010; // CASTLE_WQ
     b.side_to_move = Color::White;
 
@@ -931,8 +1031,10 @@ fn white_queenside_castle_generated() {
 #[test]
 fn black_kingside_castle_generated() {
     let mut b = Board::new_empty();
-    b.black_king = 1 << 60; // e8
-    b.black_rooks = 1 << 63; // h8
+    let piece_mask = 1u64 << 60;
+    set_piece_mask(&mut b, Color::Black, Piece::King, piece_mask);
+    let piece_mask = 1u64 << 63;
+    set_piece_mask(&mut b, Color::Black, Piece::Rook, piece_mask);
     b.castling_rights = 0b0100; // CASTLE_BK
     b.side_to_move = Color::Black;
 
@@ -948,8 +1050,10 @@ fn black_kingside_castle_generated() {
 #[test]
 fn black_queenside_castle_generated() {
     let mut b = Board::new_empty();
-    b.black_king = 1 << 60; // e8
-    b.black_rooks = 1 << 56; // a8
+    let piece_mask = 1u64 << 60;
+    set_piece_mask(&mut b, Color::Black, Piece::King, piece_mask);
+    let piece_mask = 1u64 << 56;
+    set_piece_mask(&mut b, Color::Black, Piece::Rook, piece_mask);
     b.castling_rights = 0b1000; // CASTLE_BQ
     b.side_to_move = Color::Black;
 

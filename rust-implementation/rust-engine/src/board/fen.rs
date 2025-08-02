@@ -1,72 +1,60 @@
-use super::{Board, CASTLE_BK, CASTLE_BQ, CASTLE_WK, CASTLE_WQ, Color};
+use super::{Board, CASTLE_BK, CASTLE_BQ, CASTLE_WK, CASTLE_WQ, Color, Piece};
 use crate::square::Square;
+
+static PIECE_TABLE: [(Piece, Color, char); 12] = [
+    (Piece::Rook, Color::Black, 'r'),
+    (Piece::Knight, Color::Black, 'n'),
+    (Piece::Bishop, Color::Black, 'b'),
+    (Piece::Queen, Color::Black, 'q'),
+    (Piece::King, Color::Black, 'k'),
+    (Piece::Pawn, Color::Black, 'p'),
+    (Piece::Rook, Color::White, 'R'),
+    (Piece::Knight, Color::White, 'N'),
+    (Piece::Bishop, Color::White, 'B'),
+    (Piece::Queen, Color::White, 'Q'),
+    (Piece::King, Color::White, 'K'),
+    (Piece::Pawn, Color::White, 'P'),
+];
 
 impl Board {
     /// Generate the piece‐placement portion of FEN (e.g., "rnbqkbnr/pppppppp/8/...").
     pub(crate) fn placement_fen(&self) -> String {
         let mut fen = String::new();
 
-        // Loop ranks 8 down to 1 (rank_idx 7 → 0)
         for rank in (0..8).rev() {
             let mut empty = 0;
-
-            // Loop files a through h (file_idx 0 → 7)
             for file in 0..8 {
                 let idx = rank * 8 + file;
                 let bit = 1u64 << idx;
 
-                // Determine which piece (if any) occupies this square:
-                let piece_char = if self.white_pawns & bit != 0 {
-                    Some('P')
-                } else if self.white_knights & bit != 0 {
-                    Some('N')
-                } else if self.white_bishops & bit != 0 {
-                    Some('B')
-                } else if self.white_rooks & bit != 0 {
-                    Some('R')
-                } else if self.white_queens & bit != 0 {
-                    Some('Q')
-                } else if self.white_king & bit != 0 {
-                    Some('K')
-                } else if self.black_pawns & bit != 0 {
-                    Some('p')
-                } else if self.black_knights & bit != 0 {
-                    Some('n')
-                } else if self.black_bishops & bit != 0 {
-                    Some('b')
-                } else if self.black_rooks & bit != 0 {
-                    Some('r')
-                } else if self.black_queens & bit != 0 {
-                    Some('q')
-                } else if self.black_king & bit != 0 {
-                    Some('k')
-                } else {
-                    None
-                };
-
-                if let Some(ch) = piece_char {
-                    // Flush any accumulated empties
+                // find the piece symbol, if any
+                if let Some(symbol) = PIECE_TABLE.iter().find_map(|&(piece, color, sym)| {
+                    if self.bb(color, piece) & bit != 0 {
+                        Some(sym)
+                    } else {
+                        None
+                    }
+                }) {
+                    // flush empty counter
                     if empty > 0 {
                         fen.push_str(&empty.to_string());
                         empty = 0;
                     }
-                    fen.push(ch);
+                    fen.push(symbol);
                 } else {
-                    // Empty square
                     empty += 1;
                 }
             }
 
-            // After finishing the rank, flush trailing empties
+            // trailing empties
             if empty > 0 {
                 fen.push_str(&empty.to_string());
             }
-
-            // Add '/' between ranks (but not after the last one)
             if rank > 0 {
                 fen.push('/');
             }
         }
+
         fen
     }
 
@@ -161,23 +149,29 @@ impl Board {
         Ok(())
     }
 
+    /// Place a piece on `idx` (0–63) based on its FEN character.
     fn set_piece_at(&mut self, ch: char, idx: usize) -> Result<(), String> {
         let mask = 1u64 << idx;
-        match ch {
-            'P' => self.white_pawns |= mask,
-            'N' => self.white_knights |= mask,
-            'B' => self.white_bishops |= mask,
-            'R' => self.white_rooks |= mask,
-            'Q' => self.white_queens |= mask,
-            'K' => self.white_king |= mask,
-            'p' => self.black_pawns |= mask,
-            'n' => self.black_knights |= mask,
-            'b' => self.black_bishops |= mask,
-            'r' => self.black_rooks |= mask,
-            'q' => self.black_queens |= mask,
-            'k' => self.black_king |= mask,
+        // Map FEN char → (Color, Piece)
+        let (color, piece) = match ch {
+            'P' => (Color::White, Piece::Pawn),
+            'N' => (Color::White, Piece::Knight),
+            'B' => (Color::White, Piece::Bishop),
+            'R' => (Color::White, Piece::Rook),
+            'Q' => (Color::White, Piece::Queen),
+            'K' => (Color::White, Piece::King),
+            'p' => (Color::Black, Piece::Pawn),
+            'n' => (Color::Black, Piece::Knight),
+            'b' => (Color::Black, Piece::Bishop),
+            'r' => (Color::Black, Piece::Rook),
+            'q' => (Color::Black, Piece::Queen),
+            'k' => (Color::Black, Piece::King),
             _ => return Err(format!("Invalid piece char '{}'", ch)),
-        }
+        };
+
+        // Grab old bitboard, OR in the mask, and let set_bb update occ_* for us
+        let old_bb = self.bb(color, piece);
+        self.set_bb(color, piece, old_bb | mask);
         Ok(())
     }
 

@@ -106,8 +106,32 @@ impl Board {
     }
 
     #[inline(always)]
-    fn set_bb(&mut self, color: Color, piece: Piece, bits: u64) {
-        self.piece_bb[color as usize][piece as usize] = bits;
+    fn set_bb(&mut self, color: Color, piece: Piece, new_bb: u64) {
+        let idx = color as usize;
+        let p = piece as usize;
+
+        // 1) Read old bitboard
+        let old_bb = self.piece_bb[idx][p];
+
+        // 2) Compute which bits changed (set or cleared)
+        let delta = old_bb ^ new_bb;
+
+        // 3) Early out if nothing changed
+        if delta == 0 {
+            return;
+        }
+        // 4) Store new bitboard
+        self.piece_bb[idx][p] = new_bb;
+
+        // 5) Update side‐occupancy by XOR’ing the delta
+        if color == Color::White {
+            self.occ_white ^= delta;
+        } else {
+            self.occ_black ^= delta;
+        }
+
+        // 6) Recompute the global occupancy
+        self.occ_all = self.occ_white | self.occ_black;
     }
 
     /// Create an empty board (all bitboards zero, White to move).
@@ -142,10 +166,6 @@ impl Board {
         b.set_bb(Color::Black, Piece::Rook, BLACK_ROOK_MASK);
         b.set_bb(Color::Black, Piece::Queen, BLACK_QUEEN_MASK);
         b.set_bb(Color::Black, Piece::King, BLACK_KING_MASK);
-
-        b.occ_white = b.occupancy(Color::White);
-        b.occ_black = b.occupancy(Color::Black);
-        b.occ_all = b.occ_white | b.occ_black;
 
         // Setup side to move and other important information
         b.side_to_move = Color::White;
