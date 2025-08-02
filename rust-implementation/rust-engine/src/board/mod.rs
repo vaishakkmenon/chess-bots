@@ -46,7 +46,7 @@ const CASTLE_BK: u8 = 0b0100;
 const CASTLE_BQ: u8 = 0b1000;
 
 // Empty square value, no piece 0-11 will coincide with 255
-const EMPTY_SQ: u8 = 0xFF;
+pub(crate) const EMPTY_SQ: u8 = 0xFF;
 
 /// Which side is to move.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -296,6 +296,32 @@ impl Color {
         match self {
             Color::White => Color::Black,
             Color::Black => Color::White,
+        }
+    }
+
+    /// Decode a 0/1 value into a Color.
+    #[inline(always)]
+    pub(crate) fn from_u8(v: u8) -> Self {
+        match v {
+            0 => Color::White,
+            1 => Color::Black,
+            _ => panic!("Invalid Color encoding: {}", v),
+        }
+    }
+}
+
+impl Piece {
+    /// Decode a 0–5 value into a Piece.
+    #[inline(always)]
+    pub(crate) fn from_u8(v: u8) -> Self {
+        match v {
+            0 => Piece::Pawn,
+            1 => Piece::Knight,
+            2 => Piece::Bishop,
+            3 => Piece::Rook,
+            4 => Piece::Queen,
+            5 => Piece::King,
+            _ => panic!("Invalid Piece encoding: {}", v),
         }
     }
 }
