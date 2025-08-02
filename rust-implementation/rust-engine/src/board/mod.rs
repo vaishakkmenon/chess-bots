@@ -45,6 +45,9 @@ const CASTLE_BK: u8 = 0b0100;
 // Castling Black Queenside
 const CASTLE_BQ: u8 = 0b1000;
 
+// Empty square value, no piece 0-11 will coincide with 255
+const EMPTY_SQ: u8 = 0xFF;
+
 /// Which side is to move.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -68,25 +71,14 @@ pub enum Piece {
 /// Core board representation using bitboards.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Board {
-    // /// White Pieces
-    // pub white_pawns: u64,
-    // pub white_knights: u64,
-    // pub white_bishops: u64,
-    // pub white_rooks: u64,
-    // pub white_queens: u64,
-    // pub white_king: u64,
-    // pub black_pawns: u64,
-    // /// Black Pieces
-    // pub black_knights: u64,
-    // pub black_bishops: u64,
-    // pub black_rooks: u64,
-    // pub black_queens: u64,
-    // pub black_king: u64,
+    /// White Pieces
     pub piece_bb: [[u64; 6]; 2],
     /// Occupancy fields
     pub occ_white: u64,
     pub occ_black: u64,
     pub occ_all: u64,
+    /// Lookup table for each square
+    pub piece_on_sq: [u8; 64], // new table: 0xFF = empty, 0–11 = (color<<3)|piece
     /// White or Black to move
     pub side_to_move: Color,
     /// Castling rights: bit 0=White kingside, 1=White queenside, 2=Black kingside, 3=Black queenside
@@ -101,12 +93,12 @@ pub struct Board {
 
 impl Board {
     #[inline(always)]
-    fn bb(&self, color: Color, piece: Piece) -> u64 {
+    pub(crate) fn bb(&self, color: Color, piece: Piece) -> u64 {
         self.piece_bb[color as usize][piece as usize]
     }
 
     #[inline(always)]
-    fn set_bb(&mut self, color: Color, piece: Piece, new_bb: u64) {
+    pub(crate) fn set_bb(&mut self, color: Color, piece: Piece, new_bb: u64) {
         let idx = color as usize;
         let p = piece as usize;
 
@@ -132,6 +124,39 @@ impl Board {
 
         // 6) Recompute the global occupancy
         self.occ_all = self.occ_white | self.occ_black;
+
+        let mut bits_to_update = delta;
+        while bits_to_update != 0 {
+            // Isolate the least significant 1-bit
+            let single_bit = bits_to_update & (!bits_to_update + 1);
+
+            // Compute the square index (0–63) from that bit
+            let square_index = single_bit.trailing_zeros() as u8;
+            let square = Square::from_index(square_index);
+
+            // If the bit is set in the new bitboard, place the piece;
+            // otherwise clear the square
+            if new_bb & single_bit != 0 {
+                self.place_piece_at_sq(color, piece, square);
+            } else {
+                self.clear_square(square);
+            }
+
+            // Remove that bit from bits_to_update
+            bits_to_update &= bits_to_update - 1;
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn clear_square(&mut self, sq: Square) {
+        let i = sq.index() as usize;
+        self.piece_on_sq[i] = EMPTY_SQ;
+    }
+
+    #[inline(always)]
+    pub(crate) fn place_piece_at_sq(&mut self, color: Color, piece: Piece, sq: Square) {
+        let i = sq.index() as usize;
+        self.piece_on_sq[i] = (color as u8) << 3 | (piece as u8);
     }
 
     /// Create an empty board (all bitboards zero, White to move).
@@ -141,6 +166,7 @@ impl Board {
             occ_white: 0,
             occ_black: 0,
             occ_all: 0,
+            piece_on_sq: [EMPTY_SQ; 64],
             side_to_move: Color::White,
             castling_rights: 0,
             en_passant: None,
