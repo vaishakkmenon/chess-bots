@@ -20,4 +20,5 @@ pub struct Undo {
     pub color: Color,
     pub prev_side: Color,
     pub capture: Option<(Color, Piece, Square)>,
+    pub castling_rook: Option<(Square /*rook_from*/, Square /*rook_to*/)>,
 }

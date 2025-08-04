@@ -92,3 +92,27 @@ fn roundtrip_pawn_capture() {
         "Board should be back to the starting position"
     );
 }
+
+#[test]
+fn roundtrip_white_kingside_castle() {
+    let mut b = Board::new();
+    let original = b.clone();
+
+    // White king e1->g1
+    let mv = Move {
+        from: Square::from_index(4), // e1
+        to: Square::from_index(6),   // g1
+        piece: Piece::King,
+        promotion: None,
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: true,
+    };
+    let undo = make_move_basic(&mut b, mv);
+    // After move: king on g1, rook on f1
+    assert_ne!(b.pieces(Piece::King, Color::White) & (1 << 6), 0);
+    assert_ne!(b.pieces(Piece::Rook, Color::White) & (1 << 5), 0);
+    // Undo and verify full restore
+    undo_move_basic(&mut b, undo);
+    assert_eq!(b, original);
+}
