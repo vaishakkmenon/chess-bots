@@ -116,3 +116,86 @@ fn roundtrip_white_kingside_castle() {
     undo_move_basic(&mut b, undo);
     assert_eq!(b, original);
 }
+
+#[test]
+fn roundtrip_white_queenside_castle() {
+    use std::str::FromStr;
+
+    let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+    let mut board = Board::from_str(fen).unwrap();
+    let original = board.clone();
+
+    let mv = Move {
+        from: Square::from_str("e1").unwrap(),
+        to: Square::from_str("c1").unwrap(),
+        piece: Piece::King,
+        promotion: None,
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: true,
+    };
+
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_ne!(board.pieces(Piece::King, Color::White) & (1 << 2), 0); // c1
+    assert_ne!(board.pieces(Piece::Rook, Color::White) & (1 << 3), 0); // d1
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(board, original);
+}
+
+#[test]
+fn roundtrip_black_kingside_castle() {
+    use std::str::FromStr;
+
+    let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+    let mut board = Board::from_str(fen).unwrap();
+    board.side_to_move = Color::Black; // force black to move
+    let original = board.clone();
+
+    let mv = Move {
+        from: Square::from_str("e8").unwrap(),
+        to: Square::from_str("g8").unwrap(),
+        piece: Piece::King,
+        promotion: None,
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: true,
+    };
+
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_ne!(board.pieces(Piece::King, Color::Black) & (1 << 62), 0); // g8
+    assert_ne!(board.pieces(Piece::Rook, Color::Black) & (1 << 61), 0); // f8
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(board, original);
+}
+
+#[test]
+fn roundtrip_black_queenside_castle() {
+    use std::str::FromStr;
+
+    let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+    let mut board = Board::from_str(fen).unwrap();
+    board.side_to_move = Color::Black; // force black to move
+    let original = board.clone();
+
+    let mv = Move {
+        from: Square::from_str("e8").unwrap(),
+        to: Square::from_str("c8").unwrap(),
+        piece: Piece::King,
+        promotion: None,
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: true,
+    };
+
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_ne!(board.pieces(Piece::King, Color::Black) & (1 << 58), 0); // c8
+    assert_ne!(board.pieces(Piece::Rook, Color::Black) & (1 << 59), 0); // d8
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(board, original);
+}
