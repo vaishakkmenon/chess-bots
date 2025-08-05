@@ -2,6 +2,7 @@ use rust_engine::board::{Board, Color, Piece};
 use rust_engine::moves::execute::{make_move_basic, undo_move_basic};
 use rust_engine::moves::types::Move;
 use rust_engine::square::Square;
+use std::str::FromStr;
 
 #[test]
 fn roundtrip_simple_move() {
@@ -95,13 +96,13 @@ fn roundtrip_pawn_capture() {
 
 #[test]
 fn roundtrip_white_kingside_castle() {
-    let mut b = Board::new();
+    let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+    let mut b = Board::from_str(fen).unwrap();
     let original = b.clone();
 
-    // White king e1->g1
     let mv = Move {
-        from: Square::from_index(4), // e1
-        to: Square::from_index(6),   // g1
+        from: Square::from_str("e1").unwrap(),
+        to: Square::from_str("g1").unwrap(),
         piece: Piece::King,
         promotion: None,
         is_capture: false,
@@ -109,10 +110,9 @@ fn roundtrip_white_kingside_castle() {
         is_castling: true,
     };
     let undo = make_move_basic(&mut b, mv);
-    // After move: king on g1, rook on f1
-    assert_ne!(b.pieces(Piece::King, Color::White) & (1 << 6), 0);
-    assert_ne!(b.pieces(Piece::Rook, Color::White) & (1 << 5), 0);
-    // Undo and verify full restore
+    assert_ne!(b.pieces(Piece::King, Color::White) & (1 << 6), 0); // g1
+    assert_ne!(b.pieces(Piece::Rook, Color::White) & (1 << 5), 0); // f1
+
     undo_move_basic(&mut b, undo);
     assert_eq!(b, original);
 }
