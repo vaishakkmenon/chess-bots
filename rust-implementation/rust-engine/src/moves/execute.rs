@@ -2,6 +2,15 @@ use crate::board::{Board, Color, EMPTY_SQ, Piece};
 use crate::moves::types::{Move, Undo};
 use crate::square::Square;
 
+// Castling White Kingside
+const CASTLE_WK: u8 = 0b0001;
+// Castling White Queenside
+const CASTLE_WQ: u8 = 0b0010;
+// Castling Black Kingside
+const CASTLE_BK: u8 = 0b0100;
+// Castling Black Queenside
+const CASTLE_BQ: u8 = 0b1000;
+
 /// Precomputed castling rook moves by king destination index.
 #[inline(always)]
 fn rook_castle_squares(king_to_idx: u8) -> Option<(Square, Square)> {
@@ -60,7 +69,42 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
         prev_side: color,
         capture,
         castling_rook,
+        prev_castling_rights: board.castling_rights,
     };
+
+    // 3b) Clear castling rights if king or rook moves or rook is captured
+    match piece {
+        Piece::King => {
+            // Clear both king- and queen-side rights for that color
+            match color {
+                Color::White => board.castling_rights &= !(CASTLE_WK | CASTLE_WQ), // WK | WQ
+                Color::Black => board.castling_rights &= !(CASTLE_BK | CASTLE_BQ), // BK | BQ
+            }
+        }
+        Piece::Rook => {
+            match (color, mv.from.index()) {
+                (Color::White, 0) => board.castling_rights &= !CASTLE_WQ, // WQ
+                (Color::White, 7) => board.castling_rights &= !CASTLE_WK, // WK
+                (Color::Black, 56) => board.castling_rights &= !CASTLE_BQ, // BQ
+                (Color::Black, 63) => board.castling_rights &= !CASTLE_BK, // BK
+                _ => {}
+            }
+        }
+        _ => {}
+    }
+
+    // Also clear if captured a rook on its original square
+    if let Some((cap_color, cap_piece, cap_sq)) = capture {
+        if cap_piece == Piece::Rook {
+            match (cap_color, cap_sq.index()) {
+                (Color::White, 0) => board.castling_rights &= !0b0010, // WQ
+                (Color::White, 7) => board.castling_rights &= !0b0001, // WK
+                (Color::Black, 56) => board.castling_rights &= !0b1000, // BQ
+                (Color::Black, 63) => board.castling_rights &= !0b0100, // BK
+                _ => {}
+            }
+        }
+    }
 
     // 4) Move the king
     remove_piece(board, color, piece, from_idx);
@@ -81,8 +125,9 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
 }
 
 pub fn undo_move_basic(board: &mut Board, undo: Undo) {
-    // 1) Restore side-to-move
+    // 1) Restore side-to-move, and castling rights
     board.side_to_move = undo.prev_side;
+    board.castling_rights = undo.prev_castling_rights;
 
     let from_idx = undo.from.index() as usize;
     let to_idx = undo.to.index() as usize;

@@ -199,3 +199,99 @@ fn roundtrip_black_queenside_castle() {
     undo_move_basic(&mut board, undo);
     assert_eq!(board, original);
 }
+
+#[test]
+fn castling_rights_removed_on_king_move() {
+    use rust_engine::board::{Board, Color};
+    use std::str::FromStr;
+
+    let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+    let mut board = Board::from_str(fen).unwrap();
+
+    assert!(board.has_kingside_castle(Color::White));
+    assert!(board.has_queenside_castle(Color::White));
+
+    let mv = Move {
+        from: Square::from_str("e1").unwrap(),
+        to: Square::from_str("f1").unwrap(),
+        piece: Piece::King,
+        promotion: None,
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    };
+
+    let undo = make_move_basic(&mut board, mv);
+
+    assert!(!board.has_kingside_castle(Color::White));
+    assert!(!board.has_queenside_castle(Color::White));
+
+    undo_move_basic(&mut board, undo);
+
+    assert!(board.has_kingside_castle(Color::White));
+    assert!(board.has_queenside_castle(Color::White));
+}
+
+#[test]
+fn castling_rights_removed_on_rook_move() {
+    use rust_engine::board::{Board, Color};
+    use std::str::FromStr;
+
+    let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+    let mut board = Board::from_str(fen).unwrap();
+
+    assert!(board.has_kingside_castle(Color::White));
+    assert!(board.has_queenside_castle(Color::White));
+
+    let mv = Move {
+        from: Square::from_str("h1").unwrap(),
+        to: Square::from_str("h2").unwrap(),
+        piece: Piece::Rook,
+        promotion: None,
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    };
+
+    let undo = make_move_basic(&mut board, mv);
+
+    assert!(!board.has_kingside_castle(Color::White));
+    assert!(board.has_queenside_castle(Color::White));
+
+    undo_move_basic(&mut board, undo);
+
+    assert!(board.has_kingside_castle(Color::White));
+    assert!(board.has_queenside_castle(Color::White));
+}
+
+#[test]
+fn castling_rights_removed_on_rook_capture() {
+    use rust_engine::board::{Board, Color};
+    use std::str::FromStr;
+
+    let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+    let mut board = Board::from_str(fen).unwrap();
+
+    // Move a black bishop to capture a white rook on a1
+    board.side_to_move = Color::Black;
+
+    let mv = Move {
+        from: Square::from_str("e8").unwrap(), // Pretend this is a bishop
+        to: Square::from_str("a1").unwrap(),
+        piece: Piece::Bishop,
+        promotion: None,
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    };
+
+    assert!(board.has_queenside_castle(Color::White));
+
+    let undo = make_move_basic(&mut board, mv);
+
+    assert!(!board.has_queenside_castle(Color::White));
+
+    undo_move_basic(&mut board, undo);
+
+    assert!(board.has_queenside_castle(Color::White));
+}
