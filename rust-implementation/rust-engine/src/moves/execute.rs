@@ -80,7 +80,7 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
     let castling_rook = rook_castle_squares(to_idx as u8);
 
     // Snapshot undo info
-    let undo = Undo {
+    let mut undo = Undo {
         from: mv.from,
         to: mv.to,
         piece,
@@ -153,7 +153,15 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
 
     // Move the king
     remove_piece(board, color, piece, from_idx);
-    place_piece(board, color, piece, to_idx);
+
+    if let Some(prom) = mv.promotion {
+        debug_assert!(piece == Piece::Pawn, "Only pawns can promote");
+        place_piece(board, color, prom, to_idx);
+        undo.promotion = Some(prom);
+    } else {
+        // Normal (non-promotion) move
+        place_piece(board, color, piece, to_idx);
+    }
 
     // Move the rook if castling
     if let Some((rook_from, rook_to)) = castling_rook {
@@ -189,9 +197,16 @@ pub fn undo_move_basic(board: &mut Board, undo: Undo) {
     let from_idx = undo.from.index() as usize;
     let to_idx = undo.to.index() as usize;
 
-    // Undo king move
-    remove_piece(board, undo.color, undo.piece, to_idx);
-    place_piece(board, undo.color, undo.piece, from_idx);
+    // Undo move
+    if let Some(prom) = undo.promotion {
+        // The piece on 'to' is the promoted piece; remove it, restore a pawn at 'from'
+        remove_piece(board, undo.color, prom, to_idx);
+        place_piece(board, undo.color, Piece::Pawn, from_idx);
+    } else {
+        // Normal move back
+        remove_piece(board, undo.color, undo.piece, to_idx);
+        place_piece(board, undo.color, undo.piece, from_idx);
+    }
 
     // Undo capture
     if let Some((cap_color, cap_piece, cap_sq)) = undo.capture {

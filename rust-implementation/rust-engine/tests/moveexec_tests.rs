@@ -500,3 +500,362 @@ fn halfmove_and_fullmove_counters_with_ep() {
     assert_eq!(board.halfmove_clock, orig_half);
     assert_eq!(board.fullmove_number, orig_full);
 }
+
+#[test]
+fn roundtrip_promotion_no_capture() {
+    // Position: White pawn on e7 ready to promote, kings only otherwise
+    // FEN: 4k3/4P3/8/8/8/8/8/4K3 w - - 0 1
+    let fen = "4k3/4P3/8/8/8/8/8/4K3 w - - 0 1";
+    let mut board = Board::from_str(fen).unwrap();
+    let original = board.clone();
+
+    // e7 -> e8 = Q
+    let mv = Move {
+        from: Square::from_str("e7").unwrap(),
+        to: Square::from_str("e8").unwrap(),
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Queen),
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let undo = make_move_basic(&mut board, mv);
+
+    // After: White Queen on e8, no white pawn on e7/e8
+    let e8 = Square::from_str("e8").unwrap().index();
+    let e7 = Square::from_str("e7").unwrap().index();
+    let mask_e8 = 1u64 << e8;
+
+    assert_ne!(
+        board.pieces(Piece::Queen, Color::White) & mask_e8,
+        0,
+        "White queen should be on e8 after promotion"
+    );
+    assert_eq!(
+        board.piece_on_sq[e7 as usize], EMPTY_SQ,
+        "e7 should be empty after promotion"
+    );
+    // Promotion is a pawn move → halfmove clock resets
+    assert_eq!(
+        board.halfmove_clock, 0,
+        "Halfmove clock should reset on promotion (pawn move)"
+    );
+
+    // Undo
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board, original,
+        "Board should return to original after promotion undo"
+    );
+}
+
+#[test]
+fn roundtrip_promotion_with_capture() {
+    // Position: Black king on a8, black rook on f8; white pawn on e7; white king on e1
+    // FEN: k4r2/4P3/8/8/8/8/8/4K3 w - - 0 1
+    let fen = "k4r2/4P3/8/8/8/8/8/4K3 w - - 0 1";
+    let mut board = Board::from_str(fen).unwrap();
+    let original = board.clone();
+
+    // e7 x f8 = N   (capture the rook on f8, promote to knight)
+    let mv = Move {
+        from: Square::from_str("e7").unwrap(),
+        to: Square::from_str("f8").unwrap(),
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Knight),
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let undo = make_move_basic(&mut board, mv);
+
+    let f8 = Square::from_str("f8").unwrap().index();
+    let mask_f8 = 1u64 << f8;
+
+    // After: White knight on f8, black rook removed
+    assert_ne!(
+        board.pieces(Piece::Knight, Color::White) & mask_f8,
+        0,
+        "White knight should be on f8 after capture-promotion"
+    );
+    assert_eq!(
+        board.pieces(Piece::Rook, Color::Black) & mask_f8,
+        0,
+        "Black rook should be gone from f8 after capture"
+    );
+    // Pawn move → halfmove clock resets
+    assert_eq!(
+        board.halfmove_clock, 0,
+        "Halfmove clock should reset on capture-promotion"
+    );
+
+    // Undo
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board, original,
+        "Board should return to original after capture-promotion undo"
+    );
+}
+
+#[test]
+fn en_passant_lifecycle_set_clear_undo() {
+    let mut board = Board::new();
+
+    // White: e2->e4 sets EP = e3
+    let u1 = make_move_basic(
+        &mut board,
+        Move {
+            from: Square::from_str("e2").unwrap(),
+            to: Square::from_str("e4").unwrap(),
+            piece: Piece::Pawn,
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+    assert_eq!(board.en_passant, Some(Square::from_str("e3").unwrap()));
+
+    // Black: g8->f6 (quiet) should CLEAR EP
+    let u2 = make_move_basic(
+        &mut board,
+        Move {
+            from: Square::from_str("g8").unwrap(),
+            to: Square::from_str("f6").unwrap(),
+            piece: Piece::Knight,
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+    assert_eq!(board.en_passant, None);
+
+    // Undo black move → EP restored to e3
+    undo_move_basic(&mut board, u2);
+    assert_eq!(board.en_passant, Some(Square::from_str("e3").unwrap()));
+
+    // Undo white move → EP cleared again
+    undo_move_basic(&mut board, u1);
+    assert_eq!(board.en_passant, None);
+}
+
+#[test]
+fn castling_rights_removed_on_h1_rook_capture() {
+    // Standard rook/king layout with all rights
+    let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+    let mut board = Board::from_str(fen).unwrap();
+    assert!(board.has_kingside_castle(Color::White));
+
+    // Black to move and capture white rook on h1 (mirror of your a1 test)
+    board.side_to_move = Color::Black;
+    let mv = Move {
+        from: Square::from_str("e8").unwrap(), // treat as bishop/queen-like mover for the test
+        to: Square::from_str("h1").unwrap(),
+        piece: Piece::Bishop,
+        promotion: None,
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let undo = make_move_basic(&mut board, mv);
+
+    assert!(
+        !board.has_kingside_castle(Color::White),
+        "Capturing rook on h1 should clear WK right"
+    );
+    undo_move_basic(&mut board, undo);
+    assert!(board.has_kingside_castle(Color::White));
+}
+
+#[test]
+fn castling_rights_removed_on_a8_and_h8_rook_capture() {
+    // All rights present
+    let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+    let mut board = Board::from_str(fen).unwrap();
+
+    // White captures a8 rook → clears Black queenside right
+    let mv1 = Move {
+        from: Square::from_str("e1").unwrap(), // treat as bishop/queen-like mover for the test
+        to: Square::from_str("a8").unwrap(),
+        piece: Piece::Bishop,
+        promotion: None,
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let u1 = make_move_basic(&mut board, mv1);
+    assert!(
+        !board.has_queenside_castle(Color::Black),
+        "Capturing rook on a8 should clear BQ"
+    );
+    undo_move_basic(&mut board, u1);
+    assert!(board.has_queenside_castle(Color::Black));
+
+    // White captures h8 rook → clears Black kingside right
+    let mv2 = Move {
+        from: Square::from_str("e1").unwrap(),
+        to: Square::from_str("h8").unwrap(),
+        piece: Piece::Bishop,
+        promotion: None,
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let u2 = make_move_basic(&mut board, mv2);
+    assert!(
+        !board.has_kingside_castle(Color::Black),
+        "Capturing rook on h8 should clear BK"
+    );
+    undo_move_basic(&mut board, u2);
+    assert!(board.has_kingside_castle(Color::Black));
+}
+
+#[test]
+fn castling_halfmove_fullmove_behavior() {
+    // Rights available, clocks zero
+    let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+    let mut board = Board::from_str(fen).unwrap();
+    let start_half = board.halfmove_clock;
+    let start_full = board.fullmove_number;
+
+    // White castles O-O (king move, no capture) → halfmove increments by 1, fullmove unchanged yet
+    let u1 = make_move_basic(
+        &mut board,
+        Move {
+            from: Square::from_str("e1").unwrap(),
+            to: Square::from_str("g1").unwrap(),
+            piece: Piece::King,
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: true,
+        },
+    );
+    assert_eq!(board.halfmove_clock, start_half + 1);
+    assert_eq!(board.fullmove_number, start_full);
+
+    // Black quiet move → halfmove increments again, fullmove increments after black
+    let u2 = make_move_basic(
+        &mut board,
+        Move {
+            from: Square::from_str("b8").unwrap(),
+            to: Square::from_str("c6").unwrap(),
+            piece: Piece::Knight,
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+    assert_eq!(board.halfmove_clock, start_half + 2);
+    assert_eq!(board.fullmove_number, start_full + 1);
+
+    // Undo back to start
+    undo_move_basic(&mut board, u2);
+    undo_move_basic(&mut board, u1);
+    assert_eq!(board.halfmove_clock, start_half);
+    assert_eq!(board.fullmove_number, start_full);
+}
+
+#[test]
+fn quiet_moves_increment_halfmove_and_black_increments_fullmove() {
+    let mut board = Board::new();
+    let start_half = board.halfmove_clock;
+    let start_full = board.fullmove_number;
+
+    // White quiet move (Knight): halfmove +1, fullmove same
+    let u1 = make_move_basic(
+        &mut board,
+        Move {
+            from: Square::from_str("g1").unwrap(),
+            to: Square::from_str("f3").unwrap(),
+            piece: Piece::Knight,
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+    assert_eq!(board.halfmove_clock, start_half + 1);
+    assert_eq!(board.fullmove_number, start_full);
+
+    // Black quiet move: halfmove +2 total, fullmove +1
+    let u2 = make_move_basic(
+        &mut board,
+        Move {
+            from: Square::from_str("g8").unwrap(),
+            to: Square::from_str("f6").unwrap(),
+            piece: Piece::Knight,
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+    assert_eq!(board.halfmove_clock, start_half + 2);
+    assert_eq!(board.fullmove_number, start_full + 1);
+
+    // Undo
+    undo_move_basic(&mut board, u2);
+    undo_move_basic(&mut board, u1);
+    assert_eq!(board.halfmove_clock, start_half);
+    assert_eq!(board.fullmove_number, start_full);
+}
+
+#[test]
+fn promotion_castling_rights_effects() {
+    // Non-capture promotion should NOT affect Black castling rights.
+    // Black king/rooks present, all rights; white pawn on e7 ready to promote on e8=Q.
+    let fen = "r3k2r/4P3/8/8/8/8/8/R3K2R w KQkq - 0 1";
+    let mut board = Board::from_str(fen).unwrap();
+    assert!(board.has_kingside_castle(Color::Black));
+    assert!(board.has_queenside_castle(Color::Black));
+
+    let u1 = make_move_basic(
+        &mut board,
+        Move {
+            from: Square::from_str("e7").unwrap(),
+            to: Square::from_str("e8").unwrap(),
+            piece: Piece::Pawn,
+            promotion: Some(Piece::Queen),
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+    assert!(
+        board.has_kingside_castle(Color::Black),
+        "Non-capture promotion must not change BK"
+    );
+    assert!(
+        board.has_queenside_castle(Color::Black),
+        "Non-capture promotion must not change BQ"
+    );
+    undo_move_basic(&mut board, u1);
+
+    // Capture-promotion on a rook's start square SHOULD clear the corresponding right.
+    // Put a white pawn on b7 to capture a8=Q and clear Black's queenside right.
+    let fen2 = "r3k2r/1P6/8/8/8/8/8/4K3 w KQkq - 0 1";
+    let mut board2 = Board::from_str(fen2).unwrap();
+    assert!(board2.has_queenside_castle(Color::Black));
+
+    let u2 = make_move_basic(
+        &mut board2,
+        Move {
+            from: Square::from_str("b7").unwrap(),
+            to: Square::from_str("a8").unwrap(),
+            piece: Piece::Pawn,
+            promotion: Some(Piece::Queen),
+            is_capture: true,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+    assert!(
+        !board2.has_queenside_castle(Color::Black),
+        "Capture-promotion on a8 must clear BQ"
+    );
+    undo_move_basic(&mut board2, u2);
+    assert!(board2.has_queenside_castle(Color::Black));
+}
