@@ -47,20 +47,39 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
     let from_idx = mv.from.index() as usize;
     let to_idx = mv.to.index() as usize;
 
-    // 1) Capture
+    let prev_en_passant = board.en_passant;
+    let prev_halfmove_clock = board.halfmove_clock;
+    let prev_fullmove_number = board.fullmove_number;
+
+    // Capture
     let mut capture = None;
-    let occupant = board.piece_on_sq[to_idx];
-    if occupant != EMPTY_SQ {
-        let cap_color = Color::from_u8(occupant >> 3);
-        let cap_piece = Piece::from_u8(occupant & 0b111);
-        capture = Some((cap_color, cap_piece, mv.to));
-        remove_piece(board, cap_color, cap_piece, to_idx);
+
+    if mv.is_en_passant {
+        let cap_sq = if color == Color::White {
+            to_idx - 8
+        } else {
+            to_idx + 8
+        };
+        capture = Some((
+            color.opposite(),
+            Piece::Pawn,
+            Square::from_index(cap_sq as u8),
+        ));
+        remove_piece(board, color.opposite(), Piece::Pawn, cap_sq);
+    } else {
+        let occupant = board.piece_on_sq[to_idx];
+        if occupant != EMPTY_SQ {
+            let cap_color = Color::from_u8(occupant >> 3);
+            let cap_piece = Piece::from_u8(occupant & 0b111);
+            capture = Some((cap_color, cap_piece, mv.to));
+            remove_piece(board, cap_color, cap_piece, to_idx);
+        }
     }
 
-    // 2) Castling
-    let castling_rook = rook_castle_squares(mv.to.index());
+    // Castling
+    let castling_rook = rook_castle_squares(to_idx as u8);
 
-    // 3) Snapshot undo info
+    // Snapshot undo info
     let undo = Undo {
         from: mv.from,
         to: mv.to,
@@ -70,9 +89,35 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
         capture,
         castling_rook,
         prev_castling_rights: board.castling_rights,
+        promotion: None,
+        prev_en_passant,
+        prev_halfmove_clock,
+        prev_fullmove_number,
     };
 
-    // 3b) Clear castling rights if king or rook moves or rook is captured
+    match piece {
+        Piece::Pawn => {
+            let from_rank = from_idx / 8;
+            let to_rank = to_idx / 8;
+            if (color == Color::White && from_rank == 1 && to_rank == 3)
+                || (color == Color::Black && from_rank == 6 && to_rank == 4)
+            {
+                let ep_sq = if color == Color::White {
+                    from_idx + 8
+                } else {
+                    from_idx - 8
+                };
+                board.en_passant = Some(Square::from_index(ep_sq as u8));
+            } else {
+                board.en_passant = None;
+            }
+        }
+        _ => {
+            board.en_passant = None;
+        }
+    }
+
+    // Clear castling rights if king or rook moves or rook is captured
     match piece {
         Piece::King => {
             // Clear both king- and queen-side rights for that color
@@ -106,11 +151,11 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
         }
     }
 
-    // 4) Move the king
+    // Move the king
     remove_piece(board, color, piece, from_idx);
     place_piece(board, color, piece, to_idx);
 
-    // 5) Move the rook if castling
+    // Move the rook if castling
     if let Some((rook_from, rook_to)) = castling_rook {
         let rf = rook_from.index() as usize;
         let rt = rook_to.index() as usize;
@@ -118,7 +163,16 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
         place_piece(board, color, Piece::Rook, rt);
     }
 
-    // 6) Flip side-to-move
+    if capture.is_some() || piece == Piece::Pawn {
+        board.halfmove_clock = 0;
+    } else {
+        board.halfmove_clock = prev_halfmove_clock + 1;
+    }
+    if color == Color::Black {
+        board.fullmove_number = prev_fullmove_number + 1;
+    }
+
+    // Flip side-to-move
     board.side_to_move = color.opposite();
 
     undo
@@ -128,21 +182,24 @@ pub fn undo_move_basic(board: &mut Board, undo: Undo) {
     // 1) Restore side-to-move, and castling rights
     board.side_to_move = undo.prev_side;
     board.castling_rights = undo.prev_castling_rights;
+    board.en_passant = undo.prev_en_passant;
+    board.halfmove_clock = undo.prev_halfmove_clock;
+    board.fullmove_number = undo.prev_fullmove_number;
 
     let from_idx = undo.from.index() as usize;
     let to_idx = undo.to.index() as usize;
 
-    // 2) Undo king move
+    // Undo king move
     remove_piece(board, undo.color, undo.piece, to_idx);
     place_piece(board, undo.color, undo.piece, from_idx);
 
-    // 3) Undo capture
+    // Undo capture
     if let Some((cap_color, cap_piece, cap_sq)) = undo.capture {
         let ci = cap_sq.index() as usize;
         place_piece(board, cap_color, cap_piece, ci);
     }
 
-    // 4) Undo castling rook
+    // Undo castling rook
     if let Some((rook_from, rook_to)) = undo.castling_rook {
         let rf = rook_from.index() as usize;
         let rt = rook_to.index() as usize;

@@ -4,6 +4,8 @@ use rust_engine::moves::types::Move;
 use rust_engine::square::Square;
 use std::str::FromStr;
 
+pub(crate) const EMPTY_SQ: u8 = 0xFF;
+
 #[test]
 fn roundtrip_simple_move() {
     let mut b = Board::new();
@@ -294,4 +296,207 @@ fn castling_rights_removed_on_rook_capture() {
     undo_move_basic(&mut board, undo);
 
     assert!(board.has_queenside_castle(Color::White));
+}
+
+#[test]
+fn roundtrip_en_passant_correct() {
+    let mut board = Board::new();
+    let original = board.clone();
+
+    // 1) White: e2 -> e4
+    let mv1 = Move {
+        from: Square::from_str("e2").unwrap(),
+        to: Square::from_str("e4").unwrap(),
+        piece: Piece::Pawn,
+        promotion: None,
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let u1 = make_move_basic(&mut board, mv1);
+
+    // 2) Black: a7 -> a6 (dummy move so White can play e4->e5)
+    let mv2 = Move {
+        from: Square::from_str("a7").unwrap(),
+        to: Square::from_str("a6").unwrap(),
+        piece: Piece::Pawn,
+        promotion: None,
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let u2 = make_move_basic(&mut board, mv2);
+
+    // 3) White: e4 -> e5
+    let mv3 = Move {
+        from: Square::from_str("e4").unwrap(),
+        to: Square::from_str("e5").unwrap(),
+        piece: Piece::Pawn,
+        promotion: None,
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let u3 = make_move_basic(&mut board, mv3);
+
+    // 4) Black: d7 -> d5 (double push; EP target = d6)
+    let mv4 = Move {
+        from: Square::from_str("d7").unwrap(),
+        to: Square::from_str("d5").unwrap(),
+        piece: Piece::Pawn,
+        promotion: None,
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let u4 = make_move_basic(&mut board, mv4);
+
+    // 5) White: e5xd6 en passant (captures the pawn that moved d7->d5)
+    let mv5 = Move {
+        from: Square::from_str("e5").unwrap(),
+        to: Square::from_str("d6").unwrap(),
+        piece: Piece::Pawn,
+        promotion: None,
+        is_capture: true,
+        is_en_passant: true,
+        is_castling: false,
+    };
+    let u5 = make_move_basic(&mut board, mv5);
+
+    // After EP: white pawn on d6, black pawn removed from d5
+    let d6 = Square::from_str("d6").unwrap().index();
+    let d5 = Square::from_str("d5").unwrap().index();
+    let mask_d6 = 1u64 << d6;
+    let mask_d5 = 1u64 << d5;
+
+    assert_ne!(
+        board.pieces(Piece::Pawn, Color::White) & mask_d6,
+        0,
+        "white pawn should be on d6"
+    );
+    assert_eq!(
+        board.pieces(Piece::Pawn, Color::Black) & mask_d5,
+        0,
+        "black pawn should be gone from d5"
+    );
+
+    // piece_on_sq: d6 has white pawn, d5 is empty
+    let expected_white_pawn = ((Color::White as u8) << 3) | (Piece::Pawn as u8);
+    assert_eq!(
+        board.piece_on_sq[d6 as usize], expected_white_pawn,
+        "d6 should encode a White Pawn"
+    );
+    assert_eq!(
+        board.piece_on_sq[d5 as usize], EMPTY_SQ,
+        "d5 should be empty after EP"
+    );
+
+    // Undo sequence
+    undo_move_basic(&mut board, u5);
+    undo_move_basic(&mut board, u4);
+    undo_move_basic(&mut board, u3);
+    undo_move_basic(&mut board, u2);
+    undo_move_basic(&mut board, u1);
+
+    assert_eq!(
+        board, original,
+        "Board should be back to start after EP roundtrip"
+    );
+}
+
+#[test]
+fn halfmove_and_fullmove_counters_with_ep() {
+    let mut board = Board::new();
+    let orig_half = board.halfmove_clock;
+    let orig_full = board.fullmove_number;
+
+    // White: e2->e4 (pawn move resets halfmove)
+    let u1 = make_move_basic(
+        &mut board,
+        Move {
+            from: Square::from_str("e2").unwrap(),
+            to: Square::from_str("e4").unwrap(),
+            piece: Piece::Pawn,
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert_eq!(board.fullmove_number, orig_full); // increments only after Black's move
+
+    // Black: a7->a6 (pawn move resets halfmove, and increments fullmove)
+    let u2 = make_move_basic(
+        &mut board,
+        Move {
+            from: Square::from_str("a7").unwrap(),
+            to: Square::from_str("a6").unwrap(),
+            piece: Piece::Pawn,
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert_eq!(board.fullmove_number, orig_full + 1);
+
+    // White: e4->e5 (pawn move resets halfmove)
+    let u3 = make_move_basic(
+        &mut board,
+        Move {
+            from: Square::from_str("e4").unwrap(),
+            to: Square::from_str("e5").unwrap(),
+            piece: Piece::Pawn,
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert_eq!(board.fullmove_number, orig_full + 1);
+
+    // Black: d7->d5 (pawn move resets halfmove, increments fullmove)
+    let u4 = make_move_basic(
+        &mut board,
+        Move {
+            from: Square::from_str("d7").unwrap(),
+            to: Square::from_str("d5").unwrap(),
+            piece: Piece::Pawn,
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert_eq!(board.fullmove_number, orig_full + 2);
+
+    // White: e5xd6 en passant (capture resets halfmove)
+    let u5 = make_move_basic(
+        &mut board,
+        Move {
+            from: Square::from_str("e5").unwrap(),
+            to: Square::from_str("d6").unwrap(),
+            piece: Piece::Pawn,
+            promotion: None,
+            is_capture: true,
+            is_en_passant: true,
+            is_castling: false,
+        },
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert_eq!(board.fullmove_number, orig_full + 2); // still same; increments after Black moves
+
+    // Undo all and verify counters restored
+    undo_move_basic(&mut board, u5);
+    undo_move_basic(&mut board, u4);
+    undo_move_basic(&mut board, u3);
+    undo_move_basic(&mut board, u2);
+    undo_move_basic(&mut board, u1);
+
+    assert_eq!(board.halfmove_clock, orig_half);
+    assert_eq!(board.fullmove_number, orig_full);
 }
