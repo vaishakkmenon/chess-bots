@@ -4,7 +4,12 @@ use crate::moves::knight::KNIGHT_ATTACKS;
 use crate::moves::magic::MagicTables;
 use crate::moves::magic::masks::{bishop_vision_mask, rook_vision_mask};
 use crate::moves::pawn::pawn_attacks;
+use crate::moves::types::Move;
 use crate::square::Square;
+
+/// Bitboard file masks (a1 = bit 0 … h8 = bit 63).
+pub const FILE_A: u64 = 0x0101_0101_0101_0101;
+pub const FILE_H: u64 = 0x8080_8080_8080_8080;
 
 /// Returns a bitboard showing all the squares that *piece* could attack from *square*
 pub fn attacks_from(
@@ -38,14 +43,21 @@ pub fn attacks_from(
     }
 }
 
-fn is_square_attacked(
+pub fn is_square_attacked(
     board: &Board,
     square: Square,
     attacker: Color,
     tables: &MagicTables,
 ) -> bool {
     let index = square.index();
-    if pawn_attacks(index, attacker) & board.pieces(Piece::Pawn, attacker) != 0 {
+    let target = 1u64 << index;
+
+    let pawn_attackers = match attacker {
+        Color::White => ((target & !FILE_H) >> 7) | ((target & !FILE_A) >> 9),
+        Color::Black => ((target & !FILE_A) << 7) | ((target & !FILE_H) << 9),
+    };
+
+    if pawn_attackers & board.pieces(Piece::Pawn, attacker) != 0 {
         return true;
     }
     if KNIGHT_ATTACKS[index as usize] & board.pieces(Piece::Knight, attacker) != 0 {
@@ -71,25 +83,46 @@ fn is_square_attacked(
         return true;
     }
 
-    let queen_attacks = tables.queen_attacks(index as usize, occupied);
-    if queen_attacks & board.pieces(Piece::Queen, attacker) != 0 {
+    if (rook_attacks | bishop_attacks) & board.pieces(Piece::Queen, attacker) != 0 {
         return true;
     }
 
     false
 }
 
-// pub fn in_check(board: &Board, color: Color) -> bool {
-//     let king_bb = if color == Color::White {
-//         board.white_king
-//     } else {
-//         board.black_king
-//     };
+#[inline(always)]
+pub fn in_check(board: &Board, side: Color, tables: &MagicTables) -> bool {
+    let king_sq = board.king_square(side); // you’ll need this helper if not already implemented
+    is_square_attacked(board, king_sq, side.opposite(), tables)
+}
 
-//     let king_sq: u8 = king_bb.trailing_zeros() as u8;
+pub fn is_legal_castling(board: &Board, mv: Move, tables: &MagicTables) -> bool {
+    let color = board.side_to_move;
 
-//     true
-// }
+    // 1. King must not be in check
+    if in_check(board, color, tables) {
+        return false;
+    }
+
+    // 2. Check squares king passes through
+    let (start_idx, middle_idx, end_idx) = match (color, mv.to.index()) {
+        (Color::White, 6) => (4, 5, 6),     // White kingside
+        (Color::White, 2) => (4, 3, 2),     // White queenside
+        (Color::Black, 62) => (60, 61, 62), // Black kingside
+        (Color::Black, 58) => (60, 59, 58), // Black queenside
+        _ => return false,
+    };
+
+    // After computing (start_idx, middle_idx, end_idx):
+    let opp = color.opposite();
+    for &test_idx in &[start_idx, middle_idx, end_idx] {
+        if is_square_attacked(board, Square::from_index(test_idx as u8), opp, tables) {
+            return false;
+        }
+    }
+
+    true
+}
 
 /// Test suite for the `attacks_from` function across all piece types
 #[cfg(test)]

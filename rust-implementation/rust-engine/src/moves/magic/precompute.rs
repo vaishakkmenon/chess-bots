@@ -82,7 +82,6 @@ pub fn precompute_bishop_attacks() -> Vec<Vec<u64>> {
 /// Panics if the final `Vec<MagicEntry>` does not contain exactly 64 entries. This
 /// would indicate a logic error in how blockers were generated or processed.
 fn generate_magic_entries<FBlockers, FAttacks, FMask, FPerSquare, R>(
-    piece_name: &str,
     gen_blockers: FBlockers,
     get_attacks: FAttacks,
     get_mask: FMask,
@@ -99,7 +98,7 @@ where
     let mut entries_vec = Vec::with_capacity(64);
 
     for square in 0..64 {
-        println!("Generating {} magic for square {}", piece_name, square);
+        // println!("Generating {} magic for square {}", piece_name, square);
 
         let blockers = gen_blockers(square);
         let attacks = get_attacks(square, &blockers);
@@ -108,7 +107,7 @@ where
 
         let magic = match find_magic_number_for_square(&blockers, &attacks, shift, rng) {
             Ok(magic) => {
-                println!("Magic number: {:#018x}", magic);
+                // println!("Magic number: {:#018x}", magic);
                 magic
             }
             Err(e) => {
@@ -136,7 +135,6 @@ where
 
 pub fn generate_rook_magic_tables<R: RngCore>(rng: &mut R) -> Result<RookMagicTables, String> {
     let entries: Vec<MagicEntry> = generate_magic_entries(
-        "rook",
         generate_rook_blockers,
         get_rook_attack_bitboards,
         rook_vision_mask,
@@ -149,7 +147,6 @@ pub fn generate_rook_magic_tables<R: RngCore>(rng: &mut R) -> Result<RookMagicTa
 
 pub fn generate_bishop_magic_tables<R: RngCore>(rng: &mut R) -> Result<BishopMagicTables, String> {
     let entries = generate_magic_entries(
-        "bishop",
         generate_bishop_blockers,
         get_bishop_attack_bitboards,
         bishop_vision_mask,

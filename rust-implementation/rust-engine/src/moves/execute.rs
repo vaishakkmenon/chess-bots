@@ -1,4 +1,7 @@
 use crate::board::{Board, Color, EMPTY_SQ, Piece};
+use crate::moves::magic::MagicTables;
+use crate::moves::movegen::generate_pseudo_legal;
+use crate::moves::square_control::{in_check, is_legal_castling};
 use crate::moves::types::{Move, Undo};
 use crate::square::Square;
 
@@ -23,22 +26,29 @@ fn rook_castle_squares(king_to_idx: u8) -> Option<(Square, Square)> {
     }
 }
 
+#[inline(always)]
+fn rights_mask_to_clear_for_rook(color: Color, rook_sq: u8) -> u8 {
+    match (color, rook_sq) {
+        (Color::White, 0) => CASTLE_WQ,  // a1
+        (Color::White, 7) => CASTLE_WK,  // h1
+        (Color::Black, 56) => CASTLE_BQ, // a8
+        (Color::Black, 63) => CASTLE_BK, // h8
+        _ => 0,
+    }
+}
+
 /// Helper: clear a piece bit and table entry at `idx`.
 #[inline(always)]
 fn remove_piece(board: &mut Board, color: Color, piece: Piece, idx: usize) {
-    board.clear_square(Square::from_index(idx as u8));
-    let mask = !(1u64 << idx);
-    let bb = board.bb(color, piece) & mask;
-    board.set_bb(color, piece, bb);
+    let new_bb = board.bb(color, piece) & !(1u64 << idx);
+    board.set_bb(color, piece, new_bb);
 }
 
 /// Helper: set a piece bit and table entry at `idx`.
 #[inline(always)]
 fn place_piece(board: &mut Board, color: Color, piece: Piece, idx: usize) {
-    board.place_piece_at_sq(color, piece, Square::from_index(idx as u8));
-    let mask = 1u64 << idx;
-    let bb = board.bb(color, piece) | mask;
-    board.set_bb(color, piece, bb);
+    let new_bb = board.bb(color, piece) | (1u64 << idx);
+    board.set_bb(color, piece, new_bb);
 }
 
 pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
@@ -48,6 +58,7 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
     let to_idx = mv.to.index() as usize;
 
     let prev_en_passant = board.en_passant;
+    board.en_passant = None;
     let prev_halfmove_clock = board.halfmove_clock;
     let prev_fullmove_number = board.fullmove_number;
 
@@ -77,7 +88,7 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
     }
 
     // Castling
-    let castling_rook = rook_castle_squares(to_idx as u8);
+    // let castling_rook: Option<(Square, Square)> = rook_castle_squares(to_idx as u8);
 
     // Snapshot undo info
     let mut undo = Undo {
@@ -87,13 +98,21 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
         color,
         prev_side: color,
         capture,
-        castling_rook,
+        castling_rook: None,
         prev_castling_rights: board.castling_rights,
         promotion: None,
         prev_en_passant,
         prev_halfmove_clock,
         prev_fullmove_number,
     };
+
+    if mv.is_castling {
+        if let Some((rf, rt)) = rook_castle_squares(to_idx as u8) {
+            undo.castling_rook = Some((rf, rt));
+        }
+    } else {
+        undo.castling_rook = None;
+    }
 
     match piece {
         Piece::Pawn => {
@@ -108,13 +127,21 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
                     from_idx - 8
                 };
                 board.en_passant = Some(Square::from_index(ep_sq as u8));
-            } else {
-                board.en_passant = None;
+
+                // ── ADD THIS DEBUG INVARIANT ─────────────────────────────────────────
+                let ep_rank = ep_sq / 8; // 0-based ranks: 0=rank1 … 7=rank8
+                debug_assert!(
+                    (color == Color::White && ep_rank == 2)   // EP must be on rank 3 after white double push
+                || (color == Color::Black && ep_rank == 5), // EP must be on rank 6 after black double push
+                    "EP square on wrong rank: {:?} (ep_rank={}, color={:?})",
+                    Square::from_index(ep_sq as u8),
+                    ep_rank,
+                    color
+                );
+                // ────────────────────────────────────────────────────────────────────
             }
         }
-        _ => {
-            board.en_passant = None;
-        }
+        _ => {}
     }
 
     // Clear castling rights if king or rook moves or rook is captured
@@ -127,12 +154,9 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
             }
         }
         Piece::Rook => {
-            match (color, mv.from.index()) {
-                (Color::White, 0) => board.castling_rights &= !CASTLE_WQ, // WQ
-                (Color::White, 7) => board.castling_rights &= !CASTLE_WK, // WK
-                (Color::Black, 56) => board.castling_rights &= !CASTLE_BQ, // BQ
-                (Color::Black, 63) => board.castling_rights &= !CASTLE_BK, // BK
-                _ => {}
+            let mask = rights_mask_to_clear_for_rook(color, mv.from.index());
+            if mask != 0 {
+                board.castling_rights &= !mask;
             }
         }
         _ => {}
@@ -141,12 +165,9 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
     // Also clear if captured a rook on its original square
     if let Some((cap_color, cap_piece, cap_sq)) = capture {
         if cap_piece == Piece::Rook {
-            match (cap_color, cap_sq.index()) {
-                (Color::White, 0) => board.castling_rights &= !0b0010, // WQ
-                (Color::White, 7) => board.castling_rights &= !0b0001, // WK
-                (Color::Black, 56) => board.castling_rights &= !0b1000, // BQ
-                (Color::Black, 63) => board.castling_rights &= !0b0100, // BK
-                _ => {}
+            let mask = rights_mask_to_clear_for_rook(cap_color, cap_sq.index());
+            if mask != 0 {
+                board.castling_rights &= !mask;
             }
         }
     }
@@ -164,7 +185,7 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
     }
 
     // Move the rook if castling
-    if let Some((rook_from, rook_to)) = castling_rook {
+    if let Some((rook_from, rook_to)) = undo.castling_rook {
         let rf = rook_from.index() as usize;
         let rt = rook_to.index() as usize;
         remove_piece(board, color, Piece::Rook, rf);
@@ -220,5 +241,22 @@ pub fn undo_move_basic(board: &mut Board, undo: Undo) {
         let rt = rook_to.index() as usize;
         remove_piece(board, undo.color, Piece::Rook, rt);
         place_piece(board, undo.color, Piece::Rook, rf);
+    }
+}
+
+pub fn generate_legal(board: &mut Board, tables: &MagicTables, moves: &mut Vec<Move>) {
+    let mut pseudo = Vec::new();
+    generate_pseudo_legal(board, tables, &mut pseudo);
+
+    moves.clear();
+
+    for mv in pseudo {
+        let mover = board.side_to_move;
+        let undo = make_move_basic(board, mv);
+        let illegal = in_check(board, mover, tables);
+        undo_move_basic(board, undo);
+        if !illegal {
+            moves.push(mv);
+        }
     }
 }

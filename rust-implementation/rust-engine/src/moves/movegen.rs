@@ -176,16 +176,28 @@ pub fn generate_king_moves(board: &Board, move_list: &mut Vec<Move>) {
 pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
     let color = board.side_to_move;
     let pawns = board.pieces(Piece::Pawn, color);
-    // let friendly = board.occupancy(color);
     let enemy = board.opponent_occupancy(color);
     let empty = !board.occupied();
 
-    // --- Forward single pushes ---
-    let single_pushes = match color {
-        Color::White => ((pawns << 8) & empty) & !RANK8,
-        Color::Black => ((pawns >> 8) & empty) & !RANK1,
+    // Rank masks
+    let (start_rank, promo_rank, push_up) = match color {
+        Color::White => (RANK7, RANK8, 8i8),
+        Color::Black => (RANK2, RANK1, -8i8),
     };
 
+    // Single accessor that captures `color` (one closure type)
+    let pawn_attacks = |sq: usize| -> u64 {
+        match color {
+            Color::White => WHITE_PAWN_ATTACKS[sq],
+            Color::Black => BLACK_PAWN_ATTACKS[sq],
+        }
+    };
+
+    // ===== 1) Quiet single pushes (exclude promotion rank) =====
+    let single_pushes = match color {
+        Color::White => ((pawns << 8) & empty) & !promo_rank,
+        Color::Black => ((pawns >> 8) & empty) & !promo_rank,
+    };
     let mut bb = single_pushes;
     while bb != 0 {
         let to = pop_lsb(&mut bb);
@@ -193,7 +205,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
             Color::White => to - 8,
             Color::Black => to + 8,
         };
-
+        debug_assert!(from < 64 && to < 64);
         move_list.push(Move {
             from: Square::from_index(from),
             to: Square::from_index(to),
@@ -205,22 +217,19 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
         });
     }
 
-    // --- Double forward pushes ---
-    let double_push = match color {
-        // Rank 2 is the white pawn starting rank
-        // Rank 7 is the black pawn starting rank
+    // ===== 2) Quiet double pushes =====
+    let double_pushes = match color {
         Color::White => (((pawns & RANK2) << 8) & empty) << 8 & empty,
         Color::Black => (((pawns & RANK7) >> 8) & empty) >> 8 & empty,
     };
-
-    let mut bb = double_push;
+    let mut bb = double_pushes;
     while bb != 0 {
         let to = pop_lsb(&mut bb);
         let from = match color {
             Color::White => to - 16,
             Color::Black => to + 16,
         };
-
+        debug_assert!(from < 64 && to < 64);
         move_list.push(Move {
             from: Square::from_index(from),
             to: Square::from_index(to),
@@ -232,24 +241,14 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
         });
     }
 
-    // --- Diagonal captures ---
+    // ===== 3) Normal captures (exclude promotion targets) =====
     let mut attackers = pawns;
     while attackers != 0 {
         let from = pop_lsb(&mut attackers);
-        let attack_mask = match color {
-            Color::White => WHITE_PAWN_ATTACKS[from as usize],
-            Color::Black => BLACK_PAWN_ATTACKS[from as usize],
-        };
-
-        let targets = match color {
-            Color::White => attack_mask & enemy & !RANK8,
-            Color::Black => attack_mask & enemy & !RANK1,
-        };
-
-        let mut targets_bb = targets;
-        while targets_bb != 0 {
-            let to = pop_lsb(&mut targets_bb);
-
+        let targets = pawn_attacks(from as usize) & enemy & !promo_rank;
+        let mut t = targets;
+        while t != 0 {
+            let to = pop_lsb(&mut t);
             move_list.push(Move {
                 from: Square::from_index(from),
                 to: Square::from_index(to),
@@ -262,36 +261,23 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
         }
     }
 
-    // --- Promotion Logic ---
-    let (start, end, push_shift, attacks_fn): (u64, u64, i8, fn(usize) -> u64) = match color {
-        Color::White => (RANK7, RANK8, 8, |sq| WHITE_PAWN_ATTACKS[sq]),
-        Color::Black => (RANK2, RANK1, -8, |sq| BLACK_PAWN_ATTACKS[sq]),
-    };
-
-    let shift = push_shift.unsigned_abs();
-
-    let promo_pawns = if push_shift > 0 {
-        (pawns & start) << shift & empty
+    // ===== 4) Promotion pushes =====
+    let shift = push_up.unsigned_abs();
+    let promo_pushes = if push_up > 0 {
+        (pawns & start_rank) << shift & empty
     } else {
-        (pawns & start) >> shift & empty
+        (pawns & start_rank) >> shift & empty
     };
-
-    let mut bb = promo_pawns;
+    let mut bb = promo_pushes;
     while bb != 0 {
         let to = pop_lsb(&mut bb);
-
-        let from = if push_shift > 0 {
-            to - shift
-        } else {
-            to + shift
-        };
-
-        for &promo_piece in PROMOS.iter() {
+        let from = if push_up > 0 { to - shift } else { to + shift };
+        for &promo in PROMOS.iter() {
             move_list.push(Move {
                 from: Square::from_index(from),
                 to: Square::from_index(to),
                 piece: Piece::Pawn,
-                promotion: Some(promo_piece),
+                promotion: Some(promo),
                 is_capture: false,
                 is_en_passant: false,
                 is_castling: false,
@@ -299,22 +285,20 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
         }
     }
 
-    let mut attackers = pawns & start;
-    while attackers != 0 {
-        let from = pop_lsb(&mut attackers);
-
-        let targets = attacks_fn(from as usize) & enemy & end;
-
-        let mut target_bb = targets;
-        while target_bb != 0 {
-            let to = pop_lsb(&mut target_bb);
-
-            for &promo_piece in PROMOS.iter() {
+    // ===== 5) Promotion captures =====
+    let mut promo_attackers = pawns & start_rank;
+    while promo_attackers != 0 {
+        let from = pop_lsb(&mut promo_attackers);
+        let targets = pawn_attacks(from as usize) & enemy & promo_rank;
+        let mut t = targets;
+        while t != 0 {
+            let to = pop_lsb(&mut t);
+            for &promo in PROMOS.iter() {
                 move_list.push(Move {
                     from: Square::from_index(from),
                     to: Square::from_index(to),
                     piece: Piece::Pawn,
-                    promotion: Some(promo_piece),
+                    promotion: Some(promo),
                     is_capture: true,
                     is_en_passant: false,
                     is_castling: false,
@@ -323,31 +307,42 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
         }
     }
 
-    if let Some(ep_square) = board.en_passant {
-        let ep_index = ep_square.index();
-        let pawns = board.pieces(Piece::Pawn, color);
-
-        let mut attackers = pawns;
-        while attackers != 0 {
-            let from = pop_lsb(&mut attackers);
-
-            let attack_mask = match color {
-                Color::White => WHITE_PAWN_ATTACKS[from as usize],
-                Color::Black => BLACK_PAWN_ATTACKS[from as usize],
+    // ===== 6) En passant (sanity-checked pseudo-legal) =====
+    if let Some(ep_sq) = board.en_passant {
+        let ep = ep_sq.index();
+        if (empty & (1u64 << ep)) != 0 {
+            let cap_sq = match color {
+                Color::White => ep - 8,
+                Color::Black => ep + 8,
             };
-
-            // Check if this pawn attacks the en passant square
-            if attack_mask & (1 << ep_index) != 0 {
-                move_list.push(Move {
-                    from: Square::from_index(from),
-                    to: Square::from_index(ep_index),
-                    piece: Piece::Pawn,
-                    promotion: None,
-                    is_capture: true,
-                    is_en_passant: true,
-                    is_castling: false,
-                });
+            let enemy_pawns = board.pieces(Piece::Pawn, color.opposite());
+            if (enemy_pawns & (1u64 << cap_sq)) != 0 {
+                let mut atk = pawns;
+                while atk != 0 {
+                    let from = pop_lsb(&mut atk);
+                    if (pawn_attacks(from as usize) & (1u64 << ep)) != 0 {
+                        move_list.push(Move {
+                            from: Square::from_index(from),
+                            to: Square::from_index(ep),
+                            piece: Piece::Pawn,
+                            promotion: None,
+                            is_capture: true,
+                            is_en_passant: true,
+                            is_castling: false,
+                        });
+                    }
+                }
             }
         }
     }
+}
+
+pub fn generate_pseudo_legal(board: &Board, tables: &MagicTables, moves: &mut Vec<Move>) {
+    moves.clear();
+    generate_pawn_moves(board, moves);
+    generate_knight_moves(board, moves);
+    generate_bishop_moves(board, &tables.bishop, moves);
+    generate_rook_moves(board, &tables.rook, moves);
+    generate_queen_moves(board, tables, moves);
+    generate_king_moves(board, moves);
 }
