@@ -5,6 +5,7 @@ use crate::moves::magic::MagicTables;
 use crate::moves::magic::masks::{bishop_vision_mask, rook_vision_mask};
 use crate::moves::magic::structs::{BishopMagicTables, RookMagicTables};
 use crate::moves::pawn::{BLACK_PAWN_ATTACKS, WHITE_PAWN_ATTACKS};
+use crate::moves::square_control::is_legal_castling;
 use crate::moves::types::Move;
 use crate::square::Square;
 use crate::utils::pop_lsb;
@@ -129,7 +130,7 @@ pub fn generate_queen_moves(board: &Board, tables: &MagicTables, move_list: &mut
     }
 }
 
-pub fn generate_king_moves(board: &Board, move_list: &mut Vec<Move>) {
+pub fn generate_king_moves(board: &Board, tables: &MagicTables, move_list: &mut Vec<Move>) {
     let color = board.side_to_move;
     let king_bb = board.pieces(Piece::King, color);
 
@@ -148,7 +149,7 @@ pub fn generate_king_moves(board: &Board, move_list: &mut Vec<Move>) {
 
     // King-side castle
     if board.has_kingside_castle(color) && (occ & kingside_between(color)) == 0 {
-        move_list.push(Move {
+        let mv = Move {
             from: Square::from_index(from),
             to: Square::from_index(from + 2), // g-file
             piece: Piece::King,
@@ -156,7 +157,11 @@ pub fn generate_king_moves(board: &Board, move_list: &mut Vec<Move>) {
             is_capture: false,
             is_en_passant: false,
             is_castling: true,
-        });
+        };
+
+        if is_legal_castling(board, mv, tables) {
+            move_list.push(mv);
+        }
     }
 
     // Queen-side castle
@@ -344,5 +349,5 @@ pub fn generate_pseudo_legal(board: &Board, tables: &MagicTables, moves: &mut Ve
     generate_bishop_moves(board, &tables.bishop, moves);
     generate_rook_moves(board, &tables.rook, moves);
     generate_queen_moves(board, tables, moves);
-    generate_king_moves(board, moves);
+    generate_king_moves(board, tables, moves);
 }

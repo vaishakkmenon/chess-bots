@@ -251,6 +251,9 @@ pub fn generate_legal(board: &mut Board, tables: &MagicTables, moves: &mut Vec<M
     moves.clear();
 
     for mv in pseudo {
+        if mv.is_castling && !is_legal_castling(board, mv, tables) {
+            continue;
+        }
         let mover = board.side_to_move;
         let undo = make_move_basic(board, mv);
         let illegal = in_check(board, mover, tables);

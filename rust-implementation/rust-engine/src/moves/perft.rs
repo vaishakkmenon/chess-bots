@@ -90,6 +90,7 @@ pub fn perft_divide(board: &mut Board, tables: &MagicTables, depth: u32) -> u64 
             // Replace `from()` / `to()` with your actual accessors if different.
             let from = mv.from.index();
             let to = mv.to.index();
+
             debug!(
                 %mv, depth,
                 from_idx = from, to_idx = to,

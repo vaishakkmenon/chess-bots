@@ -516,8 +516,9 @@ fn king_moves_from_center_e4() {
     set_piece_mask(&mut board, Color::White, Piece::King, piece_mask);
     board.side_to_move = Color::White;
 
+    let magic_tables = load_magic_tables();
     let mut moves = Vec::new();
-    generate_king_moves(&board, &mut moves);
+    generate_king_moves(&board, &magic_tables, &mut moves);
 
     let expected_dests = [19, 20, 21, 27, 29, 35, 36, 37];
 
@@ -539,8 +540,9 @@ fn king_moves_from_corner_a1() {
     set_piece_mask(&mut board, Color::White, Piece::King, piece_mask);
     board.side_to_move = Color::White;
 
+    let magic_tables = load_magic_tables();
     let mut moves = Vec::new();
-    generate_king_moves(&board, &mut moves);
+    generate_king_moves(&board, &magic_tables, &mut moves);
 
     let expected_dests = [1, 8, 9];
     assert_eq!(moves.len(), expected_dests.len());
@@ -560,8 +562,9 @@ fn king_blocked_by_friendly_piece() {
     set_piece_mask(&mut board, Color::White, Piece::Knight, piece_mask);
     board.side_to_move = Color::White;
 
+    let magic_tables = load_magic_tables();
     let mut moves = Vec::new();
-    generate_king_moves(&board, &mut moves);
+    generate_king_moves(&board, &magic_tables, &mut moves);
 
     assert!(!moves.iter().any(|m| m.to.index() == 29));
     assert_eq!(moves.len(), 7);
@@ -578,8 +581,9 @@ fn king_captures_enemy_piece() {
     set_piece_mask(&mut board, Color::Black, Piece::Knight, piece_mask);
     board.side_to_move = Color::White;
 
+    let magic_tables = load_magic_tables();
     let mut moves = Vec::new();
-    generate_king_moves(&board, &mut moves);
+    generate_king_moves(&board, &magic_tables, &mut moves);
 
     let mv = moves
         .iter()
@@ -593,8 +597,9 @@ fn no_king_yields_no_moves() {
     let mut board = Board::new_empty();
     board.side_to_move = Color::White;
 
+    let magic_tables = load_magic_tables();
     let mut moves = Vec::new();
-    generate_king_moves(&board, &mut moves);
+    generate_king_moves(&board, &magic_tables, &mut moves);
     assert!(moves.is_empty());
 }
 
@@ -1000,8 +1005,9 @@ fn white_kingside_castle_generated() {
     b.castling_rights = 0b0001; // CASTLE_WK
     b.side_to_move = Color::White;
 
+    let magic_tables = load_magic_tables();
     let mut moves = Vec::new();
-    generate_king_moves(&b, &mut moves);
+    generate_king_moves(&b, &magic_tables, &mut moves);
 
     assert!(
         has_castle(&moves, 6),
@@ -1019,8 +1025,9 @@ fn white_queenside_castle_generated() {
     b.castling_rights = 0b0010; // CASTLE_WQ
     b.side_to_move = Color::White;
 
+    let magic_tables = load_magic_tables();
     let mut moves = Vec::new();
-    generate_king_moves(&b, &mut moves);
+    generate_king_moves(&b, &magic_tables, &mut moves);
 
     assert!(
         has_castle(&moves, 2),
@@ -1038,8 +1045,9 @@ fn black_kingside_castle_generated() {
     b.castling_rights = 0b0100; // CASTLE_BK
     b.side_to_move = Color::Black;
 
+    let magic_tables = load_magic_tables();
     let mut moves = Vec::new();
-    generate_king_moves(&b, &mut moves);
+    generate_king_moves(&b, &magic_tables, &mut moves);
 
     assert!(
         has_castle(&moves, 62),
@@ -1057,8 +1065,9 @@ fn black_queenside_castle_generated() {
     b.castling_rights = 0b1000; // CASTLE_BQ
     b.side_to_move = Color::Black;
 
+    let magic_tables = load_magic_tables();
     let mut moves = Vec::new();
-    generate_king_moves(&b, &mut moves);
+    generate_king_moves(&b, &magic_tables, &mut moves);
 
     assert!(
         has_castle(&moves, 58),
