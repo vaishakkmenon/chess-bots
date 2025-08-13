@@ -8,6 +8,8 @@ mod tests {
     const START_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     const KIWI_FEN: &str = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
 
+    use std::time::Instant;
+
     #[test]
     fn perft_startpos_depths() {
         let tables = generate_magic_tables(MagicTableSeed::Fixed(69)).expect("magic tables");
@@ -16,22 +18,45 @@ mod tests {
         let expected = [
             (1, 20u64),
             (2, 400),
-            (3, 8902),
+            (3, 8_902),
             (4, 197_281),
-            (5, 4_865_609), // uncomment when it’s fast enough
+            (5, 4_865_609),
+            (6, 119_060_324),
+            (7, 3_195_901_860),
         ];
 
+        let mut total_nodes: u128 = 0;
+        let mut total_elapsed = std::time::Duration::ZERO;
+
         for (depth, expected_nodes) in expected {
-            let mut board = Board::new(); // start with default state
+            let mut board = Board::new();
             board.set_fen(START_FEN).expect("valid startpos");
+
+            let start = Instant::now();
             let nodes = perft(&mut board, &tables, depth);
-            println!("Depth: {}, Nodes: {}", depth, nodes);
+            let elapsed = start.elapsed();
+
+            // avoid divide-by-zero on very fast depths
+            let secs = elapsed.as_secs_f64().max(1e-9);
+            let nps = (nodes as f64 / secs) as u64;
+
+            println!("d{depth}: nodes={nodes} time={:.3}s nps={}", secs, nps);
+
+            total_nodes += nodes as u128;
+            total_elapsed += elapsed;
+
             assert_eq!(
                 nodes, expected_nodes,
-                "Perft mismatch at depth {}: got {}, expected {}",
-                depth, nodes, expected_nodes
+                "Perft mismatch at depth {depth}: got {nodes}, expected {expected_nodes}"
             );
         }
+
+        let total_secs = total_elapsed.as_secs_f64().max(1e-9);
+        let total_nps = (total_nodes as f64 / total_secs) as u64;
+        println!(
+            "TOTAL: nodes={} time={:.3}s nps={}",
+            total_nodes, total_secs, total_nps
+        );
     }
 
     #[test]
