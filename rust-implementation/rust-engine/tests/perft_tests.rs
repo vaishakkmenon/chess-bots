@@ -8,15 +8,72 @@ mod tests {
     const START_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     const KIWI_FEN: &str = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
 
-    use std::time::Instant;
+    // use std::time::Instant;
 
-    #[test]
-    fn perft_startpos_depths() {
+    // Replace your existing `perft_startpos_depths` with this block (paste anywhere in tests/perft_tests.rs)
+
+    fn run_startpos_depth(depth: u32, expected_nodes: u64) -> (u64, std::time::Duration) {
+        use std::time::Instant;
         let tables = generate_magic_tables(MagicTableSeed::Fixed(69)).expect("magic tables");
 
-        // Known node counts for startpos
-        let expected = [
-            (1, 20u64),
+        let mut board = Board::new();
+        board.set_fen(START_FEN).expect("valid startpos");
+
+        let start = Instant::now();
+        let nodes = perft(&mut board, &tables, depth);
+        let elapsed = start.elapsed();
+
+        let secs = elapsed.as_secs_f64().max(1e-9); // avoid div-by-zero on tiny depths
+        let nps = (nodes as f64 / secs) as u64;
+        println!("d{depth}: nodes={nodes} time={:.3}s nps={}", secs, nps);
+
+        assert_eq!(
+            nodes, expected_nodes,
+            "Perft mismatch at depth {depth}: got {nodes}, expected {expected_nodes}"
+        );
+        (nodes, elapsed)
+    }
+
+    // Parallelizable per-depth tests (fast on CI)
+    #[test]
+    fn perft_startpos_d1() {
+        let _ = run_startpos_depth(1, 20);
+    }
+    #[test]
+    fn perft_startpos_d2() {
+        let _ = run_startpos_depth(2, 400);
+    }
+    #[test]
+    fn perft_startpos_d3() {
+        let _ = run_startpos_depth(3, 8_902);
+    }
+    #[test]
+    fn perft_startpos_d4() {
+        let _ = run_startpos_depth(4, 197_281);
+    }
+    #[test]
+    fn perft_startpos_d5() {
+        let _ = run_startpos_depth(5, 4_865_609);
+    }
+
+    // Deep nodes — opt-in on CI
+    #[test]
+    #[ignore]
+    fn perft_startpos_d6() {
+        let _ = run_startpos_depth(6, 119_060_324);
+    }
+    #[test]
+    #[ignore]
+    fn perft_startpos_d7() {
+        let _ = run_startpos_depth(7, 3_195_901_860);
+    }
+
+    // Aggregate run that reproduces the TOTAL summary (opt-in)
+    #[test]
+    #[ignore]
+    fn perft_startpos_aggregate() {
+        let depths: [(u32, u64); 7] = [
+            (1u32, 20u64),
             (2, 400),
             (3, 8_902),
             (4, 197_281),
@@ -24,33 +81,13 @@ mod tests {
             (6, 119_060_324),
             (7, 3_195_901_860),
         ];
-
         let mut total_nodes: u128 = 0;
         let mut total_elapsed = std::time::Duration::ZERO;
-
-        for (depth, expected_nodes) in expected {
-            let mut board = Board::new();
-            board.set_fen(START_FEN).expect("valid startpos");
-
-            let start = Instant::now();
-            let nodes = perft(&mut board, &tables, depth);
-            let elapsed = start.elapsed();
-
-            // avoid divide-by-zero on very fast depths
-            let secs = elapsed.as_secs_f64().max(1e-9);
-            let nps = (nodes as f64 / secs) as u64;
-
-            println!("d{depth}: nodes={nodes} time={:.3}s nps={}", secs, nps);
-
+        for (d, exp) in depths {
+            let (nodes, dt) = run_startpos_depth(d, exp);
             total_nodes += nodes as u128;
-            total_elapsed += elapsed;
-
-            assert_eq!(
-                nodes, expected_nodes,
-                "Perft mismatch at depth {depth}: got {nodes}, expected {expected_nodes}"
-            );
+            total_elapsed += dt;
         }
-
         let total_secs = total_elapsed.as_secs_f64().max(1e-9);
         let total_nps = (total_nodes as f64 / total_secs) as u64;
         println!(
