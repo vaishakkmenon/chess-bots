@@ -1,4 +1,5 @@
 use crate::board::{Board, Color, EMPTY_SQ, Piece};
+use crate::hash::zobrist::zobrist_keys;
 use crate::moves::magic::MagicTables;
 use crate::moves::movegen::generate_pseudo_legal;
 use crate::moves::square_control::{in_check, is_legal_castling};
@@ -203,12 +204,15 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
 
     // Flip side-to-move
     board.side_to_move = color.opposite();
+    board.zobrist ^= zobrist_keys().side_to_move;
 
     undo
 }
 
 pub fn undo_move_basic(board: &mut Board, undo: Undo) {
     // 1) Restore side-to-move, and castling rights
+    board.zobrist ^= zobrist_keys().side_to_move;
+
     board.side_to_move = undo.prev_side;
     board.castling_rights = undo.prev_castling_rights;
     board.en_passant = undo.prev_en_passant;

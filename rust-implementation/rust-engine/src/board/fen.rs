@@ -257,7 +257,7 @@ impl Board {
         self.parse_castling_rights(castling)?;
         self.parse_en_passant(ep)?;
         self.parse_clocks(hm, fm)?;
-
+        self.refresh_zobrist();
         Ok(())
     }
 

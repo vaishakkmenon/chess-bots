@@ -89,9 +89,17 @@ pub struct Board {
     pub halfmove_clock: u32,
     /// Fullmove number (starts at 1 and increments after Black’s move).
     pub fullmove_number: u32,
+    // Zobrist hash for each board.
+    pub zobrist: u64,
 }
 
 impl Board {
+    /// Recompute from current state and store into `self.zobrist`.
+    #[inline]
+    pub fn refresh_zobrist(&mut self) {
+        self.zobrist = self.compute_zobrist_full();
+    }
+
     #[inline(always)]
     pub(crate) fn bb(&self, color: Color, piece: Piece) -> u64 {
         self.piece_bb[color as usize][piece as usize]
@@ -161,7 +169,7 @@ impl Board {
 
     /// Create an empty board (all bitboards zero, White to move).
     pub fn new_empty() -> Self {
-        Board {
+        let mut b = Board {
             piece_bb: [[0u64; 6]; 2],
             occ_white: 0,
             occ_black: 0,
@@ -172,7 +180,10 @@ impl Board {
             en_passant: None,
             halfmove_clock: 0,
             fullmove_number: 1,
-        }
+            zobrist: 0,
+        };
+        b.refresh_zobrist();
+        b
     }
 
     pub fn new() -> Self {
@@ -199,6 +210,7 @@ impl Board {
         b.en_passant = None;
         b.halfmove_clock = 0;
         b.fullmove_number = 1;
+        b.refresh_zobrist();
         b
     }
 
@@ -288,6 +300,80 @@ impl Board {
     pub fn king_square(&self, color: Color) -> Square {
         let king_bb = self.pieces(Piece::King, color);
         Square::try_from(king_bb.lsb()).expect("Invalid king bitboard")
+    }
+
+    /// Full recompute from current state. Must match the incremental hash at all times.
+    pub fn compute_zobrist_full(&self) -> u64 {
+        use crate::hash::zobrist::zobrist_keys;
+
+        let keys = zobrist_keys();
+        let mut board_hash: u64 = 0;
+
+        // 1) Pieces by (color, piece)
+        // Prefer iterating bitboards for speed; falls back nicely if you don’t have a helper.
+        #[inline]
+        fn idx_of(c: Color, p: Piece) -> (usize, usize) {
+            let ci = match c {
+                Color::White => 0,
+                Color::Black => 1,
+            };
+            let pi = match p {
+                Piece::Pawn => 0,
+                Piece::Knight => 1,
+                Piece::Bishop => 2,
+                Piece::Rook => 3,
+                Piece::Queen => 4,
+                Piece::King => 5,
+            };
+            (ci, pi)
+        }
+
+        // Iterate all 12 piece bitboards.
+        for &c in &[Color::White, Color::Black] {
+            for &p in &[
+                Piece::Pawn,
+                Piece::Knight,
+                Piece::Bishop,
+                Piece::Rook,
+                Piece::Queen,
+                Piece::King,
+            ] {
+                let (ci, pi) = idx_of(c, p);
+                let mut bb = self.bb(c, p);
+                while bb != 0 {
+                    let sq = bb.trailing_zeros() as usize;
+                    board_hash ^= keys.piece[ci][pi][sq];
+                    bb &= bb - 1; // pop LSB
+                }
+            }
+        }
+
+        // 2) Side to move (only when Black to move)
+        if self.side_to_move == Color::Black {
+            board_hash ^= keys.side_to_move;
+        }
+
+        // 3) Castling rights in K,Q,k,q bit order (your bitfield matches this)
+        let rights = self.castling_rights; // assume u8 with bits 0..3 = K,Q,k,q
+        if (rights & 0b0001) != 0 {
+            board_hash ^= keys.castling[0];
+        } // K
+        if (rights & 0b0010) != 0 {
+            board_hash ^= keys.castling[1];
+        } // Q
+        if (rights & 0b0100) != 0 {
+            board_hash ^= keys.castling[2];
+        } // k
+        if (rights & 0b1000) != 0 {
+            board_hash ^= keys.castling[3];
+        } // q
+
+        // 4) En passant (only if capturable this ply)
+        if let Some(file) = crate::hash::zobrist::ep_file_to_hash(self) {
+            board_hash ^= keys.ep_file[file as usize];
+        }
+
+        board_hash
     }
 }
 
