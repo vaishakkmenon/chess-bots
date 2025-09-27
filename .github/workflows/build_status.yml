@@ -73,30 +73,39 @@ jobs:
     runs-on: ubuntu-latest
     needs: paths-filter
     if: needs.paths-filter.outputs.rust-changed == 'true'
-    strategy:
-      matrix:
-        feature-set:
-          - "load-magic deterministic_zobrist"
-          - "deterministic-magic deterministic_zobrist"
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
 
-      - name: rustfmt (cli)
+      - name: Install rustfmt
+        run: rustup component add rustfmt
+
+      - name: "Check formatting: rust-cli"
         working-directory: rust-implementation/rust-cli
         run: cargo fmt -- --check
 
-      - name: tests (cli)
+      - name: "Run tests: rust-cli"
         working-directory: rust-implementation/rust-cli
-        run: cargo test --release
+        run: cargo test --verbose
 
-      - name: rustfmt (engine)
+      - name: "Check formatting: rust-engine"
         working-directory: rust-implementation/rust-engine
         run: cargo fmt -- --check
 
-      - name: tests (engine) — ${{ matrix.feature-set }}
+      # NEW: deterministic generator path (matches what you validated locally)
+      - name: "Run tests: rust-engine (deterministic generator)"
         working-directory: rust-implementation/rust-engine
         run: |
-          cargo test --release --features "${{ matrix.feature-set }}" -- --test-threads=1
+          cargo test --features "deterministic-magic deterministic_zobrist" -- --nocapture --test-threads=1
+
+      # NEW: deterministic embedded path (guards the load-magic file drift)
+      - name: "Run tests: rust-engine (deterministic embedded)"
+        working-directory: rust-implementation/rust-engine
+        run: |
+          cargo test --features "load-magic deterministic_zobrist" -- --nocapture --test-threads=1
