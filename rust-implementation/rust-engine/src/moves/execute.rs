@@ -1,5 +1,5 @@
 use crate::board::{Board, Color, EMPTY_SQ, Piece};
-use crate::hash::zobrist::zobrist_keys;
+use crate::hash::zobrist::{ep_file_to_hash, zobrist_keys};
 use crate::moves::magic::MagicTables;
 use crate::moves::movegen::generate_pseudo_legal;
 use crate::moves::square_control::{in_check, is_legal_castling};
@@ -14,6 +14,9 @@ const CASTLE_WQ: u8 = 0b0010;
 const CASTLE_BK: u8 = 0b0100;
 // Castling Black Queenside
 const CASTLE_BQ: u8 = 0b1000;
+
+const FILE_A: u64 = 0x0101_0101_0101_0101;
+const FILE_H: u64 = 0x8080_8080_8080_8080;
 
 /// Precomputed castling rook moves by king destination index.
 #[inline(always)]
@@ -59,6 +62,12 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
     let to_idx = mv.to.index() as usize;
 
     let prev_en_passant = board.en_passant;
+
+    // If an EP file was in the hash (relaxed rule), XOR it OUT now (pre-move, pre-flip)
+    if let Some(f) = ep_file_to_hash(board) {
+        board.zobrist ^= zobrist_keys().ep_file[f as usize];
+    }
+
     board.en_passant = None;
     let prev_halfmove_clock = board.halfmove_clock;
     let prev_fullmove_number = board.fullmove_number;
@@ -128,6 +137,27 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
                     from_idx - 8
                 };
                 board.en_passant = Some(Square::from_index(ep_sq as u8));
+                // Only keep EP if capturable by the opponent (next side to move)
+                let ep_sq_u8 = ep_sq as u8;
+                let bb_s = 1u64 << ep_sq_u8;
+
+                let opponent = color.opposite();
+                let has_attacker = if opponent == Color::White {
+                    // White sources that attack INTO ep_sq
+                    let src_ne = (bb_s >> 9) & !FILE_H;
+                    let src_nw = (bb_s >> 7) & !FILE_A;
+                    ((src_ne | src_nw) & board.bb(Color::White, Piece::Pawn)) != 0
+                } else {
+                    // Black sources that attack INTO ep_sq
+                    let src_se = (bb_s << 7) & !FILE_H;
+                    let src_sw = (bb_s << 9) & !FILE_A;
+                    ((src_se | src_sw) & board.bb(Color::Black, Piece::Pawn)) != 0
+                };
+
+                if has_attacker {
+                    let f = (ep_sq_u8 % 8) as usize;
+                    board.zobrist ^= zobrist_keys().ep_file[f];
+                }
 
                 // ── ADD THIS DEBUG INVARIANT ─────────────────────────────────────────
                 let ep_rank = ep_sq / 8; // 0-based ranks: 0=rank1 … 7=rank8
@@ -210,12 +240,16 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
 }
 
 pub fn undo_move_basic(board: &mut Board, undo: Undo) {
+    // If the current position has an EP file included, XOR it OUT first (pre-flip)
+    if let Some(f) = ep_file_to_hash(board) {
+        board.zobrist ^= zobrist_keys().ep_file[f as usize];
+    }
+
     // 1) Restore side-to-move, and castling rights
     board.zobrist ^= zobrist_keys().side_to_move;
 
     board.side_to_move = undo.prev_side;
     board.castling_rights = undo.prev_castling_rights;
-    board.en_passant = undo.prev_en_passant;
     board.halfmove_clock = undo.prev_halfmove_clock;
     board.fullmove_number = undo.prev_fullmove_number;
 
@@ -245,6 +279,11 @@ pub fn undo_move_basic(board: &mut Board, undo: Undo) {
         let rt = rook_to.index() as usize;
         remove_piece(board, undo.color, Piece::Rook, rt);
         place_piece(board, undo.color, Piece::Rook, rf);
+    }
+
+    board.en_passant = undo.prev_en_passant;
+    if let Some(f) = ep_file_to_hash(board) {
+        board.zobrist ^= zobrist_keys().ep_file[f as usize];
     }
 }
 
