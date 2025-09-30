@@ -1,5 +1,5 @@
 use crate::board::{Board, Color, EMPTY_SQ, Piece};
-use crate::hash::zobrist::{ep_file_to_hash, zobrist_keys};
+use crate::hash::zobrist::{ep_file_to_hash, xor_castling_rights_delta, zobrist_keys};
 use crate::moves::magic::MagicTables;
 use crate::moves::movegen::generate_pseudo_legal;
 use crate::moves::square_control::{in_check, is_legal_castling};
@@ -116,6 +116,8 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
         prev_fullmove_number,
     };
 
+    let old_rights = board.castling_rights;
+
     if mv.is_castling {
         if let Some((rf, rt)) = rook_castle_squares(to_idx as u8) {
             undo.castling_rook = Some((rf, rt));
@@ -149,8 +151,8 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
                     ((src_ne | src_nw) & board.bb(Color::White, Piece::Pawn)) != 0
                 } else {
                     // Black sources that attack INTO ep_sq
-                    let src_se = (bb_s << 7) & !FILE_H;
-                    let src_sw = (bb_s << 9) & !FILE_A;
+                    let src_se = (bb_s << 7) & !FILE_A;
+                    let src_sw = (bb_s << 9) & !FILE_H;
                     ((src_se | src_sw) & board.bb(Color::Black, Piece::Pawn)) != 0
                 };
 
@@ -175,32 +177,34 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
         _ => {}
     }
 
-    // Clear castling rights if king or rook moves or rook is captured
-    match piece {
-        Piece::King => {
-            // Clear both king- and queen-side rights for that color
-            match color {
-                Color::White => board.castling_rights &= !(CASTLE_WK | CASTLE_WQ), // WK | WQ
-                Color::Black => board.castling_rights &= !(CASTLE_BK | CASTLE_BQ), // BK | BQ
-            }
-        }
-        Piece::Rook => {
-            let mask = rights_mask_to_clear_for_rook(color, mv.from.index());
-            if mask != 0 {
-                board.castling_rights &= !mask;
-            }
-        }
-        _ => {}
+    // Compute all rights to clear for this move
+    let mut mask_to_clear: u8 = 0;
+
+    // (i) King moved → clear both for that color
+    if piece == Piece::King {
+        mask_to_clear |= match color {
+            Color::White => CASTLE_WK | CASTLE_WQ,
+            Color::Black => CASTLE_BK | CASTLE_BQ,
+        };
     }
 
-    // Also clear if captured a rook on its original square
+    // (ii) Rook moved from a corner → clear that side's right
+    if piece == Piece::Rook {
+        mask_to_clear |= rights_mask_to_clear_for_rook(color, mv.from.index());
+    }
+
+    // (iii) Captured a rook on its original corner → clear that side's right
     if let Some((cap_color, cap_piece, cap_sq)) = capture {
         if cap_piece == Piece::Rook {
-            let mask = rights_mask_to_clear_for_rook(cap_color, cap_sq.index());
-            if mask != 0 {
-                board.castling_rights &= !mask;
-            }
+            mask_to_clear |= rights_mask_to_clear_for_rook(cap_color, cap_sq.index());
         }
+    }
+
+    // Apply rights change ONCE and update hash via delta
+    let new_rights = old_rights & !mask_to_clear;
+    if new_rights != old_rights {
+        board.castling_rights = new_rights;
+        xor_castling_rights_delta(&mut board.zobrist, zobrist_keys(), old_rights, new_rights);
     }
 
     // Move the king
@@ -236,6 +240,9 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
     board.side_to_move = color.opposite();
     board.zobrist ^= zobrist_keys().side_to_move;
 
+    #[cfg(debug_assertions)]
+    board.assert_hash();
+
     undo
 }
 
@@ -245,18 +252,30 @@ pub fn undo_move_basic(board: &mut Board, undo: Undo) {
         board.zobrist ^= zobrist_keys().ep_file[f as usize];
     }
 
-    // 1) Restore side-to-move, and castling rights
+    // ---- Flip side back (hash + state) ----
     board.zobrist ^= zobrist_keys().side_to_move;
-
     board.side_to_move = undo.prev_side;
-    board.castling_rights = undo.prev_castling_rights;
+
+    // ---- Castling rights: apply HASH DELTA (cur -> prev), then assign ----
+    let kz = zobrist_keys();
+    let cur = board.castling_rights;
+    let prev = undo.prev_castling_rights;
+    if cur != prev {
+        xor_castling_rights_delta(&mut board.zobrist, kz, cur, prev);
+        board.castling_rights = prev;
+    } else {
+        // keep them equal explicitly (no hash change)
+        board.castling_rights = prev;
+    }
+
+    // ---- Restore clocks ----
     board.halfmove_clock = undo.prev_halfmove_clock;
     board.fullmove_number = undo.prev_fullmove_number;
 
     let from_idx = undo.from.index() as usize;
     let to_idx = undo.to.index() as usize;
 
-    // Undo move
+    // ---- Undo the moved piece (and promotion if any) ----
     if let Some(prom) = undo.promotion {
         // The piece on 'to' is the promoted piece; remove it, restore a pawn at 'from'
         remove_piece(board, undo.color, prom, to_idx);
@@ -267,13 +286,13 @@ pub fn undo_move_basic(board: &mut Board, undo: Undo) {
         place_piece(board, undo.color, undo.piece, from_idx);
     }
 
-    // Undo capture
+    // ---- Undo capture (including EP capture, since undo.capture holds the pawn's square) ----
     if let Some((cap_color, cap_piece, cap_sq)) = undo.capture {
         let ci = cap_sq.index() as usize;
         place_piece(board, cap_color, cap_piece, ci);
     }
 
-    // Undo castling rook
+    // ---- Undo castling rook, if this was a castle ----
     if let Some((rook_from, rook_to)) = undo.castling_rook {
         let rf = rook_from.index() as usize;
         let rt = rook_to.index() as usize;
@@ -281,10 +300,14 @@ pub fn undo_move_basic(board: &mut Board, undo: Undo) {
         place_piece(board, undo.color, Piece::Rook, rf);
     }
 
+    // ---- Restore prior EP square and, if it now contributes, XOR it IN ----
     board.en_passant = undo.prev_en_passant;
     if let Some(f) = ep_file_to_hash(board) {
-        board.zobrist ^= zobrist_keys().ep_file[f as usize];
+        board.zobrist ^= kz.ep_file[f as usize];
     }
+
+    #[cfg(debug_assertions)]
+    board.assert_hash();
 }
 
 pub fn generate_legal(board: &mut Board, tables: &MagicTables, moves: &mut Vec<Move>) {

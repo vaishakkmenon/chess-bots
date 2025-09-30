@@ -107,50 +107,46 @@ impl Board {
 
     #[inline(always)]
     pub(crate) fn set_bb(&mut self, color: Color, piece: Piece, new_bb: u64) {
-        let idx = color as usize;
-        let p = piece as usize;
+        use crate::hash::zobrist::zobrist_keys;
+        let ci = color as usize;
+        let pi = piece as usize;
 
-        // 1) Read old bitboard
-        let old_bb = self.piece_bb[idx][p];
-
-        // 2) Compute which bits changed (set or cleared)
+        let old_bb = self.piece_bb[ci][pi];
         let delta = old_bb ^ new_bb;
-
-        // 3) Early out if nothing changed
         if delta == 0 {
             return;
         }
-        // 4) Store new bitboard
-        self.piece_bb[idx][p] = new_bb;
 
-        // 5) Update side‐occupancy by XOR’ing the delta
+        // store new bitboard
+        self.piece_bb[ci][pi] = new_bb;
+
+        // side occupancies
         if color == Color::White {
             self.occ_white ^= delta;
         } else {
             self.occ_black ^= delta;
         }
-
-        // 6) Recompute the global occupancy
         self.occ_all = self.occ_white | self.occ_black;
+
+        // --- ZOBRIST: toggle piece keys for all squares that changed ---
+        let keys = zobrist_keys();
 
         let mut bits_to_update = delta;
         while bits_to_update != 0 {
-            // Isolate the least significant 1-bit
+            // isolate one toggled square
             let single_bit = bits_to_update & (!bits_to_update + 1);
+            let sq_idx = single_bit.trailing_zeros() as usize;
 
-            // Compute the square index (0–63) from that bit
-            let square_index = single_bit.trailing_zeros() as u8;
-            let square = Square::from_index(square_index);
-
-            // If the bit is set in the new bitboard, place the piece;
-            // otherwise clear the square
+            // update piece_on_sq table
             if new_bb & single_bit != 0 {
-                self.place_piece_at_sq(color, piece, square);
+                self.place_piece_at_sq(color, piece, Square::from_index(sq_idx as u8));
             } else {
-                self.clear_square(square);
+                self.clear_square(Square::from_index(sq_idx as u8));
             }
 
-            // Remove that bit from bits_to_update
+            // Zobrist: XOR the piece key (works for both add and remove)
+            self.zobrist ^= keys.piece[ci][pi][sq_idx];
+
             bits_to_update &= bits_to_update - 1;
         }
     }
@@ -282,16 +278,16 @@ impl Board {
     #[inline(always)]
     pub fn has_kingside_castle(&self, color: Color) -> bool {
         match color {
-            Color::White => self.castling_rights & 0b0001 != 0,
-            Color::Black => self.castling_rights & 0b0100 != 0,
+            Color::White => self.castling_rights & CASTLE_WK != 0,
+            Color::Black => self.castling_rights & CASTLE_BK != 0,
         }
     }
 
     #[inline(always)]
     pub fn has_queenside_castle(&self, color: Color) -> bool {
         match color {
-            Color::White => self.castling_rights & 0b0010 != 0,
-            Color::Black => self.castling_rights & 0b1000 != 0,
+            Color::White => self.castling_rights & CASTLE_WQ != 0,
+            Color::Black => self.castling_rights & CASTLE_BQ != 0,
         }
     }
 
@@ -328,16 +324,18 @@ impl Board {
             (ci, pi)
         }
 
+        const COLORS: [Color; 2] = [Color::White, Color::Black];
+        const PIECES: [Piece; 6] = [
+            Piece::Pawn,
+            Piece::Knight,
+            Piece::Bishop,
+            Piece::Rook,
+            Piece::Queen,
+            Piece::King,
+        ];
         // Iterate all 12 piece bitboards.
-        for &c in &[Color::White, Color::Black] {
-            for &p in &[
-                Piece::Pawn,
-                Piece::Knight,
-                Piece::Bishop,
-                Piece::Rook,
-                Piece::Queen,
-                Piece::King,
-            ] {
+        for &c in &COLORS {
+            for &p in &PIECES {
                 let (ci, pi) = idx_of(c, p);
                 let mut bb = self.bb(c, p);
                 while bb != 0 {
@@ -355,16 +353,16 @@ impl Board {
 
         // 3) Castling rights in K,Q,k,q bit order (your bitfield matches this)
         let rights = self.castling_rights; // assume u8 with bits 0..3 = K,Q,k,q
-        if (rights & 0b0001) != 0 {
+        if (rights & CASTLE_WK) != 0 {
             board_hash ^= keys.castling[0];
         } // K
-        if (rights & 0b0010) != 0 {
+        if (rights & CASTLE_WQ) != 0 {
             board_hash ^= keys.castling[1];
         } // Q
-        if (rights & 0b0100) != 0 {
+        if (rights & CASTLE_BK) != 0 {
             board_hash ^= keys.castling[2];
         } // k
-        if (rights & 0b1000) != 0 {
+        if (rights & CASTLE_BQ) != 0 {
             board_hash ^= keys.castling[3];
         } // q
 
@@ -374,6 +372,18 @@ impl Board {
         }
 
         board_hash
+    }
+
+    #[cfg(debug_assertions)]
+    #[inline]
+    pub fn assert_hash(&self) {
+        // Recompute using the same logic as compute_zobrist_full()
+        let full = self.compute_zobrist_full();
+        debug_assert_eq!(
+            self.zobrist, full,
+            "Zobrist parity mismatch: stored={:#018x}, full={:#018x}",
+            self.zobrist, full
+        );
     }
 }
 

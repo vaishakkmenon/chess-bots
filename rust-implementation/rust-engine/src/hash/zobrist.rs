@@ -7,6 +7,12 @@ use rand::{RngCore, SeedableRng, rngs::StdRng};
 const FILE_A: u64 = 0x0101_0101_0101_0101;
 const FILE_H: u64 = 0x8080_8080_8080_8080;
 
+// Castling rights (single, disjoint bits)
+pub const CASTLE_WK: u8 = 0b0001; // White king-side  (K)
+pub const CASTLE_WQ: u8 = 0b0010; // White queen-side (Q)
+pub const CASTLE_BK: u8 = 0b0100; // Black king-side  (k)
+pub const CASTLE_BQ: u8 = 0b1000; // Black queen-side (q)
+
 #[cfg(feature = "deterministic_zobrist")]
 const ZOBRIST_SEED: u64 = 0x9E37_79B9_AAAC_5C87;
 
@@ -35,6 +41,23 @@ pub struct ZobristKeys {
     pub ep_file: [u64; 8],
 }
 
+#[inline]
+pub fn xor_castling_rights_delta(hash: &mut u64, keys: &ZobristKeys, old: u8, new_: u8) {
+    let d = old ^ new_;
+    if d & CASTLE_WK != 0 {
+        *hash ^= keys.castling[0];
+    } // K
+    if d & CASTLE_WQ != 0 {
+        *hash ^= keys.castling[1];
+    } // Q
+    if d & CASTLE_BK != 0 {
+        *hash ^= keys.castling[2];
+    } // k
+    if d & CASTLE_BQ != 0 {
+        *hash ^= keys.castling[3];
+    } // q
+}
+
 /// Returns Some(file 0..7) if EP should contribute to the hash *this ply*; else None.
 /// Rule: include EP only if side-to-move has at least one pawn that could capture onto ep_square.
 /// Pseudo-legal only (ignore pins/king safety).
@@ -56,8 +79,8 @@ pub fn ep_file_to_hash(board: &Board) -> Option<u8> {
         }
         Color::Black => {
             // Black sources that could attack INTO s:
-            let src_se = (bb_s << 7) & !FILE_H;
-            let src_sw = (bb_s << 9) & !FILE_A;
+            let src_se = (bb_s << 7) & !FILE_A;
+            let src_sw = (bb_s << 9) & !FILE_H;
             let sources = src_se | src_sw;
             (sources & board.bb(Color::Black, Piece::Pawn)) != 0
         }
