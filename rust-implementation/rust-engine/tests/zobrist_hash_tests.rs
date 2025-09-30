@@ -1,6 +1,7 @@
 // tests/zobrist_tests.rs
 use rust_engine::board::{Board, Color, Piece};
 use rust_engine::hash::zobrist::zobrist_keys;
+use rust_engine::moves::types::Move;
 use rust_engine::{
     // move executor
     moves::execute::{make_move_basic, undo_move_basic},
@@ -382,4 +383,955 @@ fn relaxed_ep_hashing_edges_black_double_push_not_capturable() {
     );
     undo_move_basic(&mut b, u);
     assert_eq!(b.zobrist, b.compute_zobrist_full());
+}
+
+// White quiet promotion: a7 -> a8=Q
+#[test]
+fn zobrist_promo_white_quiet_q() {
+    // 8/P7/8/8/8/8/8/4k2K w - - 0 1
+    let fen = "8/P7/8/8/8/8/8/4k2K w - - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).expect("valid FEN");
+
+    // a7 = rank 6, file 0 => 6*8+0 = 48
+    let from = Square::from_index(48);
+    // a8 = rank 7, file 0 => 56
+    let to = Square::from_index(56);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Queen),
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    };
+
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(
+        board.halfmove_clock, 0,
+        "promotion must reset halfmove clock"
+    );
+    assert!(board.en_passant.is_none(), "promotion must not create EP");
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// Black quiet promotion: a2 -> a1=Q
+#[test]
+fn zobrist_promo_black_quiet_q() {
+    // 4k3/8/8/8/8/8/p7/7K b - - 0 1
+    let fen = "4k3/8/8/8/8/8/p7/7K b - - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).expect("valid FEN");
+
+    // a2 = rank 1, file 0 => 8
+    let from = Square::from_index(8);
+    // a1 = rank 0, file 0 => 0
+    let to = Square::from_index(0);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Queen),
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    };
+
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// White capture promotion: g7xh8=Q (captures a black rook on h8)
+#[test]
+fn zobrist_promo_white_capture_h8_q() {
+    // k6r/6P1/8/8/8/8/8/4K3 w - - 0 1
+    let fen = "k6r/6P1/8/8/8/8/8/4K3 w - - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).expect("valid FEN");
+
+    // g7 = rank 6, file 6 => 54
+    let from = Square::from_index(54);
+    // h8 = rank 7, file 7 => 63
+    let to = Square::from_index(63);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Queen),
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    };
+
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// Black capture promotion: g2xh1=Q (captures a white rook on h1)
+#[test]
+fn zobrist_promo_black_capture_h1_q() {
+    // 4k3/8/8/8/8/8/6p1/K6R b - - 0 1
+    let fen = "4k3/8/8/8/8/8/6p1/K6R b - - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).expect("valid FEN");
+
+    // g2 = rank 1, file 6 => 14
+    let from = Square::from_index(14);
+    // h1 = rank 0, file 7 => 7
+    let to = Square::from_index(7);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Queen),
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    };
+
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// White captures h8 rook with g7h8=Q; black initially has 'k' → should clear to '-'
+#[test]
+fn zobrist_promo_white_capture_h8_clears_k_rights() {
+    // 4k2r/6P1/8/8/8/8/8/4K3 w k - 0 1
+    let fen = "4k2r/6P1/8/8/8/8/8/4K3 w k - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).expect("valid FEN");
+
+    // g7 -> h8
+    let from = Square::from_index(54); // g7
+    let to = Square::from_index(63); // h8
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+    let old_rights = board.castling_rights;
+    assert_ne!(
+        old_rights & CASTLE_BK,
+        0,
+        "precondition: black has 'k' right"
+    );
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Queen),
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    };
+
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+    assert_eq!(
+        board.castling_rights & CASTLE_BK,
+        0,
+        "k right must be cleared"
+    );
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// Black captures a1 rook with b2a1=Q; white initially has 'Q' → should clear to '-'
+#[test]
+fn zobrist_promo_black_capture_a1_clears_q_rights() {
+    // Position: White rook on a1, white king on e1 (so 'Q' is plausibly set),
+    // Black pawn on b2 ready to capture a1 and promote, Black to move, castling rights = 'Q'
+    // FEN ranks (8→1):
+    // 8: 4k3
+    // 7: 8
+    // 6: 8
+    // 5: 8
+    // 4: 8
+    // 3: 8
+    // 2: 1p6   (b2 black pawn)
+    // 1: R3K3  (a1 white rook, e1 white king)
+    let fen = "4k3/8/8/8/8/8/1p6/R3K3 b Q - 0 1";
+
+    let mut board = Board::new();
+    board.set_fen(fen).expect("valid FEN");
+
+    // b2 -> a1 = capture + promotion
+    // b2 = file 1, rank 1 => 1 + 1*8 = 9
+    // a1 = file 0, rank 0 => 0 + 0*8 = 0
+    let from = Square::from_index(9);
+    let to = Square::from_index(0);
+
+    // Pre-move: parity + precondition
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+    let old_rights = board.castling_rights;
+    assert_ne!(
+        old_rights & CASTLE_WQ,
+        0,
+        "precondition: white has 'Q' right"
+    );
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Queen),
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    };
+
+    // Make
+    let undo = make_move_basic(&mut board, mv);
+
+    // Post-move: parity + invariants + rights cleared
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(
+        board.halfmove_clock, 0,
+        "promotion must reset halfmove clock"
+    );
+    assert!(board.en_passant.is_none(), "promotion must not create EP");
+    assert_eq!(
+        board.castling_rights & CASTLE_WQ,
+        0,
+        "Q right must be cleared"
+    );
+
+    // Undo
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// White quiet promotion to Rook: a7 -> a8=R
+#[test]
+fn zobrist_promo_white_quiet_r() {
+    let fen = "8/P7/8/8/8/8/8/4k2K w - - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).unwrap();
+
+    let from = Square::from_index(48); // a7
+    let to = Square::from_index(56); // a8
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+
+    let old_rights = board.castling_rights;
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Rook),
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+    assert_eq!(
+        board.castling_rights, old_rights,
+        "quiet promo must not change rights"
+    );
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// White quiet promotion to Bishop: a7 -> a8=B
+#[test]
+fn zobrist_promo_white_quiet_b() {
+    let fen = "8/P7/8/8/8/8/8/4k2K w - - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).unwrap();
+
+    let from = Square::from_index(48);
+    let to = Square::from_index(56);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+    let old_rights = board.castling_rights;
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Bishop),
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+    assert_eq!(board.castling_rights, old_rights);
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// White quiet promotion to Knight: a7 -> a8=N
+#[test]
+fn zobrist_promo_white_quiet_n() {
+    let fen = "8/P7/8/8/8/8/8/4k2K w - - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).unwrap();
+
+    let from = Square::from_index(48);
+    let to = Square::from_index(56);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+    let old_rights = board.castling_rights;
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Knight),
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+    assert_eq!(board.castling_rights, old_rights);
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// -----------------------
+// BLACK QUIET PROMOTIONS
+// -----------------------
+
+// Black quiet promotion to Rook: a2 -> a1=R
+#[test]
+fn zobrist_promo_black_quiet_r() {
+    let fen = "4k3/8/8/8/8/8/p7/7K b - - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).unwrap();
+
+    let from = Square::from_index(8); // a2
+    let to = Square::from_index(0); // a1
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+    let old_rights = board.castling_rights;
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Rook),
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+    assert_eq!(board.castling_rights, old_rights);
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// Black quiet promotion to Bishop: a2 -> a1=B
+#[test]
+fn zobrist_promo_black_quiet_b() {
+    let fen = "4k3/8/8/8/8/8/p7/7K b - - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).unwrap();
+
+    let from = Square::from_index(8);
+    let to = Square::from_index(0);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+    let old_rights = board.castling_rights;
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Bishop),
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+    assert_eq!(board.castling_rights, old_rights);
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// Black quiet promotion to Knight: a2 -> a1=N
+#[test]
+fn zobrist_promo_black_quiet_n() {
+    let fen = "4k3/8/8/8/8/8/p7/7K b - - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).unwrap();
+
+    let from = Square::from_index(8);
+    let to = Square::from_index(0);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+    let old_rights = board.castling_rights;
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Knight),
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+    assert_eq!(board.castling_rights, old_rights);
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// -----------------------------------
+// WHITE CAPTURE PROMOTIONS (corner h8)
+// -----------------------------------
+
+// White capture promotion to Rook: g7xh8=R
+#[test]
+fn zobrist_promo_white_capture_h8_r() {
+    let fen = "k6r/6P1/8/8/8/8/8/4K3 w - - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).unwrap();
+
+    let from = Square::from_index(54); // g7
+    let to = Square::from_index(63); // h8
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Rook),
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// White capture promotion to Bishop: g7xh8=B
+#[test]
+fn zobrist_promo_white_capture_h8_b() {
+    let fen = "k6r/6P1/8/8/8/8/8/4K3 w - - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).unwrap();
+
+    let from = Square::from_index(54);
+    let to = Square::from_index(63);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Bishop),
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// White capture promotion to Knight: g7xh8=N
+#[test]
+fn zobrist_promo_white_capture_h8_n() {
+    let fen = "k6r/6P1/8/8/8/8/8/4K3 w - - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).unwrap();
+
+    let from = Square::from_index(54);
+    let to = Square::from_index(63);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Knight),
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// -----------------------------------
+// BLACK CAPTURE PROMOTIONS (corner h1)
+// -----------------------------------
+
+// Black capture promotion to Rook: g2xh1=R
+#[test]
+fn zobrist_promo_black_capture_h1_r() {
+    let fen = "4k3/8/8/8/8/8/6p1/K6R b - - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).unwrap();
+
+    let from = Square::from_index(14); // g2
+    let to = Square::from_index(7); // h1
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Rook),
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// Black capture promotion to Bishop: g2xh1=B
+#[test]
+fn zobrist_promo_black_capture_h1_b() {
+    let fen = "4k3/8/8/8/8/8/6p1/K6R b - - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).unwrap();
+
+    let from = Square::from_index(14);
+    let to = Square::from_index(7);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Bishop),
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// Black capture promotion to Knight: g2xh1=N
+#[test]
+fn zobrist_promo_black_capture_h1_n() {
+    let fen = "4k3/8/8/8/8/8/6p1/K6R b - - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).unwrap();
+
+    let from = Square::from_index(14);
+    let to = Square::from_index(7);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Knight),
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// ------------------------------------------------------
+// COMPLETE THE CORNER RIGHTS-CLEARING SYMMETRY (2 tests)
+// ------------------------------------------------------
+
+// White captures a8 rook with b7a8=Q; black initially has 'q' → should clear to '-'
+#[test]
+fn zobrist_promo_white_capture_a8_clears_q_rights() {
+    // Black: rook a8, king e8; White: pawn b7 to capture a8; rights = 'q'
+    let fen = "r3k3/1P6/8/8/8/8/8/4K3 w q - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).unwrap();
+
+    let from = Square::from_index(57); // b7
+    let to = Square::from_index(56); // a8
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+    assert_ne!(board.castling_rights & CASTLE_BQ, 0, "pre: black has 'q'");
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Queen),
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.castling_rights & CASTLE_BQ, 0, "'q' must be cleared");
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
+}
+
+// Black captures h1 rook with g2h1=Q; white initially has 'K' → should clear to '-'
+#[test]
+fn zobrist_promo_black_capture_h1_clears_k_rights() {
+    // White: rook h1, king e1; Black: pawn g2 to capture h1; rights = 'K'
+    let fen = "4k3/8/8/8/8/8/6p1/4K2R b K - 0 1";
+    let mut board = Board::new();
+    board.set_fen(fen).unwrap();
+
+    let from = Square::from_index(14); // g2
+    let to = Square::from_index(7); // h1
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "pre-move parity"
+    );
+    assert_ne!(board.castling_rights & CASTLE_WK, 0, "pre: white has 'K'");
+
+    let mv = Move {
+        from,
+        to,
+        piece: Piece::Pawn,
+        promotion: Some(Piece::Queen),
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let undo = make_move_basic(&mut board, mv);
+
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-move parity"
+    );
+    assert_eq!(board.castling_rights & CASTLE_WK, 0, "'K' must be cleared");
+    assert_eq!(board.halfmove_clock, 0);
+    assert!(board.en_passant.is_none());
+
+    undo_move_basic(&mut board, undo);
+    assert_eq!(
+        board.zobrist,
+        board.compute_zobrist_full(),
+        "post-undo parity"
+    );
 }
