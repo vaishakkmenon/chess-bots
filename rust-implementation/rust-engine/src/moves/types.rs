@@ -14,7 +14,7 @@ pub struct Move {
     pub is_castling: bool,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Undo {
     pub from: Square,
     pub to: Square,
@@ -30,8 +30,7 @@ pub struct Undo {
 
     pub prev_halfmove_clock: u32,
     pub prev_fullmove_number: u32,
-    // Optional if using hashing:
-    // pub prev_hash: u64,
+    pub prev_history: Option<Vec<u64>>,
 }
 
 impl fmt::Display for Move {

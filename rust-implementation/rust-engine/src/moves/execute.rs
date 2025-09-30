@@ -97,9 +97,6 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
         }
     }
 
-    // Castling
-    // let castling_rook: Option<(Square, Square)> = rook_castle_squares(to_idx as u8);
-
     // Snapshot undo info
     let mut undo = Undo {
         from: mv.from,
@@ -114,6 +111,7 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
         prev_en_passant,
         prev_halfmove_clock,
         prev_fullmove_number,
+        prev_history: None,
     };
 
     let old_rights = board.castling_rights;
@@ -240,6 +238,27 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
     board.side_to_move = color.opposite();
     board.zobrist ^= zobrist_keys().side_to_move;
 
+    // ---- Zobrist history (push post-move; truncate on irreversible) ----
+    let irreversible = capture.is_some() || piece == Piece::Pawn || mv.promotion.is_some();
+
+    // If irreversible, save the pre-move history so undo can restore it.
+    let saved = if irreversible {
+        Some(board.history_since_irreversible.clone())
+    } else {
+        None
+    };
+
+    // If irreversible, we logically "reset since last irreversible"
+    if irreversible {
+        board.history_since_irreversible.clear();
+    }
+
+    // Always push the POST-MOVE key
+    board.history_since_irreversible.push(board.zobrist);
+
+    // Stash in undo so undo_move_basic can restore on irreversible
+    undo.prev_history = saved;
+
     #[cfg(debug_assertions)]
     board.assert_hash();
 
@@ -304,6 +323,15 @@ pub fn undo_move_basic(board: &mut Board, undo: Undo) {
     board.en_passant = undo.prev_en_passant;
     if let Some(f) = ep_file_to_hash(board) {
         board.zobrist ^= kz.ep_file[f as usize];
+    }
+
+    // ---- Zobrist history (pop post-move; restore pre-move slice if irreversible) ----
+    // Remove the post-move key we had pushed at make()
+    let _ = board.history_since_irreversible.pop();
+
+    // If the forward move was irreversible, restore the entire pre-move history snapshot
+    if let Some(prev) = undo.prev_history {
+        board.history_since_irreversible = prev;
     }
 
     #[cfg(debug_assertions)]

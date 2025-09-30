@@ -69,7 +69,7 @@ pub enum Piece {
 }
 
 /// Core board representation using bitboards.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Board {
     /// White Pieces
     pub piece_bb: [[u64; 6]; 2],
@@ -91,6 +91,8 @@ pub struct Board {
     pub fullmove_number: u32,
     // Zobrist hash for each board.
     pub zobrist: u64,
+    // History for zobrist hashing
+    pub history_since_irreversible: Vec<u64>,
 }
 
 impl Board {
@@ -177,6 +179,7 @@ impl Board {
             halfmove_clock: 0,
             fullmove_number: 1,
             zobrist: 0,
+            history_since_irreversible: Vec::new(),
         };
         b.refresh_zobrist();
         b
@@ -207,6 +210,8 @@ impl Board {
         b.halfmove_clock = 0;
         b.fullmove_number = 1;
         b.refresh_zobrist();
+        b.history_since_irreversible.clear();
+        b.history_since_irreversible.push(b.zobrist);
         b
     }
 
@@ -372,6 +377,27 @@ impl Board {
         }
 
         board_hash
+    }
+
+    /// Counts occurrences of the *current* Zobrist in the history window
+    /// (which, by invariant, ends with `self.zobrist`). Always >= 1.
+    pub fn repetition_count(&self) -> u8 {
+        let mut count: u8 = 0;
+        // Scan from back to front is fine, but forward is also OK.
+        for &k in &self.history_since_irreversible {
+            if k == self.zobrist {
+                count += 1;
+                if count >= 3 {
+                    break;
+                }
+            }
+        }
+        count
+    }
+
+    /// True iff `repetition_count() >= 3`
+    pub fn is_threefold(&self) -> bool {
+        self.repetition_count() >= 3
     }
 
     #[cfg(debug_assertions)]

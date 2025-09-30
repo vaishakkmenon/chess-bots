@@ -20,6 +20,62 @@ const CASTLE_BK: u8 = 0b0100;
 // Castling Black Queenside
 const CASTLE_BQ: u8 = 0b1000;
 
+//Helpers
+
+fn sq(i: u8) -> Square {
+    Square::from_index(i)
+}
+
+fn mv_king(from: u8, to: u8) -> Move {
+    Move {
+        from: sq(from),
+        to: sq(to),
+        piece: Piece::King,
+        promotion: None,
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    }
+}
+
+fn mv_pawn(from: u8, to: u8) -> Move {
+    Move {
+        from: sq(from),
+        to: sq(to),
+        piece: Piece::Pawn,
+        promotion: None,
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    }
+}
+
+fn mv_promo(from: u8, to: u8, p: Piece) -> Move {
+    Move {
+        from: sq(from),
+        to: sq(to),
+        piece: Piece::Pawn,
+        promotion: Some(p),
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    }
+}
+
+fn mv_promo_capture(from: u8, to: u8, p: Piece) -> Move {
+    Move {
+        from: sq(from),
+        to: sq(to),
+        piece: Piece::Pawn,
+        promotion: Some(p),
+        is_capture: true,
+        is_en_passant: false,
+        is_castling: false,
+    }
+}
+
+// Actual tests
+
 #[test]
 fn zobrist_start_hash_stable() {
     let b = Board::new();
@@ -1333,5 +1389,156 @@ fn zobrist_promo_black_capture_h1_clears_k_rights() {
         board.zobrist,
         board.compute_zobrist_full(),
         "post-undo parity"
+    );
+}
+
+#[test]
+fn repetition_two_cycle_bare_kings_is_not_threefold() {
+    let mut b = Board::new();
+    b.set_fen("8/8/8/8/8/8/4k3/4K3 w - - 0 1").unwrap();
+    assert_eq!(b.repetition_count(), 1);
+    assert!(!b.is_threefold());
+
+    // e1=4, d1=3, e2=12, d2=11
+    let _u1 = make_move_basic(&mut b, mv_king(4, 3)); // W: Ke1-d1
+    let _u2 = make_move_basic(&mut b, mv_king(12, 11)); // B: Ke2-d2
+    let _u3 = make_move_basic(&mut b, mv_king(3, 4)); // W: Kd1-e1
+    let _u4 = make_move_basic(&mut b, mv_king(11, 12)); // B: Kd2-e2
+
+    assert_eq!(b.repetition_count(), 2, "two-cycle should yield count=2");
+    assert!(!b.is_threefold(), "two-cycle is not threefold");
+}
+
+#[test]
+fn repetition_threefold_bare_kings() {
+    let mut b = Board::new();
+    b.set_fen("8/8/8/8/8/8/4k3/4K3 w - - 0 1").unwrap();
+
+    // 1st cycle
+    let _ = make_move_basic(&mut b, mv_king(4, 3));
+    let _ = make_move_basic(&mut b, mv_king(12, 11));
+    let _ = make_move_basic(&mut b, mv_king(3, 4));
+    let _ = make_move_basic(&mut b, mv_king(11, 12));
+    assert_eq!(b.repetition_count(), 2);
+
+    // 2nd cycle (brings count to 3+)
+    let _ = make_move_basic(&mut b, mv_king(4, 3));
+    let _ = make_move_basic(&mut b, mv_king(12, 11));
+    let _ = make_move_basic(&mut b, mv_king(3, 4));
+    let _ = make_move_basic(&mut b, mv_king(11, 12));
+
+    assert!(b.repetition_count() >= 3);
+    assert!(b.is_threefold());
+}
+
+#[test]
+fn repetition_resets_after_pawn_push() {
+    let mut b = Board::new();
+    b.set_fen("8/8/8/8/8/8/3Pk3/4K3 w - - 0 1").unwrap();
+    // White king e1=4, Black king e2=12, white pawn d2=11
+
+    // reversible two-cycle
+    let _ = make_move_basic(&mut b, mv_king(4, 3)); // W: Ke1-d1
+    let _ = make_move_basic(&mut b, mv_king(12, 13)); // B: Ke2-d2
+    let _ = make_move_basic(&mut b, mv_king(3, 4)); // W: Kd1-e1
+    let _ = make_move_basic(&mut b, mv_king(13, 12)); // B: Kd2-e2
+    assert_eq!(b.repetition_count(), 2);
+
+    // irreversible: d2 (11) -> d3 (19)
+    let _ = make_move_basic(&mut b, mv_pawn(11, 19));
+    assert_eq!(
+        b.history_since_irreversible.len(),
+        1,
+        "history should truncate on irreversible"
+    );
+    assert_eq!(b.repetition_count(), 1);
+    assert!(!b.is_threefold());
+}
+
+#[test]
+fn repetition_ep_relaxed_policy_affects_equality() {
+    let mut b = Board::new();
+    b.set_fen("8/8/8/3pP3/8/8/4k3/4K3 w - d6 0 1").unwrap();
+    let start_hash = b.zobrist;
+    assert_eq!(b.repetition_count(), 1);
+
+    // Do a reversible king pair: Ke1-d1, Ke2-d2
+    let _ = make_move_basic(&mut b, mv_king(4, 3));
+    let _ = make_move_basic(&mut b, mv_king(12, 11));
+    // And back: Kd1-e1, Kd2-e2
+    let _ = make_move_basic(&mut b, mv_king(3, 4));
+    let _ = make_move_basic(&mut b, mv_king(11, 12));
+
+    // We returned to same pieces/side, but EP got cleared on the first make.
+    assert_ne!(
+        b.zobrist, start_hash,
+        "EP clearing should change the key under relaxed policy"
+    );
+    assert_eq!(
+        b.repetition_count(),
+        1,
+        "no additional repetition since EP difference prevents equality"
+    );
+}
+
+#[test]
+fn repetition_promotion_truncates_and_restores_on_undo() {
+    let mut b = Board::new();
+    b.set_fen("8/P7/8/8/8/8/8/4k2K w - - 0 1").unwrap();
+    let before_len = b.history_since_irreversible.len();
+
+    let u = make_move_basic(&mut b, mv_promo(48, 56, Piece::Queen)); // a7->a8=Q
+    assert_eq!(
+        b.history_since_irreversible.len(),
+        1,
+        "promotion should truncate history"
+    );
+    assert_eq!(b.repetition_count(), 1);
+
+    undo_move_basic(&mut b, u);
+    assert_eq!(
+        b.history_since_irreversible.len(),
+        before_len,
+        "undo should restore prior history"
+    );
+}
+
+#[test]
+fn repetition_capture_truncates_and_restores_on_undo() {
+    let mut b = Board::new();
+    b.set_fen("k6r/6P1/8/8/8/8/8/4K3 w - - 0 1").unwrap();
+    let before_len = b.history_since_irreversible.len();
+
+    let u = make_move_basic(&mut b, mv_promo_capture(54, 63, Piece::Queen)); // g7xh8=Q
+    assert_eq!(
+        b.history_since_irreversible.len(),
+        1,
+        "capture+promotion should truncate history"
+    );
+    assert_eq!(b.repetition_count(), 1);
+
+    undo_move_basic(&mut b, u);
+    assert_eq!(
+        b.history_since_irreversible.len(),
+        before_len,
+        "undo should restore prior history"
+    );
+}
+
+#[test]
+fn repetition_side_to_move_matters() {
+    let mut b = Board::new();
+    b.set_fen("8/8/8/8/8/8/4k3/4K3 w - - 0 1").unwrap();
+    let start_hash = b.zobrist;
+
+    let _ = make_move_basic(&mut b, mv_king(4, 3)); // W moves only
+    assert_ne!(
+        b.zobrist, start_hash,
+        "side-to-move toggled; key must differ"
+    );
+    assert_eq!(
+        b.repetition_count(),
+        1,
+        "different STM => not the same repetition"
     );
 }
