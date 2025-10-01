@@ -68,6 +68,16 @@ pub enum Piece {
     King,
 }
 
+/// Current Game Status enum to hold all stages of the game
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GameStatus {
+    InPlay,
+    DrawThreefold,
+    DrawFiftyMove,
+    Stalemate,
+    Checkmate, // side-to-move is checkmated
+}
+
 /// Core board representation using bitboards.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Board {
@@ -383,12 +393,11 @@ impl Board {
     /// (which, by invariant, ends with `self.zobrist`). Always >= 1.
     pub fn repetition_count(&self) -> u8 {
         let mut count: u8 = 0;
-        // Scan from back to front is fine, but forward is also OK.
         for &k in &self.history_since_irreversible {
             if k == self.zobrist {
-                count += 1;
-                if count >= 3 {
-                    break;
+                // (Optional) avoid u8 overflow in pathological cases
+                if count < u8::MAX {
+                    count += 1;
                 }
             }
         }

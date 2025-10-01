@@ -4,4 +4,5 @@ pub mod hash;
 pub mod logger;
 pub mod moves;
 pub mod square;
+pub mod status;
 pub mod utils;
