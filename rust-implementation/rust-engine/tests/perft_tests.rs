@@ -3,10 +3,34 @@ mod tests {
     use rust_engine::board::Board;
     use rust_engine::logger::init_logging;
     use rust_engine::moves::magic::{MagicTableSeed, generate_magic_tables};
-    use rust_engine::moves::perft::{perft, perft_divide};
+    use rust_engine::moves::perft::{perft, perft_divide, perft_divide_with_breakdown};
+    use rust_engine::moves::{
+        execute::{generate_legal, make_move_basic, undo_move_basic},
+        magic::loader::load_magic_tables,
+        square_control::in_check,
+    };
 
     const START_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     const KIWI_FEN: &str = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
+
+    const FENS: &[&str] = &[
+        // startpos
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        // Kiwipete
+        "rnbq1k1r/pppp1ppp/5n2/4p3/1b1P4/5N2/PPPNPPPP/R1BQKB1R w KQkq - 0 1",
+        // EP immediately available for White: e5xd6ep
+        "4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1",
+        // Promotion-ready for White: a7-a8=Q
+        "4k3/P7/8/8/8/8/8/4K3 w - - 0 1",
+    ];
+
+    fn splitmix64(mut x: u64) -> u64 {
+        x = x.wrapping_add(0x9E3779B97F4A7C15);
+        let mut z = x;
+        z = (z ^ (z >> 30)).wrapping_mul(0xBF58476D1CE4E5B9);
+        z = (z ^ (z >> 27)).wrapping_mul(0x94D049BB133111EB);
+        z ^ (z >> 31)
+    }
 
     // use std::time::Instant;
 
@@ -202,5 +226,51 @@ mod tests {
         assert_eq!(ep, 1);
         assert_eq!(castles, 91);
         assert_eq!(checks, 3);
+    }
+
+    #[test]
+    fn perft_fuzz() {
+        let tables = load_magic_tables();
+        let seeds = [1_u64, 2, 3, 42, 99];
+        for &seed0 in &seeds {
+            for &fen in FENS {
+                let mut board = Board::new();
+                board.set_fen(fen).expect("fen");
+                let mut seed = seed0;
+                for _ply in 0..200 {
+                    // parity before
+                    assert_eq!(board.zobrist, board.compute_zobrist_full());
+
+                    // generate legal
+                    let mut moves = Vec::new();
+                    generate_legal(&mut board, &tables, &mut moves);
+                    if moves.is_empty() {
+                        // optional smoke on terminal nodes
+                        let _ = in_check(&board, board.side_to_move, &tables);
+                        break;
+                    }
+
+                    // pick a move via tiny RNG
+                    seed = splitmix64(seed);
+                    let mv = moves[(seed as usize) % moves.len()];
+
+                    let u = make_move_basic(&mut board, mv);
+                    undo_move_basic(&mut board, u);
+
+                    // parity after
+                    assert_eq!(board.zobrist, board.compute_zobrist_full());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn divide_startpos_d2_matches_total() {
+        let tables = load_magic_tables();
+        let mut b = Board::new();
+        b.set_fen(START_FEN).unwrap();
+        let rows = perft_divide_with_breakdown(&mut b, &tables, 2);
+        let total: u64 = rows.iter().map(|(_, pc)| pc.nodes).sum();
+        assert_eq!(total, 400);
     }
 }

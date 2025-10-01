@@ -2,10 +2,45 @@ use crate::board::Board;
 use crate::moves::{
     execute::{generate_legal, make_move_basic, undo_move_basic},
     magic::MagicTables,
+    square_control::in_check,
+    types::Move,
 };
 use tracing::{debug, instrument, trace};
 
 const MAX_LOG_DEPTH: u32 = 3; // only trace details for shallow nodes
+
+pub struct PerftCounters {
+    pub nodes: u64,
+    pub captures: u64,
+    pub ep_captures: u64,
+    pub castles: u64,
+    pub promotions: u64,
+    pub checks: u64,
+    pub checkmates: u64,
+}
+
+impl PerftCounters {
+    pub fn zero() -> Self {
+        Self {
+            nodes: 0,
+            captures: 0,
+            ep_captures: 0,
+            castles: 0,
+            promotions: 0,
+            checks: 0,
+            checkmates: 0,
+        }
+    }
+    pub fn add(&mut self, o: &PerftCounters) {
+        self.nodes += o.nodes;
+        self.captures += o.captures;
+        self.ep_captures += o.ep_captures;
+        self.castles += o.castles;
+        self.promotions += o.promotions;
+        self.checks += o.checks;
+        self.checkmates += o.checkmates;
+    }
+}
 
 #[inline]
 fn sq_as_a1_zero(idx: u8) -> String {
@@ -115,4 +150,82 @@ pub fn perft_divide(board: &mut Board, tables: &MagicTables, depth: u32) -> u64 
     debug!(depth, total, "divide: total");
     println!("Total: {}", total);
     total
+}
+
+pub fn perft_count_with_breakdown(
+    board: &mut Board,
+    tables: &MagicTables,
+    depth: u32,
+    out: &mut PerftCounters,
+) {
+    if depth == 0 {
+        out.nodes += 1;
+
+        // Leaf: check/mate status (efficient: in_check + one legal gen)
+        let mut tmp = Vec::new();
+        let side_in_check = in_check(board, board.side_to_move, tables);
+        if side_in_check {
+            out.checks += 1;
+        }
+        generate_legal(board, tables, &mut tmp);
+        if tmp.is_empty() && side_in_check {
+            out.checkmates += 1;
+        }
+        return;
+    }
+
+    let mut moves = Vec::new();
+    generate_legal(board, tables, &mut moves);
+
+    for mv in moves {
+        // --- breakdown tags at this ply (edge-based) ---
+        if mv.is_capture {
+            out.captures += 1;
+            if mv.is_en_passant {
+                out.ep_captures += 1;
+            }
+        }
+        if mv.is_castling {
+            out.castles += 1;
+        }
+        if mv.promotion.is_some() {
+            out.promotions += 1;
+        }
+
+        #[cfg(debug_assertions)]
+        let z0 = board.zobrist;
+
+        let undo = make_move_basic(board, mv);
+        perft_count_with_breakdown(board, tables, depth - 1, out);
+        undo_move_basic(board, undo);
+
+        #[cfg(debug_assertions)]
+        {
+            debug_assert_eq!(board.zobrist, z0, "zobrist changed across make/undo");
+            debug_assert_eq!(
+                board.compute_zobrist_full(),
+                board.zobrist,
+                "full recompute mismatch"
+            );
+        }
+    }
+}
+
+pub fn perft_divide_with_breakdown(
+    board: &mut Board,
+    tables: &MagicTables,
+    depth: u32,
+) -> Vec<(Move, PerftCounters)> {
+    let mut moves = Vec::new();
+    generate_legal(board, tables, &mut moves);
+
+    let mut out = Vec::with_capacity(moves.len());
+    for mv in moves {
+        let undo = make_move_basic(board, mv);
+        let mut pc = PerftCounters::zero();
+        perft_count_with_breakdown(board, tables, depth - 1, &mut pc);
+        undo_move_basic(board, undo);
+        out.push((mv, pc));
+    }
+    out
 }
