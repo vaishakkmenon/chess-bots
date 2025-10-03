@@ -1,9 +1,11 @@
 //! tests/status_tests.rs
 //! Robust status tests using the status façade (no board->movegen imports)
+use std::str::FromStr;
 
 use rust_engine::board::{Board, Piece};
-use rust_engine::moves::execute::make_move_basic;
+use rust_engine::moves::execute::{make_move_basic, undo_move_basic};
 use rust_engine::moves::magic::loader::load_magic_tables;
+use rust_engine::moves::types::Move;
 use rust_engine::square::Square;
 use rust_engine::status::{
     GameStatus, is_draw_by_fifty_move, is_draw_by_threefold, position_status,
@@ -14,6 +16,19 @@ use rust_engine::status::{
 #[inline]
 fn sq(i: u8) -> Square {
     Square::from_index(i)
+}
+
+#[inline]
+fn mv(piece: Piece, from: u8, to: u8) -> Move {
+    Move {
+        from: sq(from),
+        to: sq(to),
+        piece,
+        promotion: None,
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    }
 }
 
 #[inline]
@@ -321,4 +336,589 @@ fn not_dead_kbn_vs_k() {
     // Bishop + Knight vs bare king: mating material exists
     b.set_fen("8/8/8/8/8/2B5/2N1k3/4K3 w - - 0 1").unwrap();
     assert_eq!(position_status(&mut b, &tables), GameStatus::InPlay);
+}
+
+#[test]
+fn seventyfive_forced_draw_precedes_threefold() {
+    let tables = load_magic_tables();
+    let mut b = Board::new();
+
+    // Build a simple threefold by repeating startpos 3 times:
+    // (Ng1f3, Nb8c6, Nf3g1, Nc6b8) × 2
+    let u1 = make_move_basic(&mut b, mv(Piece::Knight, 6, 21));
+    let u2 = make_move_basic(&mut b, mv(Piece::Knight, 62, 45));
+    let u3 = make_move_basic(&mut b, mv(Piece::Knight, 21, 6));
+    let u4 = make_move_basic(&mut b, mv(Piece::Knight, 45, 62));
+    let u5 = make_move_basic(&mut b, mv(Piece::Knight, 6, 21));
+    let u6 = make_move_basic(&mut b, mv(Piece::Knight, 62, 45));
+    let u7 = make_move_basic(&mut b, mv(Piece::Knight, 21, 6));
+    let u8 = make_move_basic(&mut b, mv(Piece::Knight, 45, 62));
+
+    assert!(
+        is_draw_by_threefold(&b),
+        "sanity: threefold should be claimable now"
+    );
+
+    // Simulate 75-move rule (150 halfmoves) also being true.
+    b.halfmove_clock = 150;
+
+    // Precedence: 75-move forced draw must be reported, not threefold.
+    assert_eq!(
+        position_status(&mut b, &tables),
+        GameStatus::DrawSeventyFiveMove
+    );
+
+    // Clean undo
+    for u in [u8, u7, u6, u5, u4, u3, u2, u1].into_iter().rev() {
+        undo_move_basic(&mut b, u);
+    }
+}
+
+#[test]
+fn threefold_only_after_third_occurrence() {
+    let tables = load_magic_tables();
+    let mut b = Board::new();
+
+    // One loop (startpos appears twice total): NOT threefold yet.
+    let _ = make_move_basic(&mut b, mv(Piece::Knight, 6, 21)); // Ng1f3
+    let _ = make_move_basic(&mut b, mv(Piece::Knight, 62, 45)); // Nb8c6
+    let _ = make_move_basic(&mut b, mv(Piece::Knight, 21, 6)); // Nf3g1
+    let _ = make_move_basic(&mut b, mv(Piece::Knight, 45, 62)); // Nc6b8
+    assert!(!is_draw_by_threefold(&b), "two occurrences are not enough");
+    assert_eq!(position_status(&mut b, &tables), GameStatus::InPlay);
+
+    // Second loop (startpos appears three times total): threefold.
+    let _ = make_move_basic(&mut b, mv(Piece::Knight, 6, 21));
+    let _ = make_move_basic(&mut b, mv(Piece::Knight, 62, 45));
+    let _ = make_move_basic(&mut b, mv(Piece::Knight, 21, 6));
+    let _ = make_move_basic(&mut b, mv(Piece::Knight, 45, 62));
+    assert!(
+        is_draw_by_threefold(&b),
+        "third occurrence should trigger threefold"
+    );
+    assert_eq!(position_status(&mut b, &tables), GameStatus::DrawThreefold);
+}
+
+#[test]
+fn detects_checkmate_and_stalemate() {
+    let tables = load_magic_tables();
+    let mut b = Board::new();
+
+    // Simple KQ vs K checkmate: Black to move, no legal moves, in check.
+    b.set_fen("7k/6Q1/7K/8/8/8/8/8 b - - 0 1").unwrap();
+    assert_eq!(position_status(&mut b, &tables), GameStatus::Checkmate);
+
+    // A classic stalemate pattern: Black to move, no legal moves, NOT in check.
+    b.set_fen("7k/5Q2/6K1/8/8/8/8/8 b - - 0 1").unwrap();
+    assert_eq!(position_status(&mut b, &tables), GameStatus::Stalemate);
+}
+
+#[test]
+fn status_priority_seventyfive_over_threefold() {
+    // Bare kings; starting side to move = White.
+    // halfmove_clock = 146 → after 8 reversible plies it will be 154 (≥ 150),
+    // and we will have returned to the start position twice (3rd occurrence).
+    //
+    // Board:
+    //   Black king: g8
+    //   White king: g1
+    // FEN ranks (8→1): "6k1/8/8/8/8/8/8/6K1"
+    let fen = "6k1/8/8/8/8/8/8/6K1 w - - 146 73";
+    let mut b = Board::from_str(fen).expect("valid FEN");
+
+    // Helpers from your test module
+    #[inline]
+    fn sq(i: u8) -> rust_engine::square::Square {
+        rust_engine::square::Square::from_index(i)
+    }
+    #[inline]
+    fn mv_king(from: u8, to: u8) -> rust_engine::moves::types::Move {
+        use rust_engine::board::Piece;
+        rust_engine::moves::types::Move {
+            from: sq(from),
+            to: sq(to),
+            piece: Piece::King,
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        }
+    }
+
+    // Squares (0=a1 … 63=h8) with LSB=a1 mapping:
+    // g1 = 6,  f2 = 13,   g8 = 62,  f7 = 53
+    // One 4-ply cycle returns to the initial position once.
+    // Do it twice (8 plies) → the initial position occurs 3 times total.
+    let cycle = [
+        mv_king(6, 13),  // W: Kg1→f2
+        mv_king(62, 53), // B: Kg8→f7
+        mv_king(13, 6),  // W: Kf2→g1
+        mv_king(53, 62), // B: Kf7→g8   (back to start position)
+    ];
+
+    for m in cycle.iter() {
+        make_move_basic(&mut b, *m);
+    }
+    for m in cycle.iter() {
+        make_move_basic(&mut b, *m);
+    }
+
+    // On this final ply:
+    // - halfmove_clock ≥ 150 → SeventyFiveMove auto draw
+    // - position repeats for the 3rd time → Threefold claim would also be valid
+    // Priority must pick SeventyFiveMove over Threefold.
+    let tables = load_magic_tables();
+    let status = position_status(&mut b, &tables);
+    assert_eq!(status, GameStatus::DrawSeventyFiveMove);
+}
+
+#[test]
+fn repetition_resets_after_pawn_move() {
+    let tables = load_magic_tables();
+
+    // Black king g8 (62), White king g1 (6), White pawn a2 (8)
+    // FEN: white to move
+    let mut b = Board::from_str("6k1/8/8/8/8/8/P7/6K1 w - - 0 1").expect("valid FEN");
+
+    // Helpers from your test module:
+    // - sq(i)
+    // - mv(piece, from, to)
+    // - mv_king(from, to)
+
+    // A 4-ply reversible king cycle returning to the same board **when White starts**:
+    // W: g1→f2, B: g8→f7, W: f2→g1, B: f7→g8
+    let cycle_white_starts = [
+        mv_king(6, 13),  // W
+        mv_king(62, 53), // B
+        mv_king(13, 6),  // W
+        mv_king(53, 62), // B (back to start)
+    ];
+
+    // Do one cycle (White starts) → not threefold yet.
+    for m in cycle_white_starts.iter() {
+        make_move_basic(&mut b, *m);
+    }
+    assert!(!is_draw_by_threefold(&b));
+    assert_eq!(position_status(&mut b, &tables), GameStatus::InPlay);
+
+    // ---- Irreversible move: White pawn a2→a3 (8→16) ----
+    make_move_basic(&mut b, mv(Piece::Pawn, 8, 16));
+    // Now it's **Black** to move.
+
+    // A 4-ply reversible cycle returning to the same board **when Black starts**:
+    // B: g8→f7, W: g1→f2, B: f7→g8, W: f2→g1
+    let cycle_black_starts = [
+        mv_king(62, 53), // B
+        mv_king(6, 13),  // W
+        mv_king(53, 62), // B
+        mv_king(13, 6),  // W (back to post-pawn-move board)
+    ];
+
+    // Do one post-reset cycle → only 2 occurrences after reset → not threefold.
+    for m in cycle_black_starts.iter() {
+        make_move_basic(&mut b, *m);
+    }
+    assert!(!is_draw_by_threefold(&b));
+    assert_eq!(position_status(&mut b, &tables), GameStatus::InPlay);
+
+    // Do a second identical post-reset cycle → 3 occurrences after reset → now threefold.
+    for m in cycle_black_starts.iter() {
+        make_move_basic(&mut b, *m);
+    }
+    assert!(is_draw_by_threefold(&b));
+    assert_eq!(position_status(&mut b, &tables), GameStatus::DrawThreefold);
+}
+
+#[test]
+fn threefold_ignores_non_capturable_ep_square() {
+    let tables = load_magic_tables();
+
+    // Not dead material: add a rook per side to avoid DrawDeadPosition.
+    // Kings on g1 (6) and g8 (62); rooks on a1 (0) and a8 (56).
+    //
+    // EP square set in FEN to "a6" but it's NON-CAPTURABLE (no pawns exist),
+    // so it should be ignored in the position identity for repetition.
+    //
+    // FEN ranks (8→1):
+    //   "r5k1/8/8/8/8/8/8/R5K1 w - a6 0 1"
+    let mut b = Board::from_str("r5k1/8/8/8/8/8/8/R5K1 w - a6 0 1").expect("valid FEN");
+
+    // Reversible 4-ply king cycle when White starts:
+    // W: g1→f2, B: g8→f7, W: f2→g1, B: f7→g8 (back to start board)
+    let cycle_white_starts = [
+        mv_king(6, 13),  // W
+        mv_king(62, 53), // B
+        mv_king(13, 6),  // W
+        mv_king(53, 62), // B
+    ];
+
+    // First full cycle: after W's first move, the EP square from FEN expires.
+    // Since it was non-capturable, correct hashing/identity should IGNORE it,
+    // allowing repetition to accumulate across that difference.
+    for m in cycle_white_starts.iter() {
+        make_move_basic(&mut b, *m);
+    }
+    // We haven't reached threefold yet.
+    assert!(!is_draw_by_threefold(&b));
+    assert_eq!(position_status(&mut b, &tables), GameStatus::InPlay);
+
+    // Second identical cycle → 3rd occurrence of the same position (ignoring the
+    // initial non-capturable EP field difference) ⇒ Threefold should hold.
+    for m in cycle_white_starts.iter() {
+        make_move_basic(&mut b, *m);
+    }
+
+    assert!(is_draw_by_threefold(&b));
+    assert_eq!(position_status(&mut b, &tables), GameStatus::DrawThreefold);
+}
+
+#[test]
+fn threefold_distinguishes_capturable_ep_square() {
+    let tables = load_magic_tables();
+
+    // Kings: g1 (6) and g8 (62); pawns: White e2 (12), Black f4 (29).
+    // After e2→e4, EP on e3 is CAPTURABLE by the f4 pawn.
+    let mut b = Board::from_str("6k1/8/8/8/5p2/8/4P3/6K1 w - - 0 1").expect("valid FEN");
+
+    // White plays e2→e4 (double push) — creates capturable EP on e3.
+    make_move_basic(
+        &mut b,
+        rust_engine::moves::types::Move {
+            from: rust_engine::square::Square::from_index(12), // e2
+            to: rust_engine::square::Square::from_index(28),   // e4
+            piece: Piece::Pawn,
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+
+    // Reversible 4-ply cycle when Black starts:
+    // B: g8→f7, W: g1→f2, B: f7→g8, W: f2→g1
+    let cycle_black_starts = [
+        mv_king(62, 53), // B
+        mv_king(6, 13),  // W
+        mv_king(53, 62), // B
+        mv_king(13, 6),  // W
+    ];
+
+    // After 1st cycle: identity switched from "EP-present" to "no-EP" (B), count(B)=1.
+    for m in cycle_black_starts.iter() {
+        make_move_basic(&mut b, *m);
+    }
+    assert!(!is_draw_by_threefold(&b));
+    assert_eq!(position_status(&mut b, &tables), GameStatus::InPlay);
+
+    // After 2nd cycle: count(B)=2.
+    for m in cycle_black_starts.iter() {
+        make_move_basic(&mut b, *m);
+    }
+    assert!(!is_draw_by_threefold(&b));
+    assert_eq!(position_status(&mut b, &tables), GameStatus::InPlay);
+
+    // After 3rd cycle: count(B)=3 → threefold triggers.
+    for m in cycle_black_starts.iter() {
+        make_move_basic(&mut b, *m);
+    }
+    assert!(is_draw_by_threefold(&b));
+    assert_eq!(position_status(&mut b, &tables), GameStatus::DrawThreefold);
+}
+
+#[test]
+fn repetition_resets_after_capture() {
+    let tables = load_magic_tables();
+
+    // Not dead material: rooks on a1/a8; kings g1/g8. White to move.
+    let mut b = Board::from_str("r5k1/8/8/8/8/8/8/R5K1 w - - 0 1").expect("valid FEN");
+
+    // White-start reversible 4-ply cycle:
+    let cycle_white_starts = [
+        mv_king(6, 13),  // W: Kg1→f2
+        mv_king(62, 53), // B: Kg8→f7
+        mv_king(13, 6),  // W: Kf2→g1
+        mv_king(53, 62), // B: Kf7→g8
+    ];
+
+    // Do one cycle → 2 occurrences so far; not yet threefold.
+    for m in cycle_white_starts.iter() {
+        make_move_basic(&mut b, *m);
+    }
+    assert!(!is_draw_by_threefold(&b));
+    assert_eq!(position_status(&mut b, &tables), GameStatus::InPlay);
+
+    // Irreversible capture: White Ra1×a8 (0→56).
+    make_move_basic(
+        &mut b,
+        Move {
+            from: Square::from_index(0),
+            to: Square::from_index(56),
+            piece: Piece::Rook,
+            promotion: None,
+            is_capture: true,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+
+    // Now Black to move. Post-capture identity should start counting from 1.
+    // Black-start reversible cycle:
+    let cycle_black_starts = [
+        mv_king(62, 53), // B
+        mv_king(6, 13),  // W
+        mv_king(53, 62), // B
+        mv_king(13, 6),  // W
+    ];
+
+    // One post-capture cycle → still not threefold.
+    for m in cycle_black_starts.iter() {
+        make_move_basic(&mut b, *m);
+    }
+    assert!(!is_draw_by_threefold(&b));
+    assert_eq!(position_status(&mut b, &tables), GameStatus::InPlay);
+
+    // Second post-capture cycle → 3 occurrences after reset → now threefold.
+    for m in cycle_black_starts.iter() {
+        make_move_basic(&mut b, *m);
+    }
+    assert!(is_draw_by_threefold(&b));
+    assert_eq!(position_status(&mut b, &tables), GameStatus::DrawThreefold);
+}
+
+#[test]
+fn repetition_resets_after_promotion() {
+    let tables = load_magic_tables();
+
+    // White pawn ready to promote on a7; kings g1/g8. White to move.
+    // Not dead material before/after promotion.
+    let mut b = Board::from_str("6k1/8/P7/8/8/8/8/6K1 w - - 0 1").expect("valid FEN");
+
+    // White-start reversible cycle to build pre-reset occurrences:
+    let cycle_white_starts = [
+        mv_king(6, 13),  // W
+        mv_king(62, 53), // B
+        mv_king(13, 6),  // W
+        mv_king(53, 62), // B
+    ];
+
+    // One cycle → not yet threefold.
+    for m in cycle_white_starts.iter() {
+        make_move_basic(&mut b, *m);
+    }
+    assert!(!is_draw_by_threefold(&b));
+    assert_eq!(position_status(&mut b, &tables), GameStatus::InPlay);
+
+    // Irreversible promotion: a7→a8=Q (48→56).
+    make_move_basic(
+        &mut b,
+        Move {
+            from: Square::from_index(48),
+            to: Square::from_index(56),
+            piece: Piece::Pawn,
+            promotion: Some(Piece::Queen),
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+
+    // Now Black to move. Count occurrences post-reset.
+    let cycle_black_starts = [
+        mv_king(62, 53), // B
+        mv_king(6, 13),  // W
+        mv_king(53, 62), // B
+        mv_king(13, 6),  // W
+    ];
+
+    for m in cycle_black_starts.iter() {
+        make_move_basic(&mut b, *m);
+    }
+    assert!(!is_draw_by_threefold(&b));
+    assert_eq!(position_status(&mut b, &tables), GameStatus::InPlay);
+
+    for m in cycle_black_starts.iter() {
+        make_move_basic(&mut b, *m);
+    }
+    assert!(is_draw_by_threefold(&b));
+    assert_eq!(position_status(&mut b, &tables), GameStatus::DrawThreefold);
+}
+
+#[test]
+fn status_threshold_boundaries_50_and_75() {
+    let tables = load_magic_tables();
+
+    // 99 → NOT Fifty
+    let mut b_99 = Board::from_str("r5k1/8/8/8/8/8/8/R5K1 w - - 99 1").expect("fen");
+    assert_eq!(b_99.halfmove_clock, 99, "parsed halfmove should be 99");
+    assert!(
+        !is_draw_by_fifty_move(&b_99),
+        "fifty must NOT be claimable at 99"
+    );
+    assert_eq!(position_status(&mut b_99, &tables), GameStatus::InPlay);
+
+    // 100 → Fifty claimable
+    let mut b_100 = Board::from_str("r5k1/8/8/8/8/8/8/R5K1 w - - 100 1").expect("fen");
+    assert_eq!(b_100.halfmove_clock, 100, "parsed halfmove should be 100");
+    assert!(
+        is_draw_by_fifty_move(&b_100),
+        "fifty MUST be claimable at 100"
+    );
+    assert_eq!(
+        position_status(&mut b_100, &tables),
+        GameStatus::DrawFiftyMove
+    );
+
+    // 149 → NOT SeventyFive
+    let mut b_149 = Board::from_str("r5k1/8/8/8/8/8/8/R5K1 w - - 149 1").expect("fen");
+    assert_eq!(b_149.halfmove_clock, 149, "parsed halfmove should be 149");
+    assert_eq!(
+        position_status(&mut b_149, &tables),
+        GameStatus::DrawFiftyMove
+    );
+    assert!(is_draw_by_fifty_move(&b_149));
+
+    // 150 → SeventyFive automatic
+    let mut b_150 = Board::from_str("r5k1/8/8/8/8/8/8/R5K1 w - - 150 1").expect("fen");
+    assert_eq!(b_150.halfmove_clock, 150, "parsed halfmove should be 150");
+    assert_eq!(
+        position_status(&mut b_150, &tables),
+        GameStatus::DrawSeventyFiveMove
+    );
+}
+
+#[test]
+fn status_evaluated_after_move_applied() {
+    let tables = load_magic_tables();
+
+    // Start below the 75-move threshold; 50-move is already claimable.
+    let mut b = Board::from_str("r5k1/8/8/8/8/8/8/R5K1 w - - 148 1").expect("fen");
+    assert_eq!(b.halfmove_clock, 148);
+
+    // Pre-move: Fifty is claimable already at 148.
+    assert_eq!(position_status(&mut b, &tables), GameStatus::DrawFiftyMove);
+
+    // White quiet move → 149: still Fifty.
+    make_move_basic(
+        &mut b,
+        Move {
+            from: Square::from_index(6), // Kg1
+            to: Square::from_index(13),  // f2
+            piece: Piece::King,
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+    assert_eq!(position_status(&mut b, &tables), GameStatus::DrawFiftyMove);
+
+    // Black quiet move → 150: now SeventyFive automatic overrides Fifty.
+    make_move_basic(
+        &mut b,
+        Move {
+            from: Square::from_index(62), // Kg8
+            to: Square::from_index(53),   // f7
+            piece: Piece::King,
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+    assert_eq!(
+        position_status(&mut b, &tables),
+        GameStatus::DrawSeventyFiveMove
+    );
+}
+
+#[test]
+fn fivefold_respects_irreversible_window() {
+    let tables = load_magic_tables();
+
+    // Start with rooks to avoid dead position; White to move.
+    let mut b = Board::from_str("r5k1/8/8/8/8/8/8/R5K1 w - - 0 1").expect("fen");
+
+    // Build some pre-reset occurrences (but we won't reach fivefold yet).
+    let cycle_white_starts = [
+        mv_king(6, 13),  // W
+        mv_king(62, 53), // B
+        mv_king(13, 6),  // W
+        mv_king(53, 62), // B
+    ];
+    for m in cycle_white_starts.iter() {
+        make_move_basic(&mut b, *m);
+    }
+
+    // Reset window with an irreversible pawn move: add a white pawn and move it a2→a3.
+    // (If your make_move requires the piece to exist, inject it via a simple legal move:
+    // we can just start from FEN that already had it instead, but to keep the test minimal,
+    // we restart from a FEN that includes the pawn.)
+    let mut b = Board::from_str("r5k1/8/8/8/8/8/P7/R5K1 w - - 0 1").expect("fen");
+    // Immediate irreversible pawn move a2→a3 (8→16).
+    make_move_basic(
+        &mut b,
+        Move {
+            from: Square::from_index(8),
+            to: Square::from_index(16),
+            piece: Piece::Pawn,
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+
+    // Now Black to move; we need 5 occurrences of the post-reset identity.
+    // Each full Black-start cycle adds one repeated occurrence.
+    let cycle_black_starts = [
+        mv_king(62, 53), // B
+        mv_king(6, 13),  // W
+        mv_king(53, 62), // B
+        mv_king(13, 6),  // W
+    ];
+
+    // Do 4 cycles → occurrences after reset = 1 (post pawn move) + 4 = 5 → fivefold.
+    for _ in 0..4 {
+        for m in cycle_black_starts.iter() {
+            make_move_basic(&mut b, *m);
+        }
+    }
+    assert_eq!(position_status(&mut b, &tables), GameStatus::DrawFivefold);
+}
+
+#[test]
+fn fen_halfmove_parsing_exact() {
+    // Use from_fen explicitly to avoid any FromStr surprises.
+    let b0 = Board::from_str("r5k1/8/8/8/8/8/8/R5K1 w - - 0 1").unwrap();
+    let b99 = Board::from_str("r5k1/8/8/8/8/8/8/R5K1 w - - 99 1").unwrap();
+    let b100 = Board::from_str("r5k1/8/8/8/8/8/8/R5K1 w - - 100 1").unwrap();
+    assert_eq!(b0.halfmove_clock, 0);
+    assert_eq!(b99.halfmove_clock, 99);
+    assert_eq!(b100.halfmove_clock, 100);
+}
+
+#[test]
+fn fifty_consistency_never_mutates_clock() {
+    let mut b = Board::from_str("r5k1/8/8/8/8/8/8/R5K1 w - - 99 1").unwrap();
+    let tables = load_magic_tables();
+
+    // Take a snapshot
+    let h0 = b.halfmove_clock;
+    assert!(!is_draw_by_fifty_move(&b));
+
+    // Peek each early check individually, asserting the clock never changes
+    let _ = rust_engine::status::is_fivefold(&b);
+    assert_eq!(b.halfmove_clock, h0, "fivefold changed halfmove");
+    let _ = rust_engine::status::is_seventyfive_move(&b);
+    assert_eq!(b.halfmove_clock, h0, "seventyfive changed halfmove");
+    let _ = rust_engine::status::is_insufficient_material(&b);
+    assert_eq!(b.halfmove_clock, h0, "dead-material changed halfmove");
+    let _ = rust_engine::status::is_draw_by_threefold(&b);
+    assert_eq!(b.halfmove_clock, h0, "threefold changed halfmove");
+
+    // Finally, call position_status; if this flips to DrawFiftyMove, the only
+    // explanation is that one of the early checks mutated `b` internally.
+    let st = position_status(&mut b, &tables);
+    assert_eq!(h0, b.halfmove_clock, "clock changed by status()");
+    assert_eq!(st, GameStatus::InPlay, "should not be 50 at 99");
 }

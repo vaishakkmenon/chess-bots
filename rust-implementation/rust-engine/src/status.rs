@@ -85,23 +85,37 @@ pub fn is_insufficient_material(board: &Board) -> bool {
     false
 }
 
+/// Determine the game status for the current position.
+///
+/// Priority (highest → lowest):
+///  1) `DrawFivefold`          (automatic)
+///  2) `DrawSeventyFiveMove`   (automatic; halfmove_clock ≥ 150)
+///  3) `DrawDeadPosition`      (insufficient material)
+///  4) `DrawThreefold`         (claimable)
+///  5) `DrawFiftyMove`         (claimable; halfmove_clock ≥ 100)
+///  6) `Checkmate` / `Stalemate` / `InPlay`
 pub fn position_status(board: &mut Board, tables: &MagicTables) -> GameStatus {
+    // Snapshot the clock once; decisions below use this immutable view.
+    let hmc = board.halfmove_clock;
+
     // FIDE automatic first
-    if is_fivefold(board) {
+    if board.repetition_count() >= 5 {
         return GameStatus::DrawFivefold;
     }
-    if is_seventyfive_move(board) {
+    if hmc >= 150 {
         return GameStatus::DrawSeventyFiveMove;
     }
+
     // Dead position (insufficient material)
     if is_insufficient_material(board) {
         return GameStatus::DrawDeadPosition;
     }
+
     // Claim-based
-    if is_draw_by_threefold(board) {
+    if board.is_threefold() {
         return GameStatus::DrawThreefold;
     }
-    if is_draw_by_fifty_move(board) {
+    if hmc >= 100 {
         return GameStatus::DrawFiftyMove;
     }
 
