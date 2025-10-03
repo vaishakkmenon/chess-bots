@@ -2,7 +2,6 @@
 mod tests {
     use rust_engine::board::Board;
     use rust_engine::logger::init_logging;
-    use rust_engine::moves::magic::{MagicTableSeed, generate_magic_tables};
     use rust_engine::moves::perft::{perft, perft_divide, perft_divide_with_breakdown};
     use rust_engine::moves::{
         execute::{generate_legal, make_move_basic, undo_move_basic},
@@ -38,7 +37,7 @@ mod tests {
 
     fn run_startpos_depth(depth: u32, expected_nodes: u64) -> (u64, std::time::Duration) {
         use std::time::Instant;
-        let tables = generate_magic_tables(MagicTableSeed::Fixed(69)).expect("magic tables");
+        let tables = load_magic_tables();
 
         let mut board = Board::new();
         board.set_fen(START_FEN).expect("valid startpos");
@@ -125,10 +124,10 @@ mod tests {
         use tracing::info;
         init_logging(
             "logs/perft.log",
-            "rust_engine::moves::perft=trace,rust_engine::moves::execute=debug,info",
+            "rust_engine::moves::perft=trace,rust_engine::moves::execute=info,info",
         );
         info!("perft_divide started");
-        let tables = generate_magic_tables(MagicTableSeed::Fixed(69)).unwrap();
+        let tables = load_magic_tables();
         let mut board = Board::new();
         board.set_fen(START_FEN).unwrap();
         perft_divide(&mut board, &tables, 3);
@@ -142,7 +141,7 @@ mod tests {
     /// d5 = 193,690,690  (heavy; usually skipped unless highly optimized)
     #[test]
     fn perft_kiwipete_complete() {
-        let tables = generate_magic_tables(MagicTableSeed::Fixed(69)).expect("magic tables");
+        let tables = load_magic_tables();
 
         let expected = [
             (1, 48u64),
@@ -166,7 +165,7 @@ mod tests {
 
     #[test]
     fn perft_kiwipete_divide() {
-        let tables = generate_magic_tables(MagicTableSeed::Fixed(69)).unwrap();
+        let tables = load_magic_tables();
         let mut board = Board::new();
         board.set_fen(KIWI_FEN).unwrap();
         perft_divide(&mut board, &tables, 2);
@@ -176,14 +175,13 @@ mod tests {
     fn kiwipete_d2_tally() {
         use rust_engine::board::Board;
         use rust_engine::moves::execute::generate_legal;
-        use rust_engine::moves::magic::{MagicTableSeed, generate_magic_tables};
         use std::str::FromStr;
 
         let mut b = Board::from_str(KIWI_FEN).unwrap();
-        let t = generate_magic_tables(MagicTableSeed::Fixed(69)).unwrap();
+        let tables = load_magic_tables();
 
         let mut roots = vec![];
-        generate_legal(&mut b, &t, &mut roots);
+        generate_legal(&mut b, &tables, &mut roots);
 
         let mut nodes = 0u64;
         let mut captures = 0u64;
@@ -195,7 +193,7 @@ mod tests {
             let u = rust_engine::moves::execute::make_move_basic(&mut b, mv);
             // depth-2: enumerate Black replies
             let mut replies = vec![];
-            generate_legal(&mut b, &t, &mut replies);
+            generate_legal(&mut b, &tables, &mut replies);
 
             nodes += replies.len() as u64;
             for r in &replies {
@@ -210,7 +208,8 @@ mod tests {
                 }
                 // quick check detector
                 let uu = rust_engine::moves::execute::make_move_basic(&mut b, *r);
-                let in_chk = rust_engine::moves::square_control::in_check(&b, b.side_to_move, &t);
+                let in_chk =
+                    rust_engine::moves::square_control::in_check(&b, b.side_to_move, &tables);
                 if in_chk {
                     checks += 1;
                 }
