@@ -112,7 +112,7 @@ fn truncates_history_on_irreversible_move() {
         after_loop
     );
 
-    for u in [u8, u7, u6, u5, u4, u3, u2, u1].into_iter().rev() {
+    for u in [u8, u7, u6, u5, u4, u3, u2, u1].into_iter() {
         undo_move_basic(&mut b, u);
     }
 }

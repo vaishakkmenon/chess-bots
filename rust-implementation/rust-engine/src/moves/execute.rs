@@ -7,9 +7,6 @@ use crate::moves::square_control::{in_check, is_legal_castling};
 use crate::moves::types::{Move, Undo};
 use crate::square::Square;
 
-const FILE_A: u64 = 0x0101_0101_0101_0101;
-const FILE_H: u64 = 0x8080_8080_8080_8080;
-
 /// Precomputed castling rook moves by king destination index.
 #[inline(always)]
 fn rook_castle_squares(king_to_idx: u8) -> Option<(Square, Square)> {
@@ -129,27 +126,6 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
                     from_idx - 8
                 };
                 board.en_passant = Some(Square::from_index(ep_sq as u8));
-                // Only keep EP if capturable by the opponent (next side to move)
-                let ep_sq_u8 = ep_sq as u8;
-                let bb_s = 1u64 << ep_sq_u8;
-
-                let opponent = color.opposite();
-                let has_attacker = if opponent == Color::White {
-                    // White sources that attack INTO ep_sq
-                    let src_ne = (bb_s >> 9) & !FILE_H;
-                    let src_nw = (bb_s >> 7) & !FILE_A;
-                    ((src_ne | src_nw) & board.bb(Color::White, Piece::Pawn)) != 0
-                } else {
-                    // Black sources that attack INTO ep_sq
-                    let src_se = (bb_s << 7) & !FILE_A;
-                    let src_sw = (bb_s << 9) & !FILE_H;
-                    ((src_se | src_sw) & board.bb(Color::Black, Piece::Pawn)) != 0
-                };
-
-                if has_attacker {
-                    let f = (ep_sq_u8 % 8) as usize;
-                    board.zobrist ^= zobrist_keys().ep_file[f];
-                }
 
                 // ── ADD THIS DEBUG INVARIANT ─────────────────────────────────────────
                 let ep_rank = ep_sq / 8; // 0-based ranks: 0=rank1 … 7=rank8
@@ -230,6 +206,13 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
     board.side_to_move = color.opposite();
     board.zobrist ^= zobrist_keys().side_to_move;
 
+    if let Some(f) = ep_file_to_hash(board) {
+        board.zobrist ^= zobrist_keys().ep_file[f as usize];
+    }
+
+    #[cfg(debug_assertions)]
+    debug_assert_valid_ep(board);
+
     // ---- Zobrist history (push post-move; truncate on irreversible) ----
     let irreversible = capture.is_some() || piece == Piece::Pawn || mv.promotion.is_some();
 
@@ -252,6 +235,38 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
     undo.prev_history = saved;
 
     #[cfg(debug_assertions)]
+    {
+        let full = board.compute_zobrist_full();
+        let diff = board.zobrist ^ full;
+        eprintln!("HASH DIFF: stored ^ full = 0x{:016x}", diff);
+
+        let kz = zobrist_keys();
+
+        // Check EP candidates
+        for f in 0..8 {
+            if diff == kz.ep_file[f] {
+                eprintln!("Looks like EP file mismatch: file {}", f);
+            }
+        }
+        if diff == kz.side_to_move {
+            eprintln!("Side-to-move bit mismatch");
+        }
+
+        // (Optional) quickly check castling deltas
+        if diff != 0 {
+            for cur in 0u8..16 {
+                for prev in 0u8..16 {
+                    let mut z = 0u64;
+                    xor_castling_rights_delta(&mut z, kz, cur, prev);
+                    if z == diff {
+                        eprintln!("Castling delta mismatch cur={} prev={}", cur, prev);
+                    }
+                }
+            }
+        }
+    }
+
+    #[cfg(debug_assertions)]
     board.assert_hash();
 
     undo
@@ -264,8 +279,8 @@ pub fn undo_move_basic(board: &mut Board, undo: Undo) {
     }
 
     // ---- Flip side back (hash + state) ----
-    board.zobrist ^= zobrist_keys().side_to_move;
     board.side_to_move = undo.prev_side;
+    board.zobrist ^= zobrist_keys().side_to_move;
 
     // ---- Castling rights: apply HASH DELTA (cur -> prev), then assign ----
     let kz = zobrist_keys();
@@ -317,6 +332,9 @@ pub fn undo_move_basic(board: &mut Board, undo: Undo) {
         board.zobrist ^= kz.ep_file[f as usize];
     }
 
+    #[cfg(debug_assertions)]
+    debug_assert_valid_ep(board);
+
     // ---- Zobrist history (pop post-move; restore pre-move slice if irreversible) ----
     // Remove the post-move key we had pushed at make()
     let _ = board.history_since_irreversible.pop();
@@ -346,6 +364,39 @@ pub fn generate_legal(board: &mut Board, tables: &MagicTables, moves: &mut Vec<M
         undo_move_basic(board, undo);
         if !illegal {
             moves.push(mv);
+        }
+    }
+}
+
+#[cfg(debug_assertions)]
+#[inline]
+pub(crate) fn debug_assert_valid_ep(board: &Board) {
+    if let Some(ep) = board.en_passant {
+        let ep_idx = ep.index() as usize;
+        let ep_rank = ep_idx / 8;
+        // File sanity (redundant if Square guarantees 0..63, but cheap in debug):
+        let ep_file = ep_idx % 8;
+        debug_assert!(ep_file <= 7, "EP file out of range: {}", ep_file);
+
+        match board.side_to_move {
+            Color::White => {
+                // Black just double-pushed → EP should be on rank 6 (0-based 5)
+                debug_assert!(
+                    ep_rank == 5,
+                    "EP must be on rank 6 (r=5) when White is to move, got rank {} at {:?}",
+                    ep_rank,
+                    ep
+                );
+            }
+            Color::Black => {
+                // White just double-pushed → EP should be on rank 3 (0-based 2)
+                debug_assert!(
+                    ep_rank == 2,
+                    "EP must be on rank 3 (r=2) when Black is to move, got rank {} at {:?}",
+                    ep_rank,
+                    ep
+                );
+            }
         }
     }
 }

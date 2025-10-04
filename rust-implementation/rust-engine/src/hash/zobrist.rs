@@ -57,32 +57,32 @@ pub fn xor_castling_rights_delta(hash: &mut u64, keys: &ZobristKeys, old: u8, ne
 /// Rule: include EP only if side-to-move has at least one pawn that could capture onto ep_square.
 /// Pseudo-legal only (ignore pins/king safety).
 pub fn ep_file_to_hash(board: &Board) -> Option<u8> {
-    let ep = board.en_passant?; // assume Option<Square>; adjust if different
+    let ep = board.en_passant?;
     let s = ep.index() as u8;
 
-    // 1 << ep square
+    let r = s / 8;
+    if !(r == 2 || r == 5) {
+        // only rank 3 or 6 ever counts
+        return None;
+    }
+
     let bb_s: u64 = 1u64 << s;
 
-    // Side-to-move pawns must be able to capture onto ep square.
     let has_capturing_pawn = match board.side_to_move {
         Color::White => {
-            // White sources that could attack INTO s:
             let src_ne = (bb_s >> 9) & !FILE_H;
             let src_nw = (bb_s >> 7) & !FILE_A;
-            let sources = src_ne | src_nw;
-            (sources & board.bb(Color::White, Piece::Pawn)) != 0
+            ((src_ne | src_nw) & board.bb(Color::White, Piece::Pawn)) != 0
         }
         Color::Black => {
-            // Black sources that could attack INTO s:
             let src_se = (bb_s << 7) & !FILE_A;
             let src_sw = (bb_s << 9) & !FILE_H;
-            let sources = src_se | src_sw;
-            (sources & board.bb(Color::Black, Piece::Pawn)) != 0
+            ((src_se | src_sw) & board.bb(Color::Black, Piece::Pawn)) != 0
         }
     };
 
     if has_capturing_pawn {
-        Some((s % 8) as u8) // file a..h => 0..7
+        Some((s % 8) as u8)
     } else {
         None
     }
