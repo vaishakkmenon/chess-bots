@@ -113,34 +113,31 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
         undo.castling_rook = None;
     }
 
-    match piece {
-        Piece::Pawn => {
-            let from_rank = from_idx / 8;
-            let to_rank = to_idx / 8;
-            if (color == Color::White && from_rank == 1 && to_rank == 3)
-                || (color == Color::Black && from_rank == 6 && to_rank == 4)
-            {
-                let ep_sq = if color == Color::White {
-                    from_idx + 8
-                } else {
-                    from_idx - 8
-                };
-                board.en_passant = Some(Square::from_index(ep_sq as u8));
+    if piece == Piece::Pawn {
+        let from_rank = from_idx / 8;
+        let to_rank = to_idx / 8;
+        if (color == Color::White && from_rank == 1 && to_rank == 3)
+            || (color == Color::Black && from_rank == 6 && to_rank == 4)
+        {
+            let ep_sq = if color == Color::White {
+                from_idx + 8
+            } else {
+                from_idx - 8
+            };
+            board.en_passant = Some(Square::from_index(ep_sq as u8));
 
-                // ── ADD THIS DEBUG INVARIANT ─────────────────────────────────────────
-                let ep_rank = ep_sq / 8; // 0-based ranks: 0=rank1 … 7=rank8
-                debug_assert!(
-                    (color == Color::White && ep_rank == 2)   // EP must be on rank 3 after white double push
-                || (color == Color::Black && ep_rank == 5), // EP must be on rank 6 after black double push
-                    "EP square on wrong rank: {:?} (ep_rank={}, color={:?})",
-                    Square::from_index(ep_sq as u8),
-                    ep_rank,
-                    color
-                );
-                // ────────────────────────────────────────────────────────────────────
-            }
+            // ── ADD THIS DEBUG INVARIANT ─────────────────────────────────────────
+            let ep_rank = ep_sq / 8; // 0-based ranks: 0=rank1 … 7=rank8
+            debug_assert!(
+                (color == Color::White && ep_rank == 2)   // EP must be on rank 3 after white double push
+            || (color == Color::Black && ep_rank == 5), // EP must be on rank 6 after black double push
+                "EP square on wrong rank: {:?} (ep_rank={}, color={:?})",
+                Square::from_index(ep_sq as u8),
+                ep_rank,
+                color
+            );
+            // ────────────────────────────────────────────────────────────────────
         }
-        _ => {}
     }
 
     // Compute all rights to clear for this move

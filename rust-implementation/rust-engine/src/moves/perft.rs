@@ -45,8 +45,8 @@ impl PerftCounters {
 #[inline]
 fn sq_as_a1_zero(idx: u8) -> String {
     // Assumes 0 = a1, 63 = h8 (file = idx % 8, rank = idx / 8)
-    let file = (idx % 8) as u8;
-    let rank = (idx / 8) as u8;
+    let file = idx % 8;
+    let rank = idx / 8;
     let f = (b'a' + file) as char;
     let r = (b'1' + rank) as char;
     format!("{f}{r}")
@@ -55,8 +55,8 @@ fn sq_as_a1_zero(idx: u8) -> String {
 #[inline]
 fn sq_as_a8_zero(idx: u8) -> String {
     // Assumes 0 = a8, 63 = h1 (file = idx % 8, rank = 7 - idx / 8)
-    let file = (idx % 8) as u8;
-    let rank = 7 - (idx / 8) as u8;
+    let file = idx % 8;
+    let rank = 7 - (idx / 8);
     let f = (b'a' + file) as char;
     let r = (b'1' + rank) as char;
     format!("{f}{r}")
@@ -87,10 +87,10 @@ pub fn perft(board: &mut Board, tables: &MagicTables, depth: u32) -> u64 {
                 depth,
                 from_idx = from,
                 to_idx   = to,
-                from_a1  = %sq_as_a1_zero(from as u8),
-                to_a1    = %sq_as_a1_zero(to as u8),
-                from_a8  = %sq_as_a8_zero(from as u8),
-                to_a8    = %sq_as_a8_zero(to as u8),
+                from_a1  = %sq_as_a1_zero(from),
+                to_a1    = %sq_as_a1_zero(to),
+                from_a8  = %sq_as_a8_zero(from),
+                to_a8    = %sq_as_a8_zero(to),
                 "perft: exploring move (decode check)"
             );
         }

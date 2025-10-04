@@ -381,9 +381,7 @@ impl Board {
         for &k in &self.history_since_irreversible {
             if k == self.zobrist {
                 // (Optional) avoid u8 overflow in pathological cases
-                if count < u8::MAX {
-                    count += 1;
-                }
+                count = count.saturating_add(1);
             }
         }
         count

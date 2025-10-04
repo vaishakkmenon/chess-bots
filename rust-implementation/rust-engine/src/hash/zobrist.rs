@@ -58,7 +58,7 @@ pub fn xor_castling_rights_delta(hash: &mut u64, keys: &ZobristKeys, old: u8, ne
 /// Pseudo-legal only (ignore pins/king safety).
 pub fn ep_file_to_hash(board: &Board) -> Option<u8> {
     let ep = board.en_passant?;
-    let s = ep.index() as u8;
+    let s = ep.index();
 
     let r = s / 8;
     if !(r == 2 || r == 5) {
@@ -82,7 +82,7 @@ pub fn ep_file_to_hash(board: &Board) -> Option<u8> {
     };
 
     if has_capturing_pawn {
-        Some((s % 8) as u8)
+        Some(s % 8)
     } else {
         None
     }
