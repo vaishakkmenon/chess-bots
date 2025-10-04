@@ -1,3 +1,4 @@
+use crate::board::castle_bits::*;
 use crate::board::{Board, Color, EMPTY_SQ, Piece};
 use crate::hash::zobrist::{ep_file_to_hash, xor_castling_rights_delta, zobrist_keys};
 use crate::moves::magic::MagicTables;
@@ -5,15 +6,6 @@ use crate::moves::movegen::generate_pseudo_legal;
 use crate::moves::square_control::{in_check, is_legal_castling};
 use crate::moves::types::{Move, Undo};
 use crate::square::Square;
-
-// Castling White Kingside
-const CASTLE_WK: u8 = 0b0001;
-// Castling White Queenside
-const CASTLE_WQ: u8 = 0b0010;
-// Castling Black Kingside
-const CASTLE_BK: u8 = 0b0100;
-// Castling Black Queenside
-const CASTLE_BQ: u8 = 0b1000;
 
 const FILE_A: u64 = 0x0101_0101_0101_0101;
 const FILE_H: u64 = 0x8080_8080_8080_8080;

@@ -5,6 +5,9 @@ use crate::square::Square;
 use std::fmt;
 use std::str::FromStr;
 
+pub mod castle_bits;
+pub use castle_bits::*;
+
 /// Starting position constants
 // ———————— White side (ranks 1 & 2) ————————
 // Pawns on rank 2: bits 8–15
@@ -35,15 +38,6 @@ const BLACK_BISHOP_MASK: u64 = (1 << 58) | (1 << 61); // 0x2400_0000_0000_0000
 const BLACK_QUEEN_MASK: u64 = 1 << 59; // 0x0800_0000_0000_0000
 // King on e8 (bit 60)
 const BLACK_KING_MASK: u64 = 1 << 60; // 0x1000_0000_0000_0000
-
-// Castling White Kingside
-const CASTLE_WK: u8 = 0b0001;
-// Castling White Queenside
-const CASTLE_WQ: u8 = 0b0010;
-// Castling Black Kingside
-const CASTLE_BK: u8 = 0b0100;
-// Castling Black Queenside
-const CASTLE_BQ: u8 = 0b1000;
 
 // Empty square value, no piece 0-11 will coincide with 255
 pub(crate) const EMPTY_SQ: u8 = 0xFF;

@@ -1,17 +1,12 @@
 // src/hash/zobrist.rs
 
+use crate::board::castle_bits::*;
 use crate::board::{Board, Color, Piece};
 use once_cell::sync::OnceCell;
 use rand::{RngCore, SeedableRng, rngs::StdRng};
 
 const FILE_A: u64 = 0x0101_0101_0101_0101;
 const FILE_H: u64 = 0x8080_8080_8080_8080;
-
-// Castling rights (single, disjoint bits)
-pub const CASTLE_WK: u8 = 0b0001; // White king-side  (K)
-pub const CASTLE_WQ: u8 = 0b0010; // White queen-side (Q)
-pub const CASTLE_BK: u8 = 0b0100; // Black king-side  (k)
-pub const CASTLE_BQ: u8 = 0b1000; // Black queen-side (q)
 
 #[cfg(feature = "deterministic_zobrist")]
 const ZOBRIST_SEED: u64 = 0x9E37_79B9_AAAC_5C87;
