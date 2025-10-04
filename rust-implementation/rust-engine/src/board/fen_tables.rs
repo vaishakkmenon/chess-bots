@@ -49,7 +49,7 @@ pub(super) const PC_TO_CHAR: [char; 12] = {
     t
 };
 
-#[cfg(debug_assertions)]
+#[cfg(any(test, debug_assertions))]
 mod debug_guards {
     use super::*;
     pub fn _assert_tables() {
