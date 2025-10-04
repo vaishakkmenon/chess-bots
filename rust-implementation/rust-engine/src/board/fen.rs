@@ -1,20 +1,7 @@
-use super::{Board, CASTLE_BK, CASTLE_BQ, CASTLE_WK, CASTLE_WQ, Color, Piece};
+use super::castle_bits::*;
+use super::fen_tables::{CHAR_TO_PC, PC_TO_CHAR};
+use super::{Board, Color, Piece};
 use crate::square::Square;
-
-static PIECE_TABLE: [(Piece, Color, char); 12] = [
-    (Piece::Rook, Color::Black, 'r'),
-    (Piece::Knight, Color::Black, 'n'),
-    (Piece::Bishop, Color::Black, 'b'),
-    (Piece::Queen, Color::Black, 'q'),
-    (Piece::King, Color::Black, 'k'),
-    (Piece::Pawn, Color::Black, 'p'),
-    (Piece::Rook, Color::White, 'R'),
-    (Piece::Knight, Color::White, 'N'),
-    (Piece::Bishop, Color::White, 'B'),
-    (Piece::Queen, Color::White, 'Q'),
-    (Piece::King, Color::White, 'K'),
-    (Piece::Pawn, Color::White, 'P'),
-];
 
 impl Board {
     /// Generate the piece‐placement portion of FEN (e.g., "rnbqkbnr/pppppppp/8/...").
@@ -27,15 +14,41 @@ impl Board {
                 let idx = rank * 8 + file;
                 let bit = 1u64 << idx;
 
+                if self.occ_all & bit == 0 {
+                    empty += 1;
+                    continue;
+                }
+
+                let symbol = if self.bb(Color::White, Piece::Pawn) & bit != 0 {
+                    PC_TO_CHAR[(Color::White as usize) * 6 + (Piece::Pawn as usize)]
+                } else if self.bb(Color::White, Piece::Knight) & bit != 0 {
+                    PC_TO_CHAR[(Color::White as usize) * 6 + (Piece::Knight as usize)]
+                } else if self.bb(Color::White, Piece::Bishop) & bit != 0 {
+                    PC_TO_CHAR[(Color::White as usize) * 6 + (Piece::Bishop as usize)]
+                } else if self.bb(Color::White, Piece::Rook) & bit != 0 {
+                    PC_TO_CHAR[(Color::White as usize) * 6 + (Piece::Rook as usize)]
+                } else if self.bb(Color::White, Piece::Queen) & bit != 0 {
+                    PC_TO_CHAR[(Color::White as usize) * 6 + (Piece::Queen as usize)]
+                } else if self.bb(Color::White, Piece::King) & bit != 0 {
+                    PC_TO_CHAR[(Color::White as usize) * 6 + (Piece::King as usize)]
+                } else if self.bb(Color::Black, Piece::Pawn) & bit != 0 {
+                    PC_TO_CHAR[(Color::Black as usize) * 6 + (Piece::Pawn as usize)]
+                } else if self.bb(Color::Black, Piece::Knight) & bit != 0 {
+                    PC_TO_CHAR[(Color::Black as usize) * 6 + (Piece::Knight as usize)]
+                } else if self.bb(Color::Black, Piece::Bishop) & bit != 0 {
+                    PC_TO_CHAR[(Color::Black as usize) * 6 + (Piece::Bishop as usize)]
+                } else if self.bb(Color::Black, Piece::Rook) & bit != 0 {
+                    PC_TO_CHAR[(Color::Black as usize) * 6 + (Piece::Rook as usize)]
+                } else if self.bb(Color::Black, Piece::Queen) & bit != 0 {
+                    PC_TO_CHAR[(Color::Black as usize) * 6 + (Piece::Queen as usize)]
+                } else if self.bb(Color::Black, Piece::King) & bit != 0 {
+                    PC_TO_CHAR[(Color::Black as usize) * 6 + (Piece::King as usize)]
+                } else {
+                    '\0' // sentinel: means empty at this square
+                };
+
                 // find the piece symbol, if any
-                if let Some(symbol) = PIECE_TABLE.iter().find_map(|&(piece, color, sym)| {
-                    if self.bb(color, piece) & bit != 0 {
-                        Some(sym)
-                    } else {
-                        None
-                    }
-                }) {
-                    // flush empty counter
+                if symbol != '\0' {
                     if empty > 0 {
                         fen.push_str(&empty.to_string());
                         empty = 0;
@@ -152,27 +165,17 @@ impl Board {
     /// Place a piece on `idx` (0–63) based on its FEN character.
     fn set_piece_at(&mut self, ch: char, idx: usize) -> Result<(), String> {
         let mask = 1u64 << idx;
-        // Map FEN char → (Color, Piece)
-        let (color, piece) = match ch {
-            'P' => (Color::White, Piece::Pawn),
-            'N' => (Color::White, Piece::Knight),
-            'B' => (Color::White, Piece::Bishop),
-            'R' => (Color::White, Piece::Rook),
-            'Q' => (Color::White, Piece::Queen),
-            'K' => (Color::White, Piece::King),
-            'p' => (Color::Black, Piece::Pawn),
-            'n' => (Color::Black, Piece::Knight),
-            'b' => (Color::Black, Piece::Bishop),
-            'r' => (Color::Black, Piece::Rook),
-            'q' => (Color::Black, Piece::Queen),
-            'k' => (Color::Black, Piece::King),
-            _ => return Err(format!("Invalid piece char '{}'", ch)),
-        };
+        // New: O(1) table lookup instead of a big match
+        if ch.is_ascii() {
+            if let Some((piece, color)) = CHAR_TO_PC[ch as usize] {
+                let old_bb = self.bb(color, piece);
+                self.set_bb(color, piece, old_bb | mask);
+                return Ok(());
+            }
+        }
 
-        // Grab old bitboard, OR in the mask, and let set_bb update occ_* for us
-        let old_bb = self.bb(color, piece);
-        self.set_bb(color, piece, old_bb | mask);
-        Ok(())
+        // Preserve your old error behavior for unknown/non-ASCII glyphs
+        Err(format!("Invalid piece char '{}'", ch))
     }
 
     pub(crate) fn parse_active_color(&mut self, field: &str) -> Result<(), String> {

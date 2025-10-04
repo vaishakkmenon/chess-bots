@@ -6,6 +6,7 @@ use std::fmt;
 use std::str::FromStr;
 
 pub mod castle_bits;
+mod fen_tables;
 pub use castle_bits::*;
 
 /// Starting position constants
@@ -60,16 +61,6 @@ pub enum Piece {
     Rook,
     Queen,
     King,
-}
-
-/// Current Game Status enum to hold all stages of the game
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum GameStatus {
-    InPlay,
-    DrawThreefold,
-    DrawFiftyMove,
-    Stalemate,
-    Checkmate, // side-to-move is checkmated
 }
 
 /// Core board representation using bitboards.
