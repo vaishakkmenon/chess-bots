@@ -3,6 +3,7 @@ pub mod board;
 pub mod hash;
 pub mod logger;
 pub mod moves;
+pub mod search;
 pub mod square;
 pub mod status;
 pub mod utils;
