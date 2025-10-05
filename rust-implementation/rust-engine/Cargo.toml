@@ -1,7 +1,20 @@
 [package]
 name = "rust-engine"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
 
 [dependencies]
 rand = "0.9.1"
+serde = { version = "1.0.219", features = ["derive"] }
+bincode = "1.3"
+indicatif = "0.18.0"
+tracing = { version = "0.1", features = ["attributes"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+tracing-appender = "0.2"
+once_cell = "1.21.3"
+
+[features]
+load-magic = []
+deterministic-magic = []
+deterministic_zobrist = [] 
+default = []

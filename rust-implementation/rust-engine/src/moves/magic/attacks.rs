@@ -58,7 +58,7 @@ pub fn rook_attacks_per_square(square: usize, blockers: u64) -> u64 {
         &mut add,
     ); // west
 
-    return attacks;
+    attacks
 }
 
 #[inline]
@@ -100,7 +100,7 @@ pub fn bishop_attacks_per_square(square: usize, blockers: u64) -> u64 {
         &mut add,
     ); // SE
 
-    return attacks;
+    attacks
 }
 
 pub fn get_rook_attack_bitboards(square: usize, blockers: &[u64]) -> Vec<u64> {

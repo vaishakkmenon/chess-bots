@@ -30,7 +30,7 @@ pub fn rook_vision_mask(square: usize) -> u64 {
         mask |= 1u64 << sq;
     }
 
-    return mask;
+    mask
 }
 
 /// Returns the bishop blocker mask for a square, excluding edge squares.
@@ -97,7 +97,7 @@ pub fn generate_rook_blockers(square: usize) -> Vec<u64> {
         configs.push(subset);
     });
 
-    return configs;
+    configs
 }
 
 pub fn generate_bishop_blockers(square: usize) -> Vec<u64> {
@@ -108,7 +108,7 @@ pub fn generate_bishop_blockers(square: usize) -> Vec<u64> {
         configs.push(subset);
     });
 
-    return configs;
+    configs
 }
 
 #[cfg(test)]

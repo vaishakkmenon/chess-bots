@@ -22,7 +22,7 @@ const fn knight_attacks(square: u8) -> u64 {
         i += 1;
     }
 
-    return attacks;
+    attacks
 }
 
 const fn generate_knight_table() -> [u64; 64] {
@@ -33,7 +33,8 @@ const fn generate_knight_table() -> [u64; 64] {
         table[i] = knight_attacks(i as u8);
         i += 1;
     }
-    return table;
+
+    table
 }
 
 /// Returns the knight attack bitboard for a given square and color, or None if the square is invalid.

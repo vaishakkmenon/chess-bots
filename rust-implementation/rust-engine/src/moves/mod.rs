@@ -1,5 +1,9 @@
-pub mod attacks;
+pub mod execute;
 pub mod king;
 pub mod knight;
 pub mod magic;
+pub mod movegen;
 pub mod pawn;
+pub mod perft;
+pub mod square_control;
+pub mod types;

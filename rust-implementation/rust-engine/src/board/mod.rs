@@ -1,8 +1,13 @@
 mod fen;
 
+use crate::bitboard::BitboardExt;
 use crate::square::Square;
 use std::fmt;
 use std::str::FromStr;
+
+pub mod castle_bits;
+mod fen_tables;
+pub use castle_bits::*;
 
 /// Starting position constants
 // ———————— White side (ranks 1 & 2) ————————
@@ -35,17 +40,12 @@ const BLACK_QUEEN_MASK: u64 = 1 << 59; // 0x0800_0000_0000_0000
 // King on e8 (bit 60)
 const BLACK_KING_MASK: u64 = 1 << 60; // 0x1000_0000_0000_0000
 
-// Castling White Kingside
-const CASTLE_WK: u8 = 0b0001;
-// Castling White Queenside
-const CASTLE_WQ: u8 = 0b0010;
-// Castling Black Kingside
-const CASTLE_BK: u8 = 0b0100;
-// Castling Black Queenside
-const CASTLE_BQ: u8 = 0b1000;
+// Empty square value, no piece 0-11 will coincide with 255
+pub(crate) const EMPTY_SQ: u8 = 0xFF;
 
 /// Which side is to move.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 pub enum Color {
     White,
     Black,
@@ -53,6 +53,7 @@ pub enum Color {
 
 /// Piece enum to hold all types of pieces
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 pub enum Piece {
     Pawn,
     Knight,
@@ -63,22 +64,16 @@ pub enum Piece {
 }
 
 /// Core board representation using bitboards.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Board {
     /// White Pieces
-    pub white_pawns: u64,
-    pub white_knights: u64,
-    pub white_bishops: u64,
-    pub white_rooks: u64,
-    pub white_queens: u64,
-    pub white_king: u64,
-    pub black_pawns: u64,
-    /// Black Pieces
-    pub black_knights: u64,
-    pub black_bishops: u64,
-    pub black_rooks: u64,
-    pub black_queens: u64,
-    pub black_king: u64,
+    pub piece_bb: [[u64; 6]; 2],
+    /// Occupancy fields
+    pub occ_white: u64,
+    pub occ_black: u64,
+    pub occ_all: u64,
+    /// Lookup table for each square
+    pub piece_on_sq: [u8; 64], // new table: 0xFF = empty, 0–11 = (color<<3)|piece
     /// White or Black to move
     pub side_to_move: Color,
     /// Castling rights: bit 0=White kingside, 1=White queenside, 2=Black kingside, 3=Black queenside
@@ -89,48 +84,119 @@ pub struct Board {
     pub halfmove_clock: u32,
     /// Fullmove number (starts at 1 and increments after Black’s move).
     pub fullmove_number: u32,
+    // Zobrist hash for each board.
+    pub zobrist: u64,
+    // History for zobrist hashing
+    pub history_since_irreversible: Vec<u64>,
 }
 
 impl Board {
+    /// Recompute from current state and store into `self.zobrist`.
+    #[inline]
+    pub fn refresh_zobrist(&mut self) {
+        self.zobrist = self.compute_zobrist_full();
+    }
+
+    #[inline(always)]
+    pub(crate) fn bb(&self, color: Color, piece: Piece) -> u64 {
+        self.piece_bb[color as usize][piece as usize]
+    }
+
+    #[inline(always)]
+    pub(crate) fn set_bb(&mut self, color: Color, piece: Piece, new_bb: u64) {
+        use crate::hash::zobrist::zobrist_keys;
+        let ci = color as usize;
+        let pi = piece as usize;
+
+        let old_bb = self.piece_bb[ci][pi];
+        let delta = old_bb ^ new_bb;
+        if delta == 0 {
+            return;
+        }
+
+        // store new bitboard
+        self.piece_bb[ci][pi] = new_bb;
+
+        // side occupancies
+        if color == Color::White {
+            self.occ_white ^= delta;
+        } else {
+            self.occ_black ^= delta;
+        }
+        self.occ_all = self.occ_white | self.occ_black;
+
+        // --- ZOBRIST: toggle piece keys for all squares that changed ---
+        let keys = zobrist_keys();
+
+        let mut bits_to_update = delta;
+        while bits_to_update != 0 {
+            // isolate one toggled square
+            let single_bit = bits_to_update & (!bits_to_update + 1);
+            let sq_idx = single_bit.trailing_zeros() as usize;
+
+            // update piece_on_sq table
+            if new_bb & single_bit != 0 {
+                self.place_piece_at_sq(color, piece, Square::from_index(sq_idx as u8));
+            } else {
+                self.clear_square(Square::from_index(sq_idx as u8));
+            }
+
+            // Zobrist: XOR the piece key (works for both add and remove)
+            self.zobrist ^= keys.piece[ci][pi][sq_idx];
+
+            bits_to_update &= bits_to_update - 1;
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn clear_square(&mut self, sq: Square) {
+        let i = sq.index() as usize;
+        self.piece_on_sq[i] = EMPTY_SQ;
+    }
+
+    #[inline(always)]
+    pub(crate) fn place_piece_at_sq(&mut self, color: Color, piece: Piece, sq: Square) {
+        let i = sq.index() as usize;
+        self.piece_on_sq[i] = (color as u8) << 3 | (piece as u8);
+    }
+
     /// Create an empty board (all bitboards zero, White to move).
     pub fn new_empty() -> Self {
-        Board {
-            white_pawns: 0,
-            white_knights: 0,
-            white_bishops: 0,
-            white_rooks: 0,
-            white_queens: 0,
-            white_king: 0,
-            black_pawns: 0,
-            black_knights: 0,
-            black_bishops: 0,
-            black_rooks: 0,
-            black_queens: 0,
-            black_king: 0,
+        let mut b = Board {
+            piece_bb: [[0u64; 6]; 2],
+            occ_white: 0,
+            occ_black: 0,
+            occ_all: 0,
+            piece_on_sq: [EMPTY_SQ; 64],
             side_to_move: Color::White,
             castling_rights: 0,
             en_passant: None,
             halfmove_clock: 0,
             fullmove_number: 1,
-        }
+            zobrist: 0,
+            history_since_irreversible: Vec::new(),
+        };
+        b.refresh_zobrist();
+        b
     }
+
     pub fn new() -> Self {
         let mut b = Board::new_empty();
         // Set up white pieces
-        b.white_pawns = WHITE_PAWN_MASK;
-        b.white_bishops = WHITE_BISHOP_MASK;
-        b.white_knights = WHITE_KNIGHT_MASK;
-        b.white_rooks = WHITE_ROOK_MASK;
-        b.white_queens = WHITE_QUEEN_MASK;
-        b.white_king = WHITE_KING_MASK;
+        b.set_bb(Color::White, Piece::Pawn, WHITE_PAWN_MASK);
+        b.set_bb(Color::White, Piece::Bishop, WHITE_BISHOP_MASK);
+        b.set_bb(Color::White, Piece::Knight, WHITE_KNIGHT_MASK);
+        b.set_bb(Color::White, Piece::Rook, WHITE_ROOK_MASK);
+        b.set_bb(Color::White, Piece::Queen, WHITE_QUEEN_MASK);
+        b.set_bb(Color::White, Piece::King, WHITE_KING_MASK);
 
         // Set up black pieces
-        b.black_pawns = BLACK_PAWN_MASK;
-        b.black_rooks = BLACK_ROOK_MASK;
-        b.black_knights = BLACK_KNIGHT_MASK;
-        b.black_bishops = BLACK_BISHOP_MASK;
-        b.black_queens = BLACK_QUEEN_MASK;
-        b.black_king = BLACK_KING_MASK;
+        b.set_bb(Color::Black, Piece::Pawn, BLACK_PAWN_MASK);
+        b.set_bb(Color::Black, Piece::Bishop, BLACK_BISHOP_MASK);
+        b.set_bb(Color::Black, Piece::Knight, BLACK_KNIGHT_MASK);
+        b.set_bb(Color::Black, Piece::Rook, BLACK_ROOK_MASK);
+        b.set_bb(Color::Black, Piece::Queen, BLACK_QUEEN_MASK);
+        b.set_bb(Color::Black, Piece::King, BLACK_KING_MASK);
 
         // Setup side to move and other important information
         b.side_to_move = Color::White;
@@ -138,22 +204,19 @@ impl Board {
         b.en_passant = None;
         b.halfmove_clock = 0;
         b.fullmove_number = 1;
-        return b;
+        b.refresh_zobrist();
+        b.history_since_irreversible.clear();
+        b.history_since_irreversible.push(b.zobrist);
+        b
     }
+
+    #[inline(always)]
+    /// Bitboard of all pieces (both colors).
     pub fn occupied(&self) -> u64 {
-        self.white_pawns
-            | self.white_bishops
-            | self.white_knights
-            | self.white_rooks
-            | self.white_queens
-            | self.white_king
-            | self.black_pawns
-            | self.black_bishops
-            | self.black_knights
-            | self.black_rooks
-            | self.black_queens
-            | self.black_king
+        self.occ_all
     }
+
+    #[inline(always)]
     pub fn has_castling(&self, flag: u8) -> bool {
         self.castling_rights & flag != 0
     }
@@ -162,18 +225,18 @@ impl Board {
     /// Returns Ok if valid, Err describing the overlap if invalid.
     pub fn validate(&self) -> Result<(), String> {
         let bitboards = [
-            ("white_pawns", self.white_pawns),
-            ("white_knights", self.white_knights),
-            ("white_bishops", self.white_bishops),
-            ("white_rooks", self.white_rooks),
-            ("white_queens", self.white_queens),
-            ("white_king", self.white_king),
-            ("black_pawns", self.black_pawns),
-            ("black_knights", self.black_knights),
-            ("black_bishops", self.black_bishops),
-            ("black_rooks", self.black_rooks),
-            ("black_queens", self.black_queens),
-            ("black_king", self.black_king),
+            ("white_pawns", self.bb(Color::White, Piece::Pawn)),
+            ("white_knights", self.bb(Color::White, Piece::Knight)),
+            ("white_bishops", self.bb(Color::White, Piece::Bishop)),
+            ("white_rooks", self.bb(Color::White, Piece::Rook)),
+            ("white_queens", self.bb(Color::White, Piece::Queen)),
+            ("white_king", self.bb(Color::White, Piece::King)),
+            ("black_pawns", self.bb(Color::Black, Piece::Pawn)),
+            ("black_knights", self.bb(Color::Black, Piece::Knight)),
+            ("black_bishops", self.bb(Color::Black, Piece::Bishop)),
+            ("black_rooks", self.bb(Color::Black, Piece::Rook)),
+            ("black_queens", self.bb(Color::Black, Piece::Queen)),
+            ("black_king", self.bb(Color::Black, Piece::King)),
         ];
 
         let mut seen: u64 = 0;
@@ -184,6 +247,196 @@ impl Board {
             seen |= bb;
         }
         Ok(())
+    }
+
+    #[inline(always)]
+    /// Bitboard of all pieces for one side.
+    pub fn occupancy(&self, color: Color) -> u64 {
+        match color {
+            Color::White => self.occ_white,
+            Color::Black => self.occ_black,
+        }
+    }
+
+    /// Shorthand for the opponent’s occupancy.
+    pub fn opponent_occupancy(&self, color: Color) -> u64 {
+        self.occupancy(color.opposite())
+    }
+
+    #[inline(always)]
+    /// Single‐slot accessor for a given piece & color.
+    pub fn pieces(&self, piece: Piece, color: Color) -> u64 {
+        self.bb(color, piece)
+    }
+
+    // Utility Aliases
+    #[inline(always)]
+    pub fn en_passant_target(&self) -> Option<Square> {
+        self.en_passant
+    }
+
+    #[inline(always)]
+    pub fn has_kingside_castle(&self, color: Color) -> bool {
+        match color {
+            Color::White => self.castling_rights & CASTLE_WK != 0,
+            Color::Black => self.castling_rights & CASTLE_BK != 0,
+        }
+    }
+
+    #[inline(always)]
+    pub fn has_queenside_castle(&self, color: Color) -> bool {
+        match color {
+            Color::White => self.castling_rights & CASTLE_WQ != 0,
+            Color::Black => self.castling_rights & CASTLE_BQ != 0,
+        }
+    }
+
+    /// Function to get exactly what square the king sits on
+    #[inline(always)]
+    pub fn king_square(&self, color: Color) -> Square {
+        let king_bb = self.pieces(Piece::King, color);
+        Square::try_from(king_bb.lsb()).expect("Invalid king bitboard")
+    }
+
+    /// Full recompute from current state. Must match the incremental hash at all times.
+    pub fn compute_zobrist_full(&self) -> u64 {
+        use crate::hash::zobrist::zobrist_keys;
+
+        let keys = zobrist_keys();
+        let mut board_hash: u64 = 0;
+
+        // 1) Pieces by (color, piece)
+        // Prefer iterating bitboards for speed; falls back nicely if you don’t have a helper.
+        #[inline]
+        fn idx_of(c: Color, p: Piece) -> (usize, usize) {
+            let ci = match c {
+                Color::White => 0,
+                Color::Black => 1,
+            };
+            let pi = match p {
+                Piece::Pawn => 0,
+                Piece::Knight => 1,
+                Piece::Bishop => 2,
+                Piece::Rook => 3,
+                Piece::Queen => 4,
+                Piece::King => 5,
+            };
+            (ci, pi)
+        }
+
+        const COLORS: [Color; 2] = [Color::White, Color::Black];
+        const PIECES: [Piece; 6] = [
+            Piece::Pawn,
+            Piece::Knight,
+            Piece::Bishop,
+            Piece::Rook,
+            Piece::Queen,
+            Piece::King,
+        ];
+        // Iterate all 12 piece bitboards.
+        for &c in &COLORS {
+            for &p in &PIECES {
+                let (ci, pi) = idx_of(c, p);
+                let mut bb = self.bb(c, p);
+                while bb != 0 {
+                    let sq = bb.trailing_zeros() as usize;
+                    board_hash ^= keys.piece[ci][pi][sq];
+                    bb &= bb - 1; // pop LSB
+                }
+            }
+        }
+
+        // 2) Side to move (only when Black to move)
+        if self.side_to_move == Color::Black {
+            board_hash ^= keys.side_to_move;
+        }
+
+        // 3) Castling rights in K,Q,k,q bit order (your bitfield matches this)
+        let rights = self.castling_rights; // assume u8 with bits 0..3 = K,Q,k,q
+        if (rights & CASTLE_WK) != 0 {
+            board_hash ^= keys.castling[0];
+        } // K
+        if (rights & CASTLE_WQ) != 0 {
+            board_hash ^= keys.castling[1];
+        } // Q
+        if (rights & CASTLE_BK) != 0 {
+            board_hash ^= keys.castling[2];
+        } // k
+        if (rights & CASTLE_BQ) != 0 {
+            board_hash ^= keys.castling[3];
+        } // q
+
+        // 4) En passant (only if capturable this ply)
+        if let Some(file) = crate::hash::zobrist::ep_file_to_hash(self) {
+            board_hash ^= keys.ep_file[file as usize];
+        }
+
+        board_hash
+    }
+
+    /// Counts occurrences of the *current* Zobrist in the history window
+    /// (which, by invariant, ends with `self.zobrist`). Always >= 1.
+    pub fn repetition_count(&self) -> u8 {
+        let mut count: u8 = 0;
+        for &k in &self.history_since_irreversible {
+            if k == self.zobrist {
+                // (Optional) avoid u8 overflow in pathological cases
+                count = count.saturating_add(1);
+            }
+        }
+        count
+    }
+
+    /// True iff `repetition_count() >= 3`
+    pub fn is_threefold(&self) -> bool {
+        self.repetition_count() >= 3
+    }
+
+    #[cfg(debug_assertions)]
+    #[inline]
+    pub fn assert_hash(&self) {
+        // Recompute using the same logic as compute_zobrist_full()
+        let full = self.compute_zobrist_full();
+        debug_assert_eq!(
+            self.zobrist, full,
+            "Zobrist parity mismatch: stored={:#018x}, full={:#018x}",
+            self.zobrist, full
+        );
+    }
+}
+
+impl Color {
+    pub fn opposite(self) -> Self {
+        match self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        }
+    }
+
+    /// Decode a 0/1 value into a Color.
+    #[inline(always)]
+    pub(crate) fn from_u8(v: u8) -> Self {
+        match v {
+            0 => Color::White,
+            1 => Color::Black,
+            _ => panic!("Invalid Color encoding: {}", v),
+        }
+    }
+}
+
+impl Piece {
+    /// Decode a 0–5 value into a Piece.
+    #[inline(always)]
+    pub(crate) fn from_u8(v: u8) -> Self {
+        match v {
+            0 => Piece::Pawn,
+            1 => Piece::Knight,
+            2 => Piece::Bishop,
+            3 => Piece::Rook,
+            4 => Piece::Queen,
+            5 => Piece::King,
+            _ => panic!("Invalid Piece encoding: {}", v),
+        }
     }
 }
 
@@ -212,5 +465,4 @@ impl fmt::Display for Board {
 }
 
 #[cfg(test)]
-// #[path = "board_tests.rs"]
 mod tests;

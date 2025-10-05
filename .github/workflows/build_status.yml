@@ -67,9 +67,9 @@ jobs:
         run: pytest --maxfail=1 --disable-warnings -q
 
   # ───────────────────────────────────────────────────────────────────────────────
-  # 3) Rust Tests (only if rust-implementation/** changed)
+  # 3) Rust Tests (only if rust-implementation/** changed) — Canaries + Full Suite in one job
   rust-tests:
-    name: Rust 🦀 Tests
+    name: Rust 🦀 Tests (canaries + full)
     runs-on: ubuntu-latest
     needs: paths-filter
     if: needs.paths-filter.outputs.rust-changed == 'true'
@@ -77,26 +77,62 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          override: true
 
       - name: Install rustfmt
         run: rustup component add rustfmt
 
-      - name: "Check formatting: rust-cli"
+      # ---- Format checks (match your old flow)
+      - name: rust-cli
         working-directory: rust-implementation/rust-cli
         run: cargo fmt -- --check
 
-      - name: "Run tests: rust-cli"
-        working-directory: rust-implementation/rust-cli
-        run: cargo test --verbose
-
-      - name: "Check formatting: rust-engine"
+      - name: rust-engine
         working-directory: rust-implementation/rust-engine
         run: cargo fmt -- --check
 
-      - name: "Run tests: rust-engine"
+      # ---- FAST CANARIES (always run)
+      - name: Magics canary (generator)
         working-directory: rust-implementation/rust-engine
-        run: cargo test --verbose
+        env:
+          RUSTFLAGS: "-C debuginfo=0"
+        run: |
+          cargo test -p rust-engine --test magic_consistency \
+            --features "deterministic-magic deterministic_zobrist" \
+            -- --exact test_magic_table_consistency --test-threads=1
+
+      - name: Magics canary (embedded)
+        working-directory: rust-implementation/rust-engine
+        env:
+          RUSTFLAGS: "-C debuginfo=0"
+        run: |
+          cargo test -p rust-engine --test magic_consistency \
+            --features "load-magic deterministic_zobrist" \
+            -- --exact test_magic_table_consistency --test-threads=1
+
+      # ---- FULL SUITE (embedded, deterministic)
+      - name: rust-cli (release)
+        working-directory: rust-implementation/rust-cli
+        run: cargo test --release
+
+      - name: rust-engine (embedded, deterministic, release)
+        working-directory: rust-implementation/rust-engine
+        env:
+          RUSTFLAGS: "-C debug-assertions=yes -C target-cpu=native"
+        run: |
+          cargo test --release --features "load-magic deterministic_zobrist" -- --test-threads=1

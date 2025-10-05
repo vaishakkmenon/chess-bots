@@ -18,8 +18,8 @@ impl Square {
 
 impl fmt::Display for Square {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let file = (self.0 % 8) as u8;
-        let rank = (self.0 / 8) as u8;
+        let file = self.0 % 8;
+        let rank = self.0 / 8;
         write!(f, "{}{}", (b'a' + file) as char, rank + 1)
     }
 }
@@ -36,7 +36,7 @@ impl FromStr for Square {
         let rank = bytes[1];
 
         if (b'A'..=b'H').contains(&file) {
-            file = file + (b'a' - b'A');
+            file += b'a' - b'A';
         }
 
         if !(b'a'..=b'h').contains(&file) {
