@@ -6,6 +6,24 @@ const B: i32 = 330;
 const R: i32 = 500;
 const Q: i32 = 900;
 
+#[cfg(feature = "psqt")]
+// Helper to mirror file
+#[inline(always)]
+pub fn mirror_vert(sq: u8) -> u8 {
+    let file = sq & 7;
+    let rank = sq >> 3;
+    (file | ((7 - rank) << 3)) as u8
+}
+
+#[cfg(feature = "psqt")]
+mod psqt_tables {
+    pub const PAWN: [i16; 64] = [0; 64];
+    pub const KNIGHT: [i16; 64] = [0; 64];
+    pub const BISHOP: [i16; 64] = [0; 64];
+    pub const ROOK: [i16; 64] = [0; 64];
+    pub const QUEEN: [i16; 64] = [0; 64];
+}
+
 /// Material-only evaluation (White perspective), side-to-move agnostic.
 /// Kings are excluded (value = 0). P=100, N=320, B=330, R=500, Q=900.
 pub fn eval_material(board: &Board) -> i32 {
@@ -27,4 +45,82 @@ pub fn eval_material(board: &Board) -> i32 {
         + Q * (wq as i32 - bq as i32);
 
     score
+}
+
+#[cfg(feature = "psqt")]
+pub fn eval_psqt(board: &Board) -> i32 {
+    use crate::utils::pop_lsb;
+    use psqt_tables::*;
+    let mut score: i32 = 0;
+
+    let mut bb = board.bb(Color::White, Piece::Pawn);
+    while bb != 0 {
+        let sq = pop_lsb(&mut bb);
+        score += PAWN[sq as usize] as i32;
+    }
+
+    let mut bb = board.bb(Color::White, Piece::Knight);
+    while bb != 0 {
+        let sq = pop_lsb(&mut bb);
+        score += KNIGHT[sq as usize] as i32;
+    }
+
+    let mut bb = board.bb(Color::White, Piece::Bishop);
+    while bb != 0 {
+        let sq = pop_lsb(&mut bb);
+        score += BISHOP[sq as usize] as i32;
+    }
+
+    let mut bb = board.bb(Color::White, Piece::Rook);
+    while bb != 0 {
+        let sq = pop_lsb(&mut bb);
+        score += ROOK[sq as usize] as i32;
+    }
+
+    let mut bb = board.bb(Color::White, Piece::Queen);
+    while bb != 0 {
+        let sq = pop_lsb(&mut bb);
+        score += QUEEN[sq as usize] as i32;
+    }
+
+    let mut bb = board.bb(Color::Black, Piece::Pawn);
+    while bb != 0 {
+        let sq = pop_lsb(&mut bb);
+        score -= PAWN[mirror_vert(sq) as usize] as i32;
+    }
+
+    let mut bb = board.bb(Color::Black, Piece::Knight);
+    while bb != 0 {
+        let sq = pop_lsb(&mut bb);
+        score -= KNIGHT[mirror_vert(sq) as usize] as i32;
+    }
+
+    let mut bb = board.bb(Color::Black, Piece::Bishop);
+    while bb != 0 {
+        let sq = pop_lsb(&mut bb);
+        score -= BISHOP[mirror_vert(sq) as usize] as i32;
+    }
+
+    let mut bb = board.bb(Color::Black, Piece::Rook);
+    while bb != 0 {
+        let sq = pop_lsb(&mut bb);
+        score -= ROOK[mirror_vert(sq) as usize] as i32;
+    }
+
+    let mut bb = board.bb(Color::Black, Piece::Queen);
+    while bb != 0 {
+        let sq = pop_lsb(&mut bb);
+        score -= QUEEN[mirror_vert(sq) as usize] as i32;
+    }
+
+    score
+}
+
+#[cfg(not(feature = "psqt"))]
+pub fn eval_psqt(_board: &Board) -> i32 {
+    0
+}
+
+pub fn static_eval(board: &Board) -> i32 {
+    eval_material(board) + eval_psqt(board)
 }
