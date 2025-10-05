@@ -383,7 +383,6 @@ fn seventyfive_forced_draw_precedes_threefold() {
     let tables = load_magic_tables();
     let mut b = Board::new();
 
-    // Build a simple threefold by repeating startpos 3 times:
     // (Ng1f3, Nb8c6, Nf3g1, Nc6b8) × 2
     let u1 = make_move_basic(&mut b, mv(Piece::Knight, 6, 21));
     let u2 = make_move_basic(&mut b, mv(Piece::Knight, 62, 45));
@@ -394,22 +393,19 @@ fn seventyfive_forced_draw_precedes_threefold() {
     let u7 = make_move_basic(&mut b, mv(Piece::Knight, 21, 6));
     let u8 = make_move_basic(&mut b, mv(Piece::Knight, 45, 62));
 
-    assert!(
-        is_draw_by_threefold(&b),
-        "sanity: threefold should be claimable now"
-    );
+    assert!(is_draw_by_threefold(&b));
 
-    // Simulate 75-move rule (150 halfmoves) also being true.
-    b.halfmove_clock = 150;
+    // Do status check on a clone so we don't perturb the original sequence
+    let mut b75 = b.clone();
+    b75.halfmove_clock = 150; // ok to set directly on the throwaway clone
 
-    // Precedence: 75-move forced draw must be reported, not threefold.
     assert_eq!(
-        position_status(&mut b, &tables),
+        position_status(&mut b75, &tables),
         GameStatus::DrawSeventyFiveMove
     );
 
-    // Clean undo
-    for u in [u8, u7, u6, u5, u4, u3, u2, u1].into_iter().rev() {
+    // Undo in the exact reverse order of execution
+    for u in [u8, u7, u6, u5, u4, u3, u2, u1] {
         undo_move_basic(&mut b, u);
     }
 }
@@ -1322,4 +1318,48 @@ fn threefold_accepts_when_castling_rights_match() {
 
     assert!(is_draw_by_threefold(&b));
     assert_eq!(position_status(&mut b, &tables), GameStatus::DrawThreefold);
+}
+
+#[test]
+fn draw_insufficient_king_vs_king() {
+    let mut b = Board::from_str("8/8/8/8/8/8/8/K6k w - - 0 1").unwrap();
+    let tables = load_magic_tables();
+    assert_eq!(
+        position_status(&mut b, &tables),
+        GameStatus::DrawDeadPosition
+    );
+}
+
+#[test]
+fn draw_insufficient_kb_vs_k() {
+    // White: K e1, B c1; Black: K e8
+    let mut b = Board::from_str("4k3/8/8/8/8/8/8/2B1K3 w - - 0 1").unwrap();
+    let tables = load_magic_tables();
+    assert_eq!(
+        position_status(&mut b, &tables),
+        GameStatus::DrawDeadPosition
+    );
+}
+
+#[test]
+fn draw_insufficient_kn_vs_k() {
+    // White: K e1, N c3; Black: K e8
+    let mut b = Board::from_str("4k3/8/8/8/8/2N5/8/4K3 w - - 0 1").unwrap();
+    let tables = load_magic_tables();
+    assert_eq!(
+        position_status(&mut b, &tables),
+        GameStatus::DrawDeadPosition
+    );
+}
+
+#[test]
+fn draw_insufficient_kb_vs_kb_same_color() {
+    // Bishops on same-colored squares: White B c1 (dark), Black b a3 (dark)
+    // Kings on e1/e8
+    let mut b = Board::from_str("4k3/8/8/8/8/b7/8/2B1K3 w - - 0 1").unwrap();
+    let tables = load_magic_tables();
+    assert_eq!(
+        position_status(&mut b, &tables),
+        GameStatus::DrawDeadPosition
+    );
 }

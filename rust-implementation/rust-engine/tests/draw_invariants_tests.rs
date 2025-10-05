@@ -1,7 +1,9 @@
 use rust_engine::board::{Board, Piece};
 use rust_engine::moves::execute::{make_move_basic, undo_move_basic};
+use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::types::Move;
 use rust_engine::square::Square;
+use rust_engine::status::{GameStatus, is_draw_by_fifty_move, position_status};
 
 fn sq(i: u8) -> Square {
     Square::from_index(i)
@@ -115,4 +117,80 @@ fn truncates_history_on_irreversible_move() {
     for u in [u8, u7, u6, u5, u4, u3, u2, u1].into_iter() {
         undo_move_basic(&mut b, u);
     }
+}
+
+#[test]
+fn fifty_move_rule_becomes_claimable_at_100_halfmoves() {
+    let _tables = load_magic_tables();
+    let mut b = Board::new();
+
+    // Bump to 99 halfmoves, then make one quiet move to hit 100.
+    b.halfmove_clock = 99;
+
+    // Quiet move: Ng1-f3 (6 -> 21)
+    let mv = Move {
+        from: Square::from_index(6),
+        to: Square::from_index(21),
+        piece: Piece::Knight,
+        promotion: None,
+        is_capture: false,
+        is_en_passant: false,
+        is_castling: false,
+    };
+    let _u = make_move_basic(&mut b, mv);
+
+    assert!(
+        is_draw_by_fifty_move(&b), // or your `is_draw_by_fifty(&b)`
+        "Should be claimable at exactly 100 halfmoves (50 full moves)"
+    );
+}
+
+#[test]
+fn seventyfive_move_forced_draw_precedes_threefold_at_150_halfmoves() {
+    let tables = load_magic_tables();
+    let mut b = Board::new();
+
+    // Quick reversible loop (no captures/pawn moves)
+    let seq = [
+        (6u8, 21u8),  // Ng1-f3
+        (62u8, 45u8), // Nb8-c6
+        (21u8, 6u8),  // Nf3-g1
+        (45u8, 62u8), // Nc6-b8
+    ];
+    for &(f, t) in &seq {
+        let _ = make_move_basic(
+            &mut b,
+            Move {
+                from: Square::from_index(f),
+                to: Square::from_index(t),
+                piece: Piece::Knight,
+                promotion: None,
+                is_capture: false,
+                is_en_passant: false,
+                is_castling: false,
+            },
+        );
+    }
+
+    // Set to 149 halfmoves, then one quiet move to hit 150.
+    b.halfmove_clock = 149;
+
+    let _ = make_move_basic(
+        &mut b,
+        Move {
+            from: Square::from_index(6),
+            to: Square::from_index(21),
+            piece: Piece::Knight,
+            promotion: None,
+            is_capture: false,
+            is_en_passant: false,
+            is_castling: false,
+        },
+    );
+
+    assert_eq!(
+        position_status(&mut b, &tables),
+        GameStatus::DrawSeventyFiveMove,
+        "Forced 75-move draw (150 halfmoves) must take precedence over threefold"
+    );
 }

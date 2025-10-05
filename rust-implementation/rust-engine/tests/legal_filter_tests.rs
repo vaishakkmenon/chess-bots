@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use rust_engine::board::Board;
 use rust_engine::moves::execute::generate_legal;
+use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::magic::{MagicTableSeed, generate_magic_tables};
 use rust_engine::moves::types::Move;
 use rust_engine::square::Square;
@@ -49,5 +50,36 @@ fn checking_moves_are_kept() {
     assert!(
         has_move(&legal, "e1", "e7"),
         "Checking capture e1e7 should not be filtered out."
+    );
+}
+
+#[test]
+fn en_passant_is_illegal_when_pawn_is_pinned_opening_file_on_own_king() {
+    // Position: White king e1, White pawn e5; Black rook e8; Black pawn d5.
+    // EP square = d6; White to move. If White plays e5xd6 e.p., the e-file opens and K on e1 is in check -> illegal.
+    //
+    // Board:
+    // 8: k . . . r . . .
+    // 7: . . . . . . . .
+    // 6: . . . . . . . .
+    // 5: . . . p P . . .
+    // 4: . . . . . . . .
+    // 3: . . . . . . . .
+    // 2: . . . . . . . .
+    // 1: . . . . K . . R
+    // FEN with EP target d6 and white to move:
+    let fen = "k3r3/8/8/3pP3/8/8/8/4K2R w - d6 0 1";
+    let mut b = Board::from_str(fen).unwrap();
+    let tables = load_magic_tables();
+
+    let mut moves = Vec::with_capacity(64);
+    generate_legal(&mut b, &tables, &mut moves);
+
+    // Ensure no legal EP move from e5 to d6 exists
+    assert!(
+        !moves.iter().any(|m| m.is_en_passant
+            && m.from == Square::from_str("e5").unwrap()
+            && m.to == Square::from_str("d6").unwrap()),
+        "EP capture that exposes own king must be filtered out by the legality checker"
     );
 }

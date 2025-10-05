@@ -273,3 +273,43 @@ mod tests {
         assert_eq!(total, 400);
     }
 }
+
+#[cfg(debug_assertions)]
+#[test]
+fn make_undo_fuzz_sanity() {
+    use rand::rngs::StdRng;
+    use rand::{Rng, SeedableRng};
+    use rust_engine::board::Board;
+    use rust_engine::moves::execute::{generate_legal, make_move_basic, undo_move_basic};
+    use rust_engine::moves::magic::loader::load_magic_tables;
+
+    let tables = load_magic_tables();
+    let mut b = Board::new();
+    let mut rng = StdRng::seed_from_u64(42);
+    let plies = 1000usize;
+
+    for _ in 0..plies {
+        let mut ms = Vec::with_capacity(64);
+        generate_legal(&mut b, &tables, &mut ms);
+        if ms.is_empty() {
+            break;
+        }
+
+        let idx = rng.random_range(0..ms.len());
+        let u = make_move_basic(&mut b, ms[idx]);
+
+        // Hash should be coherent after make
+        #[cfg(debug_assertions)]
+        {
+            b.assert_hash();
+        }
+
+        undo_move_basic(&mut b, u);
+
+        // Hash should be coherent after undo
+        #[cfg(debug_assertions)]
+        {
+            b.assert_hash();
+        }
+    }
+}

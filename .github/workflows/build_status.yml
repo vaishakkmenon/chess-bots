@@ -132,5 +132,7 @@ jobs:
 
       - name: rust-engine (embedded, deterministic, release)
         working-directory: rust-implementation/rust-engine
+        env:
+          RUSTFLAGS: "-C debug-assertions=yes -C target-cpu=native"
         run: |
           cargo test --release --features "load-magic deterministic_zobrist" -- --test-threads=1

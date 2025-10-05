@@ -148,11 +148,8 @@ fn roundtrip_white_queenside_castle() {
 
 #[test]
 fn roundtrip_black_kingside_castle() {
-    use std::str::FromStr;
-
-    let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+    let fen = "r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1"; // note 'b'
     let mut board = Board::from_str(fen).unwrap();
-    board.side_to_move = Color::Black; // force black to move
     let original = board.clone();
 
     let mv = Move {
@@ -166,7 +163,6 @@ fn roundtrip_black_kingside_castle() {
     };
 
     let undo = make_move_basic(&mut board, mv);
-
     assert_ne!(board.pieces(Piece::King, Color::Black) & (1 << 62), 0); // g8
     assert_ne!(board.pieces(Piece::Rook, Color::Black) & (1 << 61), 0); // f8
 
@@ -176,11 +172,8 @@ fn roundtrip_black_kingside_castle() {
 
 #[test]
 fn roundtrip_black_queenside_castle() {
-    use std::str::FromStr;
-
-    let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+    let fen = "r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1"; // note 'b'
     let mut board = Board::from_str(fen).unwrap();
-    board.side_to_move = Color::Black; // force black to move
     let original = board.clone();
 
     let mv = Move {
@@ -194,7 +187,6 @@ fn roundtrip_black_queenside_castle() {
     };
 
     let undo = make_move_basic(&mut board, mv);
-
     assert_ne!(board.pieces(Piece::King, Color::Black) & (1 << 58), 0); // c8
     assert_ne!(board.pieces(Piece::Rook, Color::Black) & (1 << 59), 0); // d8
 
@@ -268,17 +260,14 @@ fn castling_rights_removed_on_rook_move() {
 
 #[test]
 fn castling_rights_removed_on_rook_capture() {
-    use rust_engine::board::{Board, Color};
-    use std::str::FromStr;
-
-    let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+    // Put a black bishop on c3 (rank 3: "2b5") and make it Black to move.
+    let fen = "r3k2r/8/8/8/8/2b5/8/R3K2R b KQkq - 0 1";
     let mut board = Board::from_str(fen).unwrap();
 
-    // Move a black bishop to capture a white rook on a1
-    board.side_to_move = Color::Black;
+    assert!(board.has_queenside_castle(Color::White));
 
     let mv = Move {
-        from: Square::from_str("e8").unwrap(), // Pretend this is a bishop
+        from: Square::from_str("c3").unwrap(),
         to: Square::from_str("a1").unwrap(),
         piece: Piece::Bishop,
         promotion: None,
@@ -287,14 +276,10 @@ fn castling_rights_removed_on_rook_capture() {
         is_castling: false,
     };
 
-    assert!(board.has_queenside_castle(Color::White));
-
     let undo = make_move_basic(&mut board, mv);
-
     assert!(!board.has_queenside_castle(Color::White));
 
     undo_move_basic(&mut board, undo);
-
     assert!(board.has_queenside_castle(Color::White));
 }
 
@@ -642,15 +627,15 @@ fn en_passant_lifecycle_set_clear_undo() {
 
 #[test]
 fn castling_rights_removed_on_h1_rook_capture() {
-    // Standard rook/king layout with all rights
-    let fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+    // Add a black bishop on e4 and make it Black to move.
+    // Rank 4 FEN: "4b3" puts a bishop on e4.
+    let fen = "r3k2r/8/8/8/4b3/8/8/R3K2R b KQkq - 0 1";
     let mut board = Board::from_str(fen).unwrap();
+
     assert!(board.has_kingside_castle(Color::White));
 
-    // Black to move and capture white rook on h1 (mirror of your a1 test)
-    board.side_to_move = Color::Black;
     let mv = Move {
-        from: Square::from_str("e8").unwrap(), // treat as bishop/queen-like mover for the test
+        from: Square::from_str("e4").unwrap(),
         to: Square::from_str("h1").unwrap(),
         piece: Piece::Bishop,
         promotion: None,
@@ -658,12 +643,14 @@ fn castling_rights_removed_on_h1_rook_capture() {
         is_en_passant: false,
         is_castling: false,
     };
+
     let undo = make_move_basic(&mut board, mv);
 
     assert!(
         !board.has_kingside_castle(Color::White),
         "Capturing rook on h1 should clear WK right"
     );
+
     undo_move_basic(&mut board, undo);
     assert!(board.has_kingside_castle(Color::White));
 }

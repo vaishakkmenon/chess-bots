@@ -1,4 +1,5 @@
 use rust_engine::board::{Board, Color, Piece};
+use rust_engine::moves::execute::generate_legal;
 use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::movegen::generate_bishop_moves;
 use rust_engine::moves::movegen::generate_king_moves;
@@ -8,6 +9,7 @@ use rust_engine::moves::movegen::generate_queen_moves;
 use rust_engine::moves::movegen::generate_rook_moves;
 use rust_engine::moves::types::Move;
 use rust_engine::square::Square;
+use std::str::FromStr;
 
 /// Set the bitboard for (color, piece) to exactly `mask`, then recompute occupancies.
 fn set_piece_mask(board: &mut Board, color: Color, piece: Piece, mask: u64) {
@@ -1072,5 +1074,42 @@ fn black_queenside_castle_generated() {
     assert!(
         has_castle(&moves, 58),
         "Black QS castle (to c8) not generated"
+    );
+}
+
+#[test]
+fn white_kingside_castle_forbidden_if_f1_or_g1_attacked() {
+    // White: K e1, R h1; Black bishop g2 attacks f1 (path square)
+    // Only K-side right present, path empty, but attacked square forbids castling.
+    let fen = "k7/8/8/8/8/8/6b1/4K2R w K - 0 1";
+    let mut b = Board::from_str(fen).unwrap();
+    let tables = load_magic_tables();
+
+    let mut moves = Vec::new();
+    generate_legal(&mut b, &tables, &mut moves);
+
+    assert!(
+        !moves.iter().any(|m| m.is_castling
+            && m.from == Square::from_str("e1").unwrap()
+            && m.to == Square::from_str("g1").unwrap()),
+        "White cannot castle through check when f1 or g1 is attacked"
+    );
+}
+
+#[test]
+fn black_queenside_castle_forbidden_if_d8_or_c8_attacked() {
+    // Black: K e8, R a8 with 'q' right; White bishop c7 attacks d8 (transit square)
+    let fen = "r3k3/2B5/8/8/8/8/8/8 b q - 0 1";
+    let mut b = Board::from_str(fen).unwrap();
+    let tables = load_magic_tables();
+
+    let mut moves = Vec::new();
+    generate_legal(&mut b, &tables, &mut moves);
+
+    assert!(
+        !moves.iter().any(|m| m.is_castling
+            && m.from == Square::from_str("e8").unwrap()
+            && m.to == Square::from_str("c8").unwrap()),
+        "Black cannot castle through check when d8 or c8 is attacked"
     );
 }
