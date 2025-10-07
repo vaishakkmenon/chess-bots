@@ -8,30 +8,6 @@ use crate::search::eval::static_eval;
 pub const MATE: i32 = 30_000;
 pub const INFTY: i32 = MATE + 2_000;
 
-fn is_terminal_fast(
-    board: &mut Board,
-    tables: &MagicTables,
-    scratch: &mut Vec<Move>,
-    ply: i32,
-) -> Option<i32> {
-    let mut legal_moves = Vec::with_capacity(64);
-    generate_legal(board, tables, &mut legal_moves, scratch);
-    if !legal_moves.is_empty() {
-        return None;
-    }
-
-    let stm = board.side_to_move;
-    if in_check(board, stm, tables) {
-        return Some(if stm == Color::White {
-            -(MATE - ply)
-        } else {
-            MATE - ply
-        });
-    }
-
-    Some(0)
-}
-
 fn negamax(
     board: &mut Board,
     tables: &MagicTables,
@@ -41,21 +17,35 @@ fn negamax(
     ply: i32,
     scratch: &mut Vec<Move>,
 ) -> i32 {
-    // At the start of negamax, before terminal check:
+    // Draw detection first
     if board.halfmove_clock >= 100 || board.repetition_count() >= 3 {
         return 0; // draw
     }
 
-    if let Some(tscore) = is_terminal_fast(board, tables, scratch, ply) {
-        return tscore;
+    // Generate legal moves ONCE
+    let mut pseudo_scratch = Vec::with_capacity(256);
+    scratch.clear();
+    generate_legal(board, tables, scratch, &mut pseudo_scratch);
+
+    // Terminal check
+    if scratch.is_empty() {
+        if in_check(board, board.side_to_move, tables) {
+            return if board.side_to_move == Color::White {
+                -(MATE - ply)
+            } else {
+                MATE - ply
+            };
+        }
+        return 0; // stalemate
     }
 
+    // Base case
     if depth == 0 {
         return static_eval(board);
     }
 
-    let mut legal_moves: Vec<Move> = Vec::with_capacity(64);
-    generate_legal(board, tables, &mut legal_moves, scratch);
+    // Copy moves locally since scratch will be reused in recursion
+    let legal_moves: Vec<Move> = scratch.clone(); // ← Must clone before recursion
 
     let mut a = alpha;
     for &mv in legal_moves.iter() {
