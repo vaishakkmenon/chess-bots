@@ -9,6 +9,9 @@ pub struct MagicEntry {
     /// The number of bits to shift after multiplication to get the table index.
     pub shift: u32,
 
+    /// The precomputed vision mask for this square.
+    pub mask: u64,
+
     /// The precomputed attack table indexed by (blockers * magic) >> shift.
     pub table: Box<[u64]>,
 }
@@ -30,36 +33,49 @@ pub struct MagicTables {
 }
 
 impl RookMagicTables {
-    /// Returns the rook attack bitboard for a given square, blockers, and vision mask.
-    /// The mask should be the rook vision mask for that square.
-    pub fn get_attacks(&self, square: usize, blockers: u64, mask: u64) -> u64 {
+    /// Returns the rook attack bitboard for a given square and blockers.
+    #[inline(always)]
+    pub fn get_attacks(&self, square: usize, blockers: u64) -> u64 {
         let entry = &self.entries[square];
-        let masked = blockers & mask;
+        let masked = blockers & entry.mask;
         let index = ((masked.wrapping_mul(entry.magic)) >> entry.shift) as usize;
         entry.table[index]
+    }
+
+    /// Legacy interface: Returns the rook attack bitboard with explicit mask parameter.
+    /// The mask parameter is ignored since mask is now stored in the entry.
+    #[inline(always)]
+    #[deprecated(note = "Use get_attacks(square, blockers) instead")]
+    pub fn get_attacks_with_mask(&self, square: usize, blockers: u64, _mask: u64) -> u64 {
+        self.get_attacks(square, blockers)
     }
 }
 
 impl BishopMagicTables {
-    /// Returns the bishop attack bitboard for a given square, blockers, and vision mask.
-    /// The mask should be the bishop vision mask for that square.
-    pub fn get_attacks(&self, square: usize, blockers: u64, mask: u64) -> u64 {
+    /// Returns the bishop attack bitboard for a given square and blockers.
+    #[inline(always)]
+    pub fn get_attacks(&self, square: usize, blockers: u64) -> u64 {
         let entry = &self.entries[square];
-        let masked = blockers & mask;
+        let masked = blockers & entry.mask;
         let index = ((masked.wrapping_mul(entry.magic)) >> entry.shift) as usize;
         entry.table[index]
+    }
+
+    /// Legacy interface: Returns the bishop attack bitboard with explicit mask parameter.
+    /// The mask parameter is ignored since mask is now stored in the entry.
+    #[inline(always)]
+    #[deprecated(note = "Use get_attacks(square, blockers) instead")]
+    pub fn get_attacks_with_mask(&self, square: usize, blockers: u64, _mask: u64) -> u64 {
+        self.get_attacks(square, blockers)
     }
 }
 
 impl MagicTables {
     /// Returns queen attacks by combining rook and bishop magic lookups.
+    #[inline(always)]
     pub fn queen_attacks(&self, square: usize, blockers: u64) -> u64 {
-        let rook_mask = crate::moves::magic::masks::rook_vision_mask(square);
-        let bishop_mask = crate::moves::magic::masks::bishop_vision_mask(square);
-
-        let rook = self.rook.get_attacks(square, blockers, rook_mask);
-        let bishop = self.bishop.get_attacks(square, blockers, bishop_mask);
-
+        let rook = self.rook.get_attacks(square, blockers);
+        let bishop = self.bishop.get_attacks(square, blockers);
         rook | bishop
     }
 }
@@ -97,12 +113,11 @@ mod tests {
         // square d4  (3 + 3*8) == 27
         let square = 27;
         let blockers = (1u64 << 41) | (1u64 << 21); // B6 + F2
-        let mask = bishop_vision_mask(square);
 
         let expected = bishop_attacks_per_square(square, blockers);
 
         let tables = build_tables();
-        let result = tables.bishop.get_attacks(square, blockers, mask);
+        let result = tables.bishop.get_attacks(square, blockers);
 
         assert_eq!(
             result, expected,
@@ -117,12 +132,11 @@ mod tests {
     fn test_rook_magic_lookup_matches_scan() {
         let square = 27; // d4
         let blockers = (1u64 << 19) | (1u64 << 35); // d3 + d6
-        let mask = rook_vision_mask(square);
 
         let expected = rook_attacks_per_square(square, blockers);
 
         let tables = build_tables();
-        let result = tables.rook.get_attacks(square, blockers, mask);
+        let result = tables.rook.get_attacks(square, blockers);
 
         assert_eq!(
             result, expected,

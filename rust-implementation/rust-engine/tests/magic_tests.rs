@@ -367,8 +367,7 @@ fn test_magic_lookup_matches_scan_rook() {
     let table =
         generate_rook_magic_tables(&mut seeded_rng()).expect("Failed to generate rook magic table");
 
-    let mask = rook_vision_mask(square);
-    let result = table.get_attacks(square, blockers, mask);
+    let result = table.get_attacks(square, blockers);
 
     assert_eq!(
         result, expected,
@@ -386,8 +385,7 @@ fn test_magic_lookup_matches_scan_bishop() {
     let table = generate_bishop_magic_tables(&mut seeded_rng())
         .expect("Failed to generate bishop magic table");
 
-    let mask = bishop_vision_mask(square);
-    let result = table.get_attacks(square, blockers, mask);
+    let result = table.get_attacks(square, blockers);
 
     assert_eq!(
         result, expected,

@@ -72,48 +72,18 @@ pub fn perft(board: &mut Board, tables: &MagicTables, depth: u32) -> u64 {
     let mut scratch = Vec::with_capacity(256);
     generate_legal(board, tables, &mut moves, &mut scratch);
 
-    // helpful breadcrumb at each node
-    if depth <= MAX_LOG_DEPTH {
-        debug!(depth, moves = moves.len(), "perft: generated legal moves");
-    }
-
     let mut nodes = 0;
     for mv in moves {
-        if depth <= MAX_LOG_DEPTH {
-            let from = mv.from.index(); // u8 or u16; cast to u8 if needed
-            let to = mv.to.index();
-
-            debug!(
-                %mv,
-                depth,
-                from_idx = from,
-                to_idx   = to,
-                from_a1  = %sq_as_a1_zero(from),
-                to_a1    = %sq_as_a1_zero(to),
-                from_a8  = %sq_as_a8_zero(from),
-                to_a8    = %sq_as_a8_zero(to),
-                "perft: exploring move (decode check)"
-            );
-        }
         let undo = make_move_basic(board, mv);
-        let child = perft(board, tables, depth - 1);
-        nodes += child;
+        nodes += perft(board, tables, depth - 1);
         undo_move_basic(board, undo);
-
-        if depth <= MAX_LOG_DEPTH {
-            trace!(%mv, depth, nodes = child, "perft: child result");
-        }
-    }
-
-    if depth <= MAX_LOG_DEPTH {
-        debug!(depth, total_nodes = nodes, "perft: return");
     }
     nodes
 }
 
 #[instrument(skip(board, tables), fields(depth))]
 pub fn perft_divide(board: &mut Board, tables: &MagicTables, depth: u32) -> u64 {
-    let mut moves = Vec::new();
+    let mut moves = Vec::with_capacity(256);
     let mut scratch = Vec::with_capacity(256);
     generate_legal(board, tables, &mut moves, &mut scratch);
 
@@ -164,12 +134,13 @@ pub fn perft_count_with_breakdown(
         out.nodes += 1;
 
         // Leaf: check/mate status (efficient: in_check + one legal gen)
-        let mut tmp = Vec::new();
-        let mut scratch = Vec::with_capacity(256);
         let side_in_check = in_check(board, board.side_to_move, tables);
         if side_in_check {
             out.checks += 1;
         }
+
+        let mut tmp = Vec::new();
+        let mut scratch = Vec::with_capacity(256);
         generate_legal(board, tables, &mut tmp, &mut scratch);
         if tmp.is_empty() && side_in_check {
             out.checkmates += 1;
@@ -220,12 +191,13 @@ pub fn perft_divide_with_breakdown(
     tables: &MagicTables,
     depth: u32,
 ) -> Vec<(Move, PerftCounters)> {
-    let mut moves = Vec::new();
+    let mut moves = Vec::with_capacity(256);
     let mut scratch = Vec::with_capacity(256);
     generate_legal(board, tables, &mut moves, &mut scratch);
 
     let mut out = Vec::with_capacity(moves.len());
-    for mv in moves {
+
+    for mv in moves.iter().copied() {
         let undo = make_move_basic(board, mv);
         let mut pc = PerftCounters::zero();
         perft_count_with_breakdown(board, tables, depth - 1, &mut pc);

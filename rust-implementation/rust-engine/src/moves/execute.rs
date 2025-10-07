@@ -231,7 +231,7 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
     // Stash in undo so undo_move_basic can restore on irreversible
     undo.prev_history = saved;
 
-    #[cfg(debug_assertions)]
+    #[cfg(all(debug_assertions, feature = "paranoid-hash"))]
     {
         let full = board.compute_zobrist_full();
         let diff = board.zobrist ^ full;

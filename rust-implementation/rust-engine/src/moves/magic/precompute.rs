@@ -126,6 +126,7 @@ where
         entries_vec.push(MagicEntry {
             magic,
             shift,
+            mask,
             table,
         });
     }

@@ -2,7 +2,6 @@ use crate::board::{Board, Color, Piece};
 use crate::moves::king::KING_ATTACKS;
 use crate::moves::knight::KNIGHT_ATTACKS;
 use crate::moves::magic::MagicTables;
-use crate::moves::magic::masks::{bishop_vision_mask, rook_vision_mask};
 use crate::moves::pawn::pawn_attacks;
 use crate::moves::types::Move;
 use crate::square::Square;
@@ -25,21 +24,9 @@ pub fn attacks_from(
         Piece::Knight => KNIGHT_ATTACKS[sq],
         Piece::King => KING_ATTACKS[sq],
         Piece::Pawn => pawn_attacks(square, color),
-        Piece::Bishop => {
-            let mask = bishop_vision_mask(square as usize);
-            tables.bishop.get_attacks(square as usize, blockers, mask)
-        }
-        Piece::Rook => {
-            let mask = rook_vision_mask(sq);
-            tables.rook.get_attacks(sq, blockers, mask)
-        }
-        Piece::Queen => {
-            let mask_b = bishop_vision_mask(sq);
-            let mask_r = rook_vision_mask(sq);
-            let b = tables.bishop.get_attacks(sq, blockers, mask_b);
-            let r = tables.rook.get_attacks(sq, blockers, mask_r);
-            b | r
-        }
+        Piece::Bishop => tables.bishop.get_attacks(square as usize, blockers),
+        Piece::Rook => tables.rook.get_attacks(sq, blockers),
+        Piece::Queen => tables.queen_attacks(sq, blockers),
     }
 }
 
@@ -69,16 +56,12 @@ pub fn is_square_attacked(
 
     let occupied = board.occupied();
 
-    let rook_mask = rook_vision_mask(index as usize);
-    let rook_attacks = tables.rook.get_attacks(index as usize, occupied, rook_mask);
+    let rook_attacks = tables.rook.get_attacks(index as usize, occupied);
     if rook_attacks & board.pieces(Piece::Rook, attacker) != 0 {
         return true;
     }
 
-    let bishop_mask = bishop_vision_mask(index as usize);
-    let bishop_attacks = tables
-        .bishop
-        .get_attacks(index as usize, occupied, bishop_mask);
+    let bishop_attacks = tables.bishop.get_attacks(index as usize, occupied);
     if bishop_attacks & board.pieces(Piece::Bishop, attacker) != 0 {
         return true;
     }
@@ -202,8 +185,7 @@ mod tests {
         let t = tables();
         let c1 = 2;
         let blockers = 0;
-        let mask = bishop_vision_mask(c1);
-        let expected = t.bishop.get_attacks(c1, blockers, mask);
+        let expected = t.bishop.get_attacks(c1, blockers);
         assert_eq!(
             attacks_from(Piece::Bishop, Color::White, c1 as u8, blockers, &t),
             expected
@@ -215,8 +197,7 @@ mod tests {
         let t = tables();
         let d4 = 3 + 8 * 3;
         let blockers = (1 << (d4 + 9)) | (1 << (d4 - 9));
-        let mask = bishop_vision_mask(d4);
-        let expected = t.bishop.get_attacks(d4, blockers, mask);
+        let expected = t.bishop.get_attacks(d4, blockers);
         assert_eq!(
             attacks_from(Piece::Bishop, Color::White, d4 as u8, blockers, &t),
             expected
@@ -228,8 +209,7 @@ mod tests {
         let t = tables();
         let a1 = 0;
         let blockers = 0;
-        let mask = rook_vision_mask(a1);
-        let expected = t.rook.get_attacks(a1, blockers, mask);
+        let expected = t.rook.get_attacks(a1, blockers);
         assert_eq!(
             attacks_from(Piece::Rook, Color::Black, a1 as u8, blockers, &t),
             expected
@@ -241,8 +221,7 @@ mod tests {
         let t = tables();
         let e5 = 4 + 8 * 4;
         let blockers = (1 << (e5 + 8)) | (1 << (e5 - 1));
-        let mask = rook_vision_mask(e5);
-        let expected = t.rook.get_attacks(e5, blockers, mask);
+        let expected = t.rook.get_attacks(e5, blockers);
         assert_eq!(
             attacks_from(Piece::Rook, Color::Black, e5 as u8, blockers, &t),
             expected
@@ -254,10 +233,7 @@ mod tests {
         let t = tables();
         let e4 = 4 + 8 * 3;
         let blockers = (1 << (e4 + 8)) | (1 << (e4 - 7));
-        let b_mask = bishop_vision_mask(e4);
-        let r_mask = rook_vision_mask(e4);
-        let expected =
-            t.bishop.get_attacks(e4, blockers, b_mask) | t.rook.get_attacks(e4, blockers, r_mask);
+        let expected = t.bishop.get_attacks(e4, blockers) | t.rook.get_attacks(e4, blockers);
         assert_eq!(
             attacks_from(Piece::Queen, Color::White, e4 as u8, blockers, &t),
             expected

@@ -2,7 +2,6 @@ use crate::board::{Board, Color, Piece};
 use crate::moves::king::KING_ATTACKS;
 use crate::moves::knight::KNIGHT_ATTACKS;
 use crate::moves::magic::MagicTables;
-use crate::moves::magic::masks::{bishop_vision_mask, rook_vision_mask};
 use crate::moves::magic::structs::{BishopMagicTables, RookMagicTables};
 use crate::moves::pawn::{BLACK_PAWN_ATTACKS, WHITE_PAWN_ATTACKS};
 use crate::moves::square_control::is_legal_castling;
@@ -90,8 +89,7 @@ pub fn generate_bishop_moves(board: &Board, tables: &BishopMagicTables, move_lis
     let mut bb = bishops;
     while bb != 0 {
         let from = pop_lsb(&mut bb);
-        let mask = bishop_vision_mask(from as usize);
-        let attacks = tables.get_attacks(from as usize, blockers, mask);
+        let attacks = tables.get_attacks(from as usize, blockers);
         let targets = attacks & !friendly;
         push_piece_moves(from, targets, enemy, Piece::Bishop, move_list);
     }
@@ -107,8 +105,7 @@ pub fn generate_rook_moves(board: &Board, tables: &RookMagicTables, move_list: &
     let mut bb = rooks;
     while bb != 0 {
         let from = pop_lsb(&mut bb);
-        let mask = rook_vision_mask(from as usize);
-        let attacks = tables.get_attacks(from as usize, blockers, mask);
+        let attacks = tables.get_attacks(from as usize, blockers);
         let targets = attacks & !friendly;
         push_piece_moves(from, targets, enemy, Piece::Rook, move_list);
     }
