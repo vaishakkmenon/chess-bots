@@ -25,7 +25,8 @@ fn self_check_is_filtered_out() {
     let t = tables();
 
     let mut legal = vec![];
-    generate_legal(&mut b, &t, &mut legal);
+    let mut scratch = Vec::with_capacity(256);
+    generate_legal(&mut b, &t, &mut legal, &mut scratch);
 
     assert!(
         !has_move(&legal, "e2", "f2"),
@@ -45,7 +46,8 @@ fn checking_moves_are_kept() {
     let t = tables();
 
     let mut legal = vec![];
-    generate_legal(&mut b, &t, &mut legal);
+    let mut scratch = Vec::with_capacity(256);
+    generate_legal(&mut b, &t, &mut legal, &mut scratch);
 
     assert!(
         has_move(&legal, "e1", "e7"),
@@ -73,7 +75,8 @@ fn en_passant_is_illegal_when_pawn_is_pinned_opening_file_on_own_king() {
     let tables = load_magic_tables();
 
     let mut moves = Vec::with_capacity(64);
-    generate_legal(&mut b, &tables, &mut moves);
+    let mut scratch = Vec::with_capacity(256);
+    generate_legal(&mut b, &tables, &mut moves, &mut scratch);
 
     // Ensure no legal EP move from e5 to d6 exists
     assert!(

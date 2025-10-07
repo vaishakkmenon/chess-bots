@@ -181,7 +181,8 @@ mod tests {
         let tables = load_magic_tables();
 
         let mut roots = vec![];
-        generate_legal(&mut b, &tables, &mut roots);
+        let mut scratch = Vec::with_capacity(256);
+        generate_legal(&mut b, &tables, &mut roots, &mut scratch);
 
         let mut nodes = 0u64;
         let mut captures = 0u64;
@@ -193,7 +194,7 @@ mod tests {
             let u = rust_engine::moves::execute::make_move_basic(&mut b, mv);
             // depth-2: enumerate Black replies
             let mut replies = vec![];
-            generate_legal(&mut b, &tables, &mut replies);
+            generate_legal(&mut b, &tables, &mut replies, &mut scratch);
 
             nodes += replies.len() as u64;
             for r in &replies {
@@ -242,7 +243,8 @@ mod tests {
 
                     // generate legal
                     let mut moves = Vec::new();
-                    generate_legal(&mut board, &tables, &mut moves);
+                    let mut scratch = Vec::with_capacity(256);
+                    generate_legal(&mut board, &tables, &mut moves, &mut scratch);
                     if moves.is_empty() {
                         // optional smoke on terminal nodes
                         let _ = in_check(&board, board.side_to_move, &tables);
@@ -290,7 +292,8 @@ fn make_undo_fuzz_sanity() {
 
     for _ in 0..plies {
         let mut ms = Vec::with_capacity(64);
-        generate_legal(&mut b, &tables, &mut ms);
+        let mut scratch = Vec::with_capacity(256);
+        generate_legal(&mut b, &tables, &mut ms, &mut scratch);
         if ms.is_empty() {
             break;
         }

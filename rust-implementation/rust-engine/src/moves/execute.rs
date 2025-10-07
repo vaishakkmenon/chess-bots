@@ -345,13 +345,17 @@ pub fn undo_move_basic(board: &mut Board, undo: Undo) {
     board.assert_hash();
 }
 
-pub fn generate_legal(board: &mut Board, tables: &MagicTables, moves: &mut Vec<Move>) {
-    let mut pseudo = Vec::new();
-    generate_pseudo_legal(board, tables, &mut pseudo);
-
+pub fn generate_legal(
+    board: &mut Board,
+    tables: &MagicTables,
+    moves: &mut Vec<Move>,
+    scratch: &mut Vec<Move>,
+) {
+    scratch.clear();
+    generate_pseudo_legal(board, tables, scratch);
     moves.clear();
 
-    for mv in pseudo {
+    for mv in scratch.iter().copied() {
         if mv.is_castling && !is_legal_castling(board, mv, tables) {
             continue;
         }

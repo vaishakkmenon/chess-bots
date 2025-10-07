@@ -9,10 +9,8 @@ const Q: i32 = 900;
 #[cfg(feature = "psqt")]
 // Helper to mirror file
 #[inline(always)]
-pub fn mirror_vert(sq: u8) -> u8 {
-    let file = sq & 7;
-    let rank = sq >> 3;
-    (file | ((7 - rank) << 3)) as u8
+pub const fn mirror_vert(sq: u8) -> u8 {
+    sq ^ 56
 }
 
 #[cfg(feature = "psqt")]
@@ -122,5 +120,10 @@ pub fn eval_psqt(_board: &Board) -> i32 {
 }
 
 pub fn static_eval(board: &Board) -> i32 {
-    eval_material(board) + eval_psqt(board)
+    let white_score = eval_material(board) + eval_psqt(board);
+    if board.side_to_move == Color::White {
+        white_score
+    } else {
+        -white_score
+    }
 }

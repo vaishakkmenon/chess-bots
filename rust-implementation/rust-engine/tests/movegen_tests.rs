@@ -1086,7 +1086,8 @@ fn white_kingside_castle_forbidden_if_f1_or_g1_attacked() {
     let tables = load_magic_tables();
 
     let mut moves = Vec::new();
-    generate_legal(&mut b, &tables, &mut moves);
+    let mut scratch = Vec::with_capacity(256);
+    generate_legal(&mut b, &tables, &mut moves, &mut scratch);
 
     assert!(
         !moves.iter().any(|m| m.is_castling
@@ -1104,7 +1105,8 @@ fn black_queenside_castle_forbidden_if_d8_or_c8_attacked() {
     let tables = load_magic_tables();
 
     let mut moves = Vec::new();
-    generate_legal(&mut b, &tables, &mut moves);
+    let mut scratch = Vec::with_capacity(256);
+    generate_legal(&mut b, &tables, &mut moves, &mut scratch);
 
     assert!(
         !moves.iter().any(|m| m.is_castling

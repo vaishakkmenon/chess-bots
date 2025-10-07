@@ -69,7 +69,8 @@ pub fn perft(board: &mut Board, tables: &MagicTables, depth: u32) -> u64 {
     }
 
     let mut moves = Vec::new();
-    generate_legal(board, tables, &mut moves);
+    let mut scratch = Vec::with_capacity(256);
+    generate_legal(board, tables, &mut moves, &mut scratch);
 
     // helpful breadcrumb at each node
     if depth <= MAX_LOG_DEPTH {
@@ -113,7 +114,8 @@ pub fn perft(board: &mut Board, tables: &MagicTables, depth: u32) -> u64 {
 #[instrument(skip(board, tables), fields(depth))]
 pub fn perft_divide(board: &mut Board, tables: &MagicTables, depth: u32) -> u64 {
     let mut moves = Vec::new();
-    generate_legal(board, tables, &mut moves);
+    let mut scratch = Vec::with_capacity(256);
+    generate_legal(board, tables, &mut moves, &mut scratch);
 
     if depth <= MAX_LOG_DEPTH {
         debug!(depth, moves = moves.len(), "divide: root legal moves");
@@ -163,11 +165,12 @@ pub fn perft_count_with_breakdown(
 
         // Leaf: check/mate status (efficient: in_check + one legal gen)
         let mut tmp = Vec::new();
+        let mut scratch = Vec::with_capacity(256);
         let side_in_check = in_check(board, board.side_to_move, tables);
         if side_in_check {
             out.checks += 1;
         }
-        generate_legal(board, tables, &mut tmp);
+        generate_legal(board, tables, &mut tmp, &mut scratch);
         if tmp.is_empty() && side_in_check {
             out.checkmates += 1;
         }
@@ -175,7 +178,8 @@ pub fn perft_count_with_breakdown(
     }
 
     let mut moves = Vec::new();
-    generate_legal(board, tables, &mut moves);
+    let mut scratch = Vec::with_capacity(256);
+    generate_legal(board, tables, &mut moves, &mut scratch);
 
     for mv in moves {
         // --- breakdown tags at this ply (edge-based) ---
@@ -217,7 +221,8 @@ pub fn perft_divide_with_breakdown(
     depth: u32,
 ) -> Vec<(Move, PerftCounters)> {
     let mut moves = Vec::new();
-    generate_legal(board, tables, &mut moves);
+    let mut scratch = Vec::with_capacity(256);
+    generate_legal(board, tables, &mut moves, &mut scratch);
 
     let mut out = Vec::with_capacity(moves.len());
     for mv in moves {

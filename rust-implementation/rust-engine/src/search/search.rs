@@ -14,8 +14,9 @@ fn is_terminal_fast(
     scratch: &mut Vec<Move>,
     ply: i32,
 ) -> Option<i32> {
-    generate_legal(board, tables, scratch);
-    if !scratch.is_empty() {
+    let mut legal_moves = Vec::with_capacity(64);
+    generate_legal(board, tables, &mut legal_moves, scratch);
+    if !legal_moves.is_empty() {
         return None;
     }
 
@@ -40,20 +41,21 @@ fn negamax(
     ply: i32,
     scratch: &mut Vec<Move>,
 ) -> i32 {
+    // At the start of negamax, before terminal check:
+    if board.halfmove_clock >= 100 || board.repetition_count() >= 3 {
+        return 0; // draw
+    }
+
     if let Some(tscore) = is_terminal_fast(board, tables, scratch, ply) {
         return tscore;
     }
 
     if depth == 0 {
-        let score = static_eval(board);
-        return if board.side_to_move == Color::White {
-            score
-        } else {
-            -score
-        };
+        return static_eval(board);
     }
+
     let mut legal_moves: Vec<Move> = Vec::with_capacity(64);
-    generate_legal(board, tables, &mut legal_moves);
+    generate_legal(board, tables, &mut legal_moves, scratch);
 
     let mut a = alpha;
     for &mv in legal_moves.iter() {

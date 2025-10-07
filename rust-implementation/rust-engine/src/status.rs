@@ -121,7 +121,8 @@ pub fn position_status(board: &mut Board, tables: &MagicTables) -> GameStatus {
 
     // Move-based outcomes
     let mut legal = Vec::with_capacity(64);
-    generate_legal(board, tables, &mut legal);
+    let mut scratch = Vec::with_capacity(256);
+    generate_legal(board, tables, &mut legal, &mut scratch);
     if legal.is_empty() {
         if in_check(board, board.side_to_move, tables) {
             GameStatus::Checkmate
