@@ -172,3 +172,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Ignore local claude settings and Claude documents
+.claude/
+CLAUDE.md
