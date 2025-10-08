@@ -115,7 +115,7 @@ fn knight_captures_enemy_piece() {
         .iter()
         .find(|m| m.to.index() == 33)
         .expect("Missing capture");
-    assert!(mv.is_capture);
+    assert!(mv.is_capture());
 }
 
 #[test]
@@ -228,7 +228,7 @@ fn bishop_captures_enemy_piece() {
         .iter()
         .find(|m| m.to.index() == 36)
         .expect("Expected capture move to 36");
-    assert!(mv.is_capture);
+    assert!(mv.is_capture());
 }
 
 #[test]
@@ -353,7 +353,7 @@ fn rook_captures_enemy_piece() {
 
     let capture = moves.iter().find(|m| m.to.index() == 28);
     assert!(capture.is_some(), "Expected capture move to e4 (28)");
-    assert!(capture.unwrap().is_capture);
+    assert!(capture.unwrap().is_capture());
 }
 
 #[test]
@@ -480,7 +480,7 @@ fn queen_captures_enemy_piece() {
 
     let capture = moves.iter().find(|m| m.to.index() == 28);
     assert!(capture.is_some(), "Expected capture move to e4 (28)");
-    assert!(capture.unwrap().is_capture);
+    assert!(capture.unwrap().is_capture());
 }
 
 #[test]
@@ -591,7 +591,7 @@ fn king_captures_enemy_piece() {
         .iter()
         .find(|m| m.to.index() == 36)
         .expect("Missing capture move to e5");
-    assert!(mv.is_capture);
+    assert!(mv.is_capture());
 }
 
 #[test]
@@ -662,7 +662,7 @@ fn pawn_captures_diagonally() {
 
     for &to in &expected_dests {
         let mv = moves.iter().find(|m| m.to.index() == to);
-        assert!(mv.unwrap().is_capture);
+        assert!(mv.unwrap().is_capture());
         assert!(mv.is_some(), "Missing capture to {}", to);
     }
 }
@@ -752,7 +752,7 @@ fn black_pawn_captures_diagonally() {
     for &to in &expected_dests {
         let mv = moves.iter().find(|m| m.to.index() == to);
         assert!(mv.is_some(), "Missing capture to {}", to);
-        assert!(mv.unwrap().is_capture);
+        assert!(mv.unwrap().is_capture());
     }
 }
 
@@ -800,7 +800,7 @@ fn white_pawn_does_not_capture_friendly_piece() {
 
     // Should not generate any diagonal captures
     assert!(
-        moves.iter().all(|m| !m.is_capture),
+        moves.iter().all(|m| !m.is_capture()),
         "Should not capture friendly pieces"
     );
 }
@@ -820,7 +820,7 @@ fn black_pawn_does_not_capture_friendly_piece() {
 
     // Should not generate any diagonal captures
     assert!(
-        moves.iter().all(|m| !m.is_capture),
+        moves.iter().all(|m| !m.is_capture()),
         "Should not capture friendly pieces"
     );
 }
@@ -842,7 +842,7 @@ fn white_promotion_push() {
         assert!(moves.iter().any(|m| m.from.index() == a7
             && m.to.index() == expected_to
             && m.promotion == Some(piece)
-            && !m.is_capture));
+            && !m.is_capture()));
     }
 }
 
@@ -865,7 +865,7 @@ fn white_promotion_captures() {
             assert!(moves.iter().any(|m| m.from.index() == d7
                 && m.to.index() == to
                 && m.promotion == Some(piece)
-                && m.is_capture));
+                && m.is_capture()));
         }
     }
 }
@@ -887,7 +887,7 @@ fn black_promotion_push() {
         assert!(moves.iter().any(|m| m.from.index() == a2
             && m.to.index() == expected_to
             && m.promotion == Some(piece)
-            && !m.is_capture));
+            && !m.is_capture()));
     }
 }
 
@@ -911,7 +911,7 @@ fn black_promotion_captures() {
             assert!(moves.iter().any(|m| m.from.index() == d2
                 && m.to.index() == to
                 && m.promotion == Some(piece)
-                && m.is_capture));
+                && m.is_capture()));
         }
     }
 }
@@ -935,13 +935,13 @@ fn white_en_passant_capture() {
     generate_pawn_moves(&board, &mut moves);
     println!("{:#?}", moves);
 
-    let ep_move = moves.iter().find(|m| m.is_en_passant);
+    let ep_move = moves.iter().find(|m| m.is_en_passant());
     assert!(ep_move.is_some(), "Expected en passant move");
 
     let m = ep_move.unwrap();
     assert_eq!(m.from.index(), e5);
     assert_eq!(m.to.index(), 43); // d6
-    assert!(m.is_capture);
+    assert!(m.is_capture());
 }
 
 #[test]
@@ -963,13 +963,13 @@ fn black_en_passant_capture() {
     generate_pawn_moves(&board, &mut moves);
     println!("{:#?}", moves);
 
-    let ep_move = moves.iter().find(|m| m.is_en_passant);
+    let ep_move = moves.iter().find(|m| m.is_en_passant());
     assert!(ep_move.is_some(), "Expected en passant move");
 
     let m = ep_move.unwrap();
     assert_eq!(m.from.index(), d4);
     assert_eq!(m.to.index(), 20); // e3
-    assert!(m.is_capture);
+    assert!(m.is_capture());
 }
 
 #[test]
@@ -987,14 +987,14 @@ fn no_en_passant_when_not_set() {
     generate_pawn_moves(&board, &mut moves);
 
     assert!(
-        moves.iter().all(|m| !m.is_en_passant),
+        moves.iter().all(|m| !m.is_en_passant()),
         "No en passant move expected"
     );
 }
 
 /// Helper to look for a castling move that lands on `to`
 fn has_castle(moves: &[Move], to: u8) -> bool {
-    moves.iter().any(|m| m.is_castling && m.to.index() == to)
+    moves.iter().any(|m| m.is_castling() && m.to.index() == to)
 }
 
 #[test]
@@ -1090,7 +1090,7 @@ fn white_kingside_castle_forbidden_if_f1_or_g1_attacked() {
     generate_legal(&mut b, &tables, &mut moves, &mut scratch);
 
     assert!(
-        !moves.iter().any(|m| m.is_castling
+        !moves.iter().any(|m| m.is_castling()
             && m.from == Square::from_str("e1").unwrap()
             && m.to == Square::from_str("g1").unwrap()),
         "White cannot castle through check when f1 or g1 is attacked"
@@ -1109,7 +1109,7 @@ fn black_queenside_castle_forbidden_if_d8_or_c8_attacked() {
     generate_legal(&mut b, &tables, &mut moves, &mut scratch);
 
     assert!(
-        !moves.iter().any(|m| m.is_castling
+        !moves.iter().any(|m| m.is_castling()
             && m.from == Square::from_str("e8").unwrap()
             && m.to == Square::from_str("c8").unwrap()),
         "Black cannot castle through check when d8 or c8 is attacked"

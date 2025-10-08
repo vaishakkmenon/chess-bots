@@ -64,7 +64,7 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
     // Capture
     let mut capture = None;
 
-    if mv.is_en_passant {
+    if mv.is_en_passant() {
         let cap_sq = if color == Color::White {
             to_idx - 8
         } else {
@@ -105,7 +105,7 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
 
     let old_rights = board.castling_rights;
 
-    if mv.is_castling {
+    if mv.is_castling() {
         if let Some((rf, rt)) = rook_castle_squares(to_idx as u8) {
             undo.castling_rook = Some((rf, rt));
         }
@@ -356,7 +356,7 @@ pub fn generate_legal(
     moves.clear();
 
     for mv in scratch.iter().copied() {
-        if mv.is_castling && !is_legal_castling(board, mv, tables) {
+        if mv.is_castling() && !is_legal_castling(board, mv, tables) {
             continue;
         }
         let mover = board.side_to_move;

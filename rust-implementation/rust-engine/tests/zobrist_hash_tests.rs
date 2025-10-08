@@ -1,7 +1,7 @@
 // tests/zobrist_tests.rs
 use rust_engine::board::{Board, Color, Piece};
 use rust_engine::hash::zobrist::zobrist_keys;
-use rust_engine::moves::types::Move;
+use rust_engine::moves::types::{Move, PROMOTION, PROMOTION_CAPTURE, QUIET_MOVE};
 use rust_engine::{
     // move executor
     moves::execute::{make_move_basic, undo_move_basic},
@@ -32,9 +32,7 @@ fn mv_king(from: u8, to: u8) -> Move {
         to: sq(to),
         piece: Piece::King,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: QUIET_MOVE,
     }
 }
 
@@ -44,9 +42,7 @@ fn mv_pawn(from: u8, to: u8) -> Move {
         to: sq(to),
         piece: Piece::Pawn,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: QUIET_MOVE,
     }
 }
 
@@ -56,9 +52,7 @@ fn mv_promo(from: u8, to: u8, p: Piece) -> Move {
         to: sq(to),
         piece: Piece::Pawn,
         promotion: Some(p),
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION,
     }
 }
 
@@ -68,9 +62,7 @@ fn mv_promo_capture(from: u8, to: u8, p: Piece) -> Move {
         to: sq(to),
         piece: Piece::Pawn,
         promotion: Some(p),
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION_CAPTURE,
     }
 }
 
@@ -174,9 +166,7 @@ fn mv(from: u8, to: u8, piece: Piece) -> rust_engine::moves::types::Move {
         to: Square::from_index(to),
         piece,
         promotion: None,
-        is_capture: false,
-        is_castling: false,
-        is_en_passant: false,
+        flags: QUIET_MOVE,
     }
 }
 
@@ -465,9 +455,7 @@ fn zobrist_promo_white_quiet_q() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Queen),
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION,
     };
 
     let undo = make_move_basic(&mut board, mv);
@@ -515,9 +503,7 @@ fn zobrist_promo_black_quiet_q() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Queen),
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION,
     };
 
     let undo = make_move_basic(&mut board, mv);
@@ -562,9 +548,7 @@ fn zobrist_promo_white_capture_h8_q() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Queen),
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION_CAPTURE,
     };
 
     let undo = make_move_basic(&mut board, mv);
@@ -609,9 +593,7 @@ fn zobrist_promo_black_capture_h1_q() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Queen),
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION_CAPTURE,
     };
 
     let undo = make_move_basic(&mut board, mv);
@@ -661,9 +643,7 @@ fn zobrist_promo_white_capture_h8_clears_k_rights() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Queen),
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION_CAPTURE,
     };
 
     let undo = make_move_basic(&mut board, mv);
@@ -732,9 +712,7 @@ fn zobrist_promo_black_capture_a1_clears_q_rights() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Queen),
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION_CAPTURE,
     };
 
     // Make
@@ -788,9 +766,7 @@ fn zobrist_promo_white_quiet_r() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Rook),
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION,
     };
     let undo = make_move_basic(&mut board, mv);
 
@@ -835,9 +811,7 @@ fn zobrist_promo_white_quiet_b() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Bishop),
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION,
     };
     let undo = make_move_basic(&mut board, mv);
 
@@ -879,9 +853,7 @@ fn zobrist_promo_white_quiet_n() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Knight),
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION,
     };
     let undo = make_move_basic(&mut board, mv);
 
@@ -927,9 +899,7 @@ fn zobrist_promo_black_quiet_r() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Rook),
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION,
     };
     let undo = make_move_basic(&mut board, mv);
 
@@ -971,9 +941,7 @@ fn zobrist_promo_black_quiet_b() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Bishop),
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION,
     };
     let undo = make_move_basic(&mut board, mv);
 
@@ -1015,9 +983,7 @@ fn zobrist_promo_black_quiet_n() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Knight),
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION,
     };
     let undo = make_move_basic(&mut board, mv);
 
@@ -1062,9 +1028,7 @@ fn zobrist_promo_white_capture_h8_r() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Rook),
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION_CAPTURE,
     };
     let undo = make_move_basic(&mut board, mv);
 
@@ -1104,9 +1068,7 @@ fn zobrist_promo_white_capture_h8_b() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Bishop),
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION_CAPTURE,
     };
     let undo = make_move_basic(&mut board, mv);
 
@@ -1146,9 +1108,7 @@ fn zobrist_promo_white_capture_h8_n() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Knight),
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION_CAPTURE,
     };
     let undo = make_move_basic(&mut board, mv);
 
@@ -1192,9 +1152,7 @@ fn zobrist_promo_black_capture_h1_r() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Rook),
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION_CAPTURE,
     };
     let undo = make_move_basic(&mut board, mv);
 
@@ -1234,9 +1192,7 @@ fn zobrist_promo_black_capture_h1_b() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Bishop),
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION_CAPTURE,
     };
     let undo = make_move_basic(&mut board, mv);
 
@@ -1276,9 +1232,7 @@ fn zobrist_promo_black_capture_h1_n() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Knight),
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION_CAPTURE,
     };
     let undo = make_move_basic(&mut board, mv);
 
@@ -1324,9 +1278,7 @@ fn zobrist_promo_white_capture_a8_clears_q_rights() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Queen),
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION_CAPTURE,
     };
     let undo = make_move_basic(&mut board, mv);
 
@@ -1369,9 +1321,7 @@ fn zobrist_promo_black_capture_h1_clears_k_rights() {
         to,
         piece: Piece::Pawn,
         promotion: Some(Piece::Queen),
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION_CAPTURE,
     };
     let undo = make_move_basic(&mut board, mv);
 

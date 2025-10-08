@@ -198,13 +198,13 @@ mod tests {
 
             nodes += replies.len() as u64;
             for r in &replies {
-                if r.is_capture {
+                if r.is_capture() {
                     captures += 1;
                 }
-                if r.is_en_passant {
+                if r.is_en_passant() {
                     ep += 1;
                 }
-                if r.is_castling {
+                if r.is_castling() {
                     castles += 1;
                 }
                 // quick check detector

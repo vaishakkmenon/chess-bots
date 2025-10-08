@@ -1,6 +1,9 @@
 use rust_engine::board::{Board, Color, Piece};
 use rust_engine::moves::execute::{make_move_basic, undo_move_basic};
-use rust_engine::moves::types::Move;
+use rust_engine::moves::types::{
+    CAPTURE, EN_PASSANT, KINGSIDE_CASTLE, Move, PROMOTION, PROMOTION_CAPTURE, QUEENSIDE_CASTLE,
+    QUIET_MOVE,
+};
 use rust_engine::square::Square;
 use std::str::FromStr;
 
@@ -15,9 +18,7 @@ fn roundtrip_simple_move() {
         to: Square::from_index(20),
         piece: Piece::Pawn,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: QUIET_MOVE,
     };
     let undo = make_move_basic(&mut b, mv);
     undo_move_basic(&mut b, undo);
@@ -35,9 +36,7 @@ fn roundtrip_pawn_capture() {
         to: Square::from_index(28),   // e4
         piece: Piece::Pawn,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: QUIET_MOVE,
     };
     let u1 = make_move_basic(&mut board, mv1);
 
@@ -47,9 +46,7 @@ fn roundtrip_pawn_capture() {
         to: Square::from_index(35),   // d5
         piece: Piece::Pawn,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: QUIET_MOVE,
     };
     let u2 = make_move_basic(&mut board, mv2);
 
@@ -59,9 +56,7 @@ fn roundtrip_pawn_capture() {
         to: Square::from_index(35),   // d5
         piece: Piece::Pawn,
         promotion: None,
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: CAPTURE,
     };
     let u3 = make_move_basic(&mut board, mv3);
 
@@ -107,9 +102,7 @@ fn roundtrip_white_kingside_castle() {
         to: Square::from_str("g1").unwrap(),
         piece: Piece::King,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: true,
+        flags: KINGSIDE_CASTLE,
     };
     let undo = make_move_basic(&mut b, mv);
     assert_ne!(b.pieces(Piece::King, Color::White) & (1 << 6), 0); // g1
@@ -132,9 +125,7 @@ fn roundtrip_white_queenside_castle() {
         to: Square::from_str("c1").unwrap(),
         piece: Piece::King,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: true,
+        flags: QUEENSIDE_CASTLE,
     };
 
     let undo = make_move_basic(&mut board, mv);
@@ -157,9 +148,7 @@ fn roundtrip_black_kingside_castle() {
         to: Square::from_str("g8").unwrap(),
         piece: Piece::King,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: true,
+        flags: KINGSIDE_CASTLE,
     };
 
     let undo = make_move_basic(&mut board, mv);
@@ -181,9 +170,7 @@ fn roundtrip_black_queenside_castle() {
         to: Square::from_str("c8").unwrap(),
         piece: Piece::King,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: true,
+        flags: QUEENSIDE_CASTLE,
     };
 
     let undo = make_move_basic(&mut board, mv);
@@ -210,9 +197,7 @@ fn castling_rights_removed_on_king_move() {
         to: Square::from_str("f1").unwrap(),
         piece: Piece::King,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: QUIET_MOVE,
     };
 
     let undo = make_move_basic(&mut board, mv);
@@ -242,9 +227,7 @@ fn castling_rights_removed_on_rook_move() {
         to: Square::from_str("h2").unwrap(),
         piece: Piece::Rook,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: QUIET_MOVE,
     };
 
     let undo = make_move_basic(&mut board, mv);
@@ -271,9 +254,7 @@ fn castling_rights_removed_on_rook_capture() {
         to: Square::from_str("a1").unwrap(),
         piece: Piece::Bishop,
         promotion: None,
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: CAPTURE,
     };
 
     let undo = make_move_basic(&mut board, mv);
@@ -294,9 +275,7 @@ fn roundtrip_en_passant_correct() {
         to: Square::from_str("e4").unwrap(),
         piece: Piece::Pawn,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: QUIET_MOVE,
     };
     let u1 = make_move_basic(&mut board, mv1);
 
@@ -306,9 +285,7 @@ fn roundtrip_en_passant_correct() {
         to: Square::from_str("a6").unwrap(),
         piece: Piece::Pawn,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: QUIET_MOVE,
     };
     let u2 = make_move_basic(&mut board, mv2);
 
@@ -318,9 +295,7 @@ fn roundtrip_en_passant_correct() {
         to: Square::from_str("e5").unwrap(),
         piece: Piece::Pawn,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: QUIET_MOVE,
     };
     let u3 = make_move_basic(&mut board, mv3);
 
@@ -330,9 +305,7 @@ fn roundtrip_en_passant_correct() {
         to: Square::from_str("d5").unwrap(),
         piece: Piece::Pawn,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: QUIET_MOVE,
     };
     let u4 = make_move_basic(&mut board, mv4);
 
@@ -342,9 +315,7 @@ fn roundtrip_en_passant_correct() {
         to: Square::from_str("d6").unwrap(),
         piece: Piece::Pawn,
         promotion: None,
-        is_capture: true,
-        is_en_passant: true,
-        is_castling: false,
+        flags: EN_PASSANT,
     };
     let u5 = make_move_basic(&mut board, mv5);
 
@@ -403,9 +374,7 @@ fn halfmove_and_fullmove_counters_with_ep() {
             to: Square::from_str("e4").unwrap(),
             piece: Piece::Pawn,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: QUIET_MOVE,
         },
     );
     assert_eq!(board.halfmove_clock, 0);
@@ -419,9 +388,7 @@ fn halfmove_and_fullmove_counters_with_ep() {
             to: Square::from_str("a6").unwrap(),
             piece: Piece::Pawn,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: QUIET_MOVE,
         },
     );
     assert_eq!(board.halfmove_clock, 0);
@@ -435,9 +402,7 @@ fn halfmove_and_fullmove_counters_with_ep() {
             to: Square::from_str("e5").unwrap(),
             piece: Piece::Pawn,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: QUIET_MOVE,
         },
     );
     assert_eq!(board.halfmove_clock, 0);
@@ -451,9 +416,7 @@ fn halfmove_and_fullmove_counters_with_ep() {
             to: Square::from_str("d5").unwrap(),
             piece: Piece::Pawn,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: QUIET_MOVE,
         },
     );
     assert_eq!(board.halfmove_clock, 0);
@@ -467,9 +430,7 @@ fn halfmove_and_fullmove_counters_with_ep() {
             to: Square::from_str("d6").unwrap(),
             piece: Piece::Pawn,
             promotion: None,
-            is_capture: true,
-            is_en_passant: true,
-            is_castling: false,
+            flags: EN_PASSANT,
         },
     );
     assert_eq!(board.halfmove_clock, 0);
@@ -500,9 +461,7 @@ fn roundtrip_promotion_no_capture() {
         to: Square::from_str("e8").unwrap(),
         piece: Piece::Pawn,
         promotion: Some(Piece::Queen),
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION,
     };
     let undo = make_move_basic(&mut board, mv);
 
@@ -548,9 +507,7 @@ fn roundtrip_promotion_with_capture() {
         to: Square::from_str("f8").unwrap(),
         piece: Piece::Pawn,
         promotion: Some(Piece::Knight),
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION_CAPTURE,
     };
     let undo = make_move_basic(&mut board, mv);
 
@@ -594,9 +551,7 @@ fn en_passant_lifecycle_set_clear_undo() {
             to: Square::from_str("e4").unwrap(),
             piece: Piece::Pawn,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: QUIET_MOVE,
         },
     );
     assert_eq!(board.en_passant, Some(Square::from_str("e3").unwrap()));
@@ -609,9 +564,7 @@ fn en_passant_lifecycle_set_clear_undo() {
             to: Square::from_str("f6").unwrap(),
             piece: Piece::Knight,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: QUIET_MOVE,
         },
     );
     assert_eq!(board.en_passant, None);
@@ -639,9 +592,7 @@ fn castling_rights_removed_on_h1_rook_capture() {
         to: Square::from_str("h1").unwrap(),
         piece: Piece::Bishop,
         promotion: None,
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: CAPTURE,
     };
 
     let undo = make_move_basic(&mut board, mv);
@@ -667,9 +618,7 @@ fn castling_rights_removed_on_a8_and_h8_rook_capture() {
         to: Square::from_str("a8").unwrap(),
         piece: Piece::Bishop,
         promotion: None,
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: CAPTURE,
     };
     let u1 = make_move_basic(&mut board, mv1);
     assert!(
@@ -685,9 +634,7 @@ fn castling_rights_removed_on_a8_and_h8_rook_capture() {
         to: Square::from_str("h8").unwrap(),
         piece: Piece::Bishop,
         promotion: None,
-        is_capture: true,
-        is_en_passant: false,
-        is_castling: false,
+        flags: CAPTURE,
     };
     let u2 = make_move_basic(&mut board, mv2);
     assert!(
@@ -714,9 +661,7 @@ fn castling_halfmove_fullmove_behavior() {
             to: Square::from_str("g1").unwrap(),
             piece: Piece::King,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: true,
+            flags: KINGSIDE_CASTLE,
         },
     );
     assert_eq!(board.halfmove_clock, start_half + 1);
@@ -730,9 +675,7 @@ fn castling_halfmove_fullmove_behavior() {
             to: Square::from_str("c6").unwrap(),
             piece: Piece::Knight,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: QUIET_MOVE,
         },
     );
     assert_eq!(board.halfmove_clock, start_half + 2);
@@ -759,9 +702,7 @@ fn quiet_moves_increment_halfmove_and_black_increments_fullmove() {
             to: Square::from_str("f3").unwrap(),
             piece: Piece::Knight,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: QUIET_MOVE,
         },
     );
     assert_eq!(board.halfmove_clock, start_half + 1);
@@ -775,9 +716,7 @@ fn quiet_moves_increment_halfmove_and_black_increments_fullmove() {
             to: Square::from_str("f6").unwrap(),
             piece: Piece::Knight,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: QUIET_MOVE,
         },
     );
     assert_eq!(board.halfmove_clock, start_half + 2);
@@ -806,9 +745,7 @@ fn promotion_castling_rights_effects() {
             to: Square::from_str("e8").unwrap(),
             piece: Piece::Pawn,
             promotion: Some(Piece::Queen),
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: PROMOTION,
         },
     );
     assert!(
@@ -834,9 +771,7 @@ fn promotion_castling_rights_effects() {
             to: Square::from_str("a8").unwrap(),
             piece: Piece::Pawn,
             promotion: Some(Piece::Queen),
-            is_capture: true,
-            is_en_passant: false,
-            is_castling: false,
+            flags: PROMOTION_CAPTURE,
         },
     );
     assert!(

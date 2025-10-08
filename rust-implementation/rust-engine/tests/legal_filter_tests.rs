@@ -80,7 +80,7 @@ fn en_passant_is_illegal_when_pawn_is_pinned_opening_file_on_own_king() {
 
     // Ensure no legal EP move from e5 to d6 exists
     assert!(
-        !moves.iter().any(|m| m.is_en_passant
+        !moves.iter().any(|m| m.is_en_passant()
             && m.from == Square::from_str("e5").unwrap()
             && m.to == Square::from_str("d6").unwrap()),
         "EP capture that exposes own king must be filtered out by the legality checker"

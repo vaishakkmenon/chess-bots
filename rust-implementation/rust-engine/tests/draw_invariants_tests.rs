@@ -1,7 +1,7 @@
 use rust_engine::board::{Board, Piece};
 use rust_engine::moves::execute::{make_move_basic, undo_move_basic};
 use rust_engine::moves::magic::loader::load_magic_tables;
-use rust_engine::moves::types::Move;
+use rust_engine::moves::types::{Move, QUIET_MOVE};
 use rust_engine::square::Square;
 use rust_engine::status::{GameStatus, is_draw_by_fifty_move, position_status};
 
@@ -14,9 +14,7 @@ fn mv(piece: Piece, from: u8, to: u8) -> Move {
         to: sq(to),
         piece,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: QUIET_MOVE,
     }
 }
 
@@ -35,7 +33,7 @@ fn halfmove_clock_increments_and_resets() {
     assert_eq!(b.halfmove_clock, 0);
 
     let cap = Move {
-        is_capture: true,
+        flags: rust_engine::moves::types::CAPTURE,
         ..mv(Piece::Pawn, 28, 35)
     }; // e4xd5
     let u5 = make_move_basic(&mut b, cap);
@@ -133,9 +131,7 @@ fn fifty_move_rule_becomes_claimable_at_100_halfmoves() {
         to: Square::from_index(21),
         piece: Piece::Knight,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: QUIET_MOVE,
     };
     let _u = make_move_basic(&mut b, mv);
 
@@ -165,9 +161,7 @@ fn seventyfive_move_forced_draw_precedes_threefold_at_150_halfmoves() {
                 to: Square::from_index(t),
                 piece: Piece::Knight,
                 promotion: None,
-                is_capture: false,
-                is_en_passant: false,
-                is_castling: false,
+                flags: QUIET_MOVE,
             },
         );
     }
@@ -182,9 +176,7 @@ fn seventyfive_move_forced_draw_precedes_threefold_at_150_halfmoves() {
             to: Square::from_index(21),
             piece: Piece::Knight,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: QUIET_MOVE,
         },
     );
 

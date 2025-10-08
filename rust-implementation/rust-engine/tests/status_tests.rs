@@ -5,7 +5,7 @@ use std::str::FromStr;
 use rust_engine::board::{Board, Piece};
 use rust_engine::moves::execute::{make_move_basic, undo_move_basic};
 use rust_engine::moves::magic::loader::load_magic_tables;
-use rust_engine::moves::types::Move;
+use rust_engine::moves::types::{CAPTURE, EN_PASSANT, Move, PROMOTION, QUIET_MOVE};
 use rust_engine::square::Square;
 use rust_engine::status::{
     GameStatus, is_draw_by_fifty_move, is_draw_by_threefold, position_status,
@@ -25,9 +25,7 @@ fn mv(piece: Piece, from: u8, to: u8) -> Move {
         to: sq(to),
         piece,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: QUIET_MOVE,
     }
 }
 
@@ -38,9 +36,7 @@ fn mv_king(from: u8, to: u8) -> rust_engine::moves::types::Move {
         to: sq(to),
         piece: Piece::King,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: QUIET_MOVE,
     }
 }
 
@@ -51,9 +47,7 @@ fn mv_pawn(from: u8, to: u8) -> rust_engine::moves::types::Move {
         to: sq(to),
         piece: Piece::Pawn,
         promotion: None,
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: QUIET_MOVE,
     }
 }
 
@@ -64,9 +58,7 @@ fn mv_rook_capture(from: u8, to: u8) -> Move {
         to: sq(to),
         piece: Piece::Rook,
         promotion: None,
-        is_capture: true, // <-- important: mark as capture
-        is_en_passant: false,
-        is_castling: false,
+        flags: CAPTURE,
     }
 }
 
@@ -77,9 +69,7 @@ fn mv_promo(from: u8, to: u8, promo: rust_engine::board::Piece) -> rust_engine::
         to: sq(to),
         piece: rust_engine::board::Piece::Pawn,
         promotion: Some(promo),
-        is_capture: false,
-        is_en_passant: false,
-        is_castling: false,
+        flags: PROMOTION,
     }
 }
 
@@ -91,9 +81,7 @@ fn mv_ep_capture(from: u8, to: u8) -> rust_engine::moves::types::Move {
         to: sq(to),
         piece: rust_engine::board::Piece::Pawn,
         promotion: None,
-        is_capture: true,
-        is_en_passant: true,
-        is_castling: false,
+        flags: EN_PASSANT,
     }
 }
 
@@ -475,9 +463,7 @@ fn status_priority_seventyfive_over_threefold() {
             to: sq(to),
             piece: Piece::King,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: QUIET_MOVE,
         }
     }
 
@@ -624,9 +610,7 @@ fn threefold_distinguishes_capturable_ep_square() {
             to: rust_engine::square::Square::from_index(28),   // e4
             piece: Piece::Pawn,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: QUIET_MOVE,
         },
     );
 
@@ -691,9 +675,7 @@ fn repetition_resets_after_capture() {
             to: Square::from_index(56),
             piece: Piece::Rook,
             promotion: None,
-            is_capture: true,
-            is_en_passant: false,
-            is_castling: false,
+            flags: CAPTURE,
         },
     );
 
@@ -752,9 +734,7 @@ fn repetition_resets_after_promotion() {
             to: Square::from_index(56),
             piece: Piece::Pawn,
             promotion: Some(Piece::Queen),
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: PROMOTION,
         },
     );
 
@@ -841,9 +821,7 @@ fn status_evaluated_after_move_applied() {
             to: Square::from_index(13),  // f2
             piece: Piece::King,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: QUIET_MOVE,
         },
     );
     assert_eq!(position_status(&mut b, &tables), GameStatus::DrawFiftyMove);
@@ -856,9 +834,7 @@ fn status_evaluated_after_move_applied() {
             to: Square::from_index(53),   // f7
             piece: Piece::King,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: QUIET_MOVE,
         },
     );
     assert_eq!(
@@ -898,9 +874,7 @@ fn fivefold_respects_irreversible_window() {
             to: Square::from_index(16),
             piece: Piece::Pawn,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: QUIET_MOVE,
         },
     );
 

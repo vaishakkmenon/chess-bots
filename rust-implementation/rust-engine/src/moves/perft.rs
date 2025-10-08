@@ -260,13 +260,13 @@ fn perft_count_recursive(
         let mv = move_buffers[ply][i];
 
         // --- breakdown tags at this ply (edge-based) ---
-        if mv.is_capture {
+        if mv.is_capture() {
             out.captures += 1;
-            if mv.is_en_passant {
+            if mv.is_en_passant() {
                 out.ep_captures += 1;
             }
         }
-        if mv.is_castling {
+        if mv.is_castling() {
             out.castles += 1;
         }
         if mv.promotion.is_some() {

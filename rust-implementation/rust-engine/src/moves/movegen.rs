@@ -5,7 +5,10 @@ use crate::moves::magic::MagicTables;
 use crate::moves::magic::structs::{BishopMagicTables, RookMagicTables};
 use crate::moves::pawn::{BLACK_PAWN_ATTACKS, WHITE_PAWN_ATTACKS};
 use crate::moves::square_control::is_legal_castling;
-use crate::moves::types::Move;
+use crate::moves::types::{
+    CAPTURE, DOUBLE_PAWN_PUSH, EN_PASSANT, KINGSIDE_CASTLE, Move, PROMOTION, PROMOTION_CAPTURE,
+    QUEENSIDE_CASTLE, QUIET_MOVE,
+};
 use crate::square::Square;
 use crate::utils::pop_lsb;
 
@@ -35,14 +38,13 @@ fn push_piece_moves(
 ) {
     while targets != 0 {
         let to = pop_lsb(&mut targets);
+        let is_cap = (enemy >> to) & 1 != 0;
         move_list.push(Move {
             from: Square::from_index(from),
             to: Square::from_index(to),
             piece: move_piece,
             promotion: None,
-            is_capture: (enemy >> to) & 1 != 0,
-            is_en_passant: false,
-            is_castling: false,
+            flags: if is_cap { CAPTURE } else { QUIET_MOVE },
         });
     }
 }
@@ -151,9 +153,7 @@ pub fn generate_king_moves(board: &Board, tables: &MagicTables, move_list: &mut 
             to: Square::from_index(from + 2), // g-file
             piece: Piece::King,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: true,
+            flags: KINGSIDE_CASTLE,
         };
 
         if is_legal_castling(board, mv, tables) {
@@ -168,9 +168,7 @@ pub fn generate_king_moves(board: &Board, tables: &MagicTables, move_list: &mut 
             to: Square::from_index(from - 2), // c-file
             piece: Piece::King,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: true,
+            flags: QUEENSIDE_CASTLE,
         });
     }
 }
@@ -213,9 +211,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
             to: Square::from_index(to),
             piece: Piece::Pawn,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: QUIET_MOVE,
         });
     }
 
@@ -237,9 +233,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
             to: Square::from_index(to),
             piece: Piece::Pawn,
             promotion: None,
-            is_capture: false,
-            is_en_passant: false,
-            is_castling: false,
+            flags: DOUBLE_PAWN_PUSH,
         });
     }
 
@@ -256,9 +250,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
                 to: Square::from_index(to),
                 piece: Piece::Pawn,
                 promotion: None,
-                is_capture: true,
-                is_en_passant: false,
-                is_castling: false,
+                flags: CAPTURE,
             });
         }
     }
@@ -280,9 +272,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
                 to: Square::from_index(to),
                 piece: Piece::Pawn,
                 promotion: Some(promo),
-                is_capture: false,
-                is_en_passant: false,
-                is_castling: false,
+                flags: PROMOTION,
             });
         }
     }
@@ -301,9 +291,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
                     to: Square::from_index(to),
                     piece: Piece::Pawn,
                     promotion: Some(promo),
-                    is_capture: true,
-                    is_en_passant: false,
-                    is_castling: false,
+                    flags: PROMOTION_CAPTURE,
                 });
             }
         }
@@ -328,9 +316,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
                             to: Square::from_index(ep),
                             piece: Piece::Pawn,
                             promotion: None,
-                            is_capture: true,
-                            is_en_passant: true,
-                            is_castling: false,
+                            flags: EN_PASSANT,
                         });
                     }
                 }
