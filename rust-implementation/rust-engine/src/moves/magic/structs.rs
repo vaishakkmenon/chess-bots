@@ -84,7 +84,6 @@ impl MagicTables {
 mod tests {
     use super::*;
     use crate::moves::magic::attacks::{bishop_attacks_per_square, rook_attacks_per_square};
-    use crate::moves::magic::masks::{bishop_vision_mask, rook_vision_mask};
     use crate::moves::magic::precompute::{MagicTableSeed, generate_magic_tables};
 
     /// One constant seed for repeatable results (0x45 == 69 decimal)

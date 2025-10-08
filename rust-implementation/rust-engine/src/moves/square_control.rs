@@ -113,7 +113,6 @@ mod tests {
     use super::*;
     use crate::board::{Color, Piece};
     use crate::moves::magic::{MagicTableSeed, generate_magic_tables};
-    use crate::moves::magic::{bishop_vision_mask, rook_vision_mask};
     use crate::moves::{king, knight, pawn};
 
     fn tables() -> MagicTables {
