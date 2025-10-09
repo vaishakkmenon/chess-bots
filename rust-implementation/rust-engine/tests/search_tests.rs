@@ -16,9 +16,9 @@ fn depth0_equals_static_eval_white_up_pawn() {
     // FEN: black king a8, white king g1, white pawn e4
     let mut b = fen("k7/8/8/8/4P3/8/8/6K1 w - - 0 1");
     let tables = load_magic_tables();
-    let search = search_fixed_depth(&mut b, &tables, 0);
-    assert_eq!(search, static_eval(&b));
-    assert_eq!(search, 100);
+    let (score, _) = search_fixed_depth(&mut b, &tables, 0);
+    assert_eq!(score, static_eval(&b));
+    assert_eq!(score, 100);
 }
 
 #[test]
@@ -28,7 +28,7 @@ fn stalemate_returns_zero_any_depth() {
     let mut b = fen("7k/5Q2/6K1/8/8/8/8/8 b - - 0 1");
     let tables = load_magic_tables();
     for d in 0..=3 {
-        let score = search_fixed_depth(&mut b, &tables, d);
+        let (score, _) = search_fixed_depth(&mut b, &tables, d);
         assert_eq!(score, 0, "stalemate should return 0 at depth {d}");
     }
 }
@@ -41,12 +41,12 @@ fn depth1_prefers_free_capture_white() {
     let mut b = fen("k7/8/8/3p4/4P3/8/8/6K1 w - - 0 1");
     let tables = load_magic_tables();
 
-    let d0 = search_fixed_depth(&mut b, &tables, 0);
-    assert_eq!(d0, static_eval(&b)); // leaf = eval at depth 0
+    let (score, _) = search_fixed_depth(&mut b, &tables, 0);
+    assert_eq!(score, static_eval(&b)); // leaf = eval at depth 0
 
-    let d1 = search_fixed_depth(&mut b, &tables, 1);
+    let (score, _) = search_fixed_depth(&mut b, &tables, 1);
     assert!(
-        d1 >= 100,
-        "depth-1 should find exd5 gaining a pawn; got {d1}"
+        score >= 100,
+        "depth-1 should find exd5 gaining a pawn; got {score}"
     );
 }

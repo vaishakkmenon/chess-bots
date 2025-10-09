@@ -1,5 +1,6 @@
 use crate::board::{Board, Piece};
 use crate::moves::types::Move;
+use crate::search::context::SearchContext;
 
 /// Piece values for MVV-LVA scoring
 pub const PIECE_VALUES: [i32; 6] = [
@@ -43,18 +44,23 @@ pub fn mvv_lva_score(mv: &Move, board: &Board) -> i32 {
 
 /// Score any move for ordering purposes
 /// Returns higher scores for moves that should be searched first
-pub fn score_move(mv: &Move, board: &Board) -> i32 {
+pub fn score_move(mv: &Move, board: &Board, ctx: &SearchContext, ply: usize) -> i32 {
+    // 1. Captures get highest priority (10000+)
     if mv.is_capture() {
-        // Captures get base score of 10000 + MVV-LVA
-        10000 + mvv_lva_score(mv, board)
-    } else {
-        // Quiet moves get score of 0 for now
-        0
+        return 10000 + mvv_lva_score(mv, board);
     }
+
+    // 2. Killer moves get priority (9000)
+    if ctx.is_killer(ply, mv) {
+        return 9000;
+    }
+
+    0
 }
 
 #[cfg(test)]
 mod tests {
+    use super::super::context::SearchContext;
     use super::*;
     use crate::board::{Board, Piece};
     use crate::square::Square;
@@ -136,6 +142,9 @@ mod tests {
         let board =
             Board::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
 
+        let ctx = SearchContext::new();
+        let ply = 0;
+
         // Quiet move: e2-e4
         let mv = Move {
             piece: Piece::Pawn,
@@ -145,7 +154,7 @@ mod tests {
             flags: 0b0000, // No capture
         };
 
-        let score = score_move(&mv, &board);
+        let score = score_move(&mv, &board, &ctx, ply);
 
         assert_eq!(score, 0, "Quiet moves should score 0 in Phase 1");
     }
@@ -153,6 +162,9 @@ mod tests {
     #[test]
     fn test_captures_score_higher_than_quiets() {
         let board = Board::from_str("8/8/8/3p4/4P3/8/8/8 w - - 0 1").unwrap();
+
+        let ctx = SearchContext::new();
+        let ply = 0;
 
         // Capture: e4xd5
         let capture = Move {
@@ -172,8 +184,8 @@ mod tests {
             flags: 0b0000,
         };
 
-        let capture_score = score_move(&capture, &board);
-        let quiet_score = score_move(&quiet, &board);
+        let capture_score = score_move(&capture, &board, &ctx, ply);
+        let quiet_score = score_move(&quiet, &board, &ctx, ply);
 
         assert!(
             capture_score > quiet_score,
@@ -188,6 +200,9 @@ mod tests {
     #[test]
     fn test_better_captures_score_higher() {
         let board = Board::from_str("8/8/8/2nq4/3N4/8/8/8 w - - 0 1").unwrap();
+
+        let ctx = SearchContext::new();
+        let ply = 0;
 
         // Good capture: Nxd5 (knight takes queen)
         let good_capture = Move {
@@ -207,8 +222,8 @@ mod tests {
             flags: 0b0100,
         };
 
-        let good_score = score_move(&good_capture, &board);
-        let bad_score = score_move(&bad_capture, &board);
+        let good_score = score_move(&good_capture, &board, &ctx, ply);
+        let bad_score = score_move(&bad_capture, &board, &ctx, ply);
 
         assert!(good_score > bad_score, "NxQ should score higher than NxN");
     }
