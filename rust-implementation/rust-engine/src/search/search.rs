@@ -4,6 +4,7 @@ use crate::moves::magic::MagicTables;
 use crate::moves::square_control::in_check;
 use crate::moves::types::Move;
 use crate::search::eval::static_eval;
+use crate::search::move_ordering::score_move;
 
 pub const MATE: i32 = 30_000;
 pub const INFTY: i32 = MATE + 2_000;
@@ -43,6 +44,11 @@ fn negamax(
     if depth == 0 {
         return static_eval(board);
     }
+
+    // Sort moves by score (descending = best first)
+    scratch.sort_unstable_by_key(|mv| {
+        -score_move(mv, board) // Negative because we want descending order
+    });
 
     // Copy moves locally since scratch will be reused in recursion
     let legal_moves: Vec<Move> = scratch.clone(); // ← Must clone before recursion
