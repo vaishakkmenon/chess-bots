@@ -14,9 +14,9 @@ tracing-appender = "0.2"
 once_cell = "1.21.3"
 
 [features]
+default = ["psqt"]
 load-magic = []
 deterministic-magic = []
 deterministic_zobrist = [] 
-default = []
 psqt = []
 paranoid-hash = []

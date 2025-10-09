@@ -1,4 +1,4 @@
-use crate::board::{Board, Color};
+use crate::board::Board;
 use crate::moves::execute::{generate_legal, make_move_basic, undo_move_basic};
 use crate::moves::magic::MagicTables;
 use crate::moves::square_control::in_check;
@@ -33,12 +33,7 @@ fn negamax(
     // Terminal check
     if scratch.is_empty() {
         if in_check(board, board.side_to_move, tables) {
-            // Change to:
-            return if board.side_to_move == Color::White {
-                -(MATE - ply as i32)
-            } else {
-                MATE - ply as i32
-            };
+            return -(MATE - ply as i32); // Mated! Bad for current player
         }
         return 0; // stalemate
     }
@@ -125,6 +120,8 @@ pub fn search_fixed_depth(
         );
 
         undo_move_basic(board, undo);
+
+        eprintln!("Move: {:?}, Score: {}", mv, score);
 
         // Track best move
         if score > best_score {

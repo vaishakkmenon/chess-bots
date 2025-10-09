@@ -5,6 +5,7 @@ const N: i32 = 320;
 const B: i32 = 330;
 const R: i32 = 500;
 const Q: i32 = 900;
+const TEMPO_BONUS: i32 = 10;
 
 #[cfg(feature = "psqt")]
 // Helper to mirror file
@@ -15,11 +16,50 @@ pub const fn mirror_vert(sq: u8) -> u8 {
 
 #[cfg(feature = "psqt")]
 mod psqt_tables {
-    pub const PAWN: [i16; 64] = [0; 64];
-    pub const KNIGHT: [i16; 64] = [0; 64];
-    pub const BISHOP: [i16; 64] = [0; 64];
-    pub const ROOK: [i16; 64] = [0; 64];
-    pub const QUEEN: [i16; 64] = [0; 64];
+    // Pawn PST - encourages center control and advancement
+    // Rewards pushing pawns forward, especially in center
+    pub const PAWN: [i16; 64] = [
+        0, 0, 0, 0, 0, 0, 0, 0, // Rank 1
+        5, 10, 10, -20, -20, 10, 10, 5, // Rank 2
+        5, -5, -10, 0, 0, -10, -5, 5, // Rank 3
+        0, 0, 0, 20, 20, 0, 0, 0, // Rank 4
+        5, 5, 10, 25, 25, 10, 5, 5, // Rank 5
+        10, 10, 20, 30, 30, 20, 10, 10, // Rank 6
+        50, 50, 50, 50, 50, 50, 50, 50, // Rank 7
+        0, 0, 0, 0, 0, 0, 0, 0, // Rank 8
+    ];
+
+    // Knight PST - prefers center, heavily penalizes edges
+    // Knights on the rim are dim!
+    pub const KNIGHT: [i16; 64] = [
+        -50, -40, -30, -30, -30, -30, -40, -50, -40, -20, 0, 5, 5, 0, -20, -40, -30, 5, 10, 15, 15,
+        10, 5, -30, -30, 0, 15, 20, 20, 15, 0, -30, -30, 5, 15, 20, 20, 15, 5, -30, -30, 0, 10, 15,
+        15, 10, 0, -30, -40, -20, 0, 0, 0, 0, -20, -40, -50, -40, -30, -30, -30, -30, -40, -50,
+    ];
+
+    // Bishop PST - likes long diagonals and fianchetto
+    // Penalizes being blocked by own pawns
+    pub const BISHOP: [i16; 64] = [
+        -20, -10, -10, -10, -10, -10, -10, -20, -10, 5, 0, 0, 0, 0, 5, -10, -10, 10, 10, 10, 10,
+        10, 10, -10, -10, 0, 10, 10, 10, 10, 0, -10, -10, 5, 5, 10, 10, 5, 5, -10, -10, 0, 5, 10,
+        10, 5, 0, -10, -10, 0, 0, 0, 0, 0, 0, -10, -20, -10, -10, -10, -10, -10, -10, -20,
+    ];
+
+    // Rook PST - loves 7th rank, prefers central files
+    // Generally wants to be active
+    pub const ROOK: [i16; 64] = [
+        0, 0, 0, 5, 5, 0, 0, 0, -5, 0, 0, 0, 0, 0, 0, -5, -5, 0, 0, 0, 0, 0, 0, -5, -5, 0, 0, 0, 0,
+        0, 0, -5, -5, 0, 0, 0, 0, 0, 0, -5, -5, 0, 0, 0, 0, 0, 0, -5, 5, 10, 10, 10, 10, 10, 10, 5,
+        0, 0, 0, 0, 0, 0, 0, 0,
+    ];
+
+    // Queen PST - discourages early development
+    // Penalizes moving queen out too soon (classic beginner mistake)
+    pub const QUEEN: [i16; 64] = [
+        -20, -10, -10, -5, -5, -10, -10, -20, -10, 0, 5, 0, 0, 0, 0, -10, -10, 5, 5, 5, 5, 5, 0,
+        -10, 0, 0, 5, 5, 5, 5, 0, -5, -5, 0, 5, 5, 5, 5, 0, -5, -10, 0, 5, 5, 5, 5, 0, -10, -10, 0,
+        0, 0, 0, 0, 0, -10, -20, -10, -10, -5, -5, -10, -10, -20,
+    ];
 }
 
 /// Material-only evaluation (White perspective), side-to-move agnostic.
@@ -120,7 +160,15 @@ pub fn eval_psqt(_board: &Board) -> i32 {
 }
 
 pub fn static_eval(board: &Board) -> i32 {
-    let white_score = eval_material(board) + eval_psqt(board);
+    let mut white_score = eval_material(board) + eval_psqt(board);
+
+    // Give small advantage to side to move
+    white_score += if board.side_to_move == Color::White {
+        TEMPO_BONUS
+    } else {
+        -TEMPO_BONUS
+    };
+
     if board.side_to_move == Color::White {
         white_score
     } else {
