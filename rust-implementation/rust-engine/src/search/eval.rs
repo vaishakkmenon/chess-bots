@@ -160,7 +160,9 @@ pub fn eval_psqt(_board: &Board) -> i32 {
 }
 
 pub fn static_eval(board: &Board) -> i32 {
-    let mut white_score = eval_material(board) + eval_psqt(board);
+    let material = eval_material(board);
+    let psqt = eval_psqt(board);
+    let mut white_score = material + (psqt / 5);
 
     // Give small advantage to side to move
     white_score += if board.side_to_move == Color::White {
