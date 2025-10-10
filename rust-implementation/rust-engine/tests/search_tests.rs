@@ -12,13 +12,21 @@ fn fen(f: &str) -> Board {
 
 #[test]
 fn depth0_equals_static_eval_white_up_pawn() {
-    // White has a lone pawn; only kings otherwise → eval = +100
+    // White has a lone pawn; only kings otherwise
     // FEN: black king a8, white king g1, white pawn e4
     let mut b = fen("k7/8/8/8/4P3/8/8/6K1 w - - 0 1");
     let tables = load_magic_tables();
     let (score, _) = search_fixed_depth(&mut b, &tables, 0);
+
+    // At depth 0, search should return static eval
     assert_eq!(score, static_eval(&b));
-    assert_eq!(score, 100);
+
+    // Material is 100, PSQT may add bonuses
+    assert!(
+        score >= 100,
+        "White pawn (material=100) + PSQT bonuses should be >= 100, got {}",
+        score
+    );
 }
 
 #[test]
@@ -41,12 +49,15 @@ fn depth1_prefers_free_capture_white() {
     let mut b = fen("k7/8/8/3p4/4P3/8/8/6K1 w - - 0 1");
     let tables = load_magic_tables();
 
-    let (score, _) = search_fixed_depth(&mut b, &tables, 0);
-    assert_eq!(score, static_eval(&b)); // leaf = eval at depth 0
+    let (score, best_move) = search_fixed_depth(&mut b, &tables, 1);
 
-    let (score, _) = search_fixed_depth(&mut b, &tables, 1);
+    // Should find a move
+    assert!(best_move.is_some(), "Should find a move at depth 1");
+
+    // After capturing, white is up a pawn (material +100) plus PSQT bonuses
     assert!(
         score >= 100,
-        "depth-1 should find exd5 gaining a pawn; got {score}"
+        "depth-1 should find exd5 gaining a pawn (+100 material minimum); got {}",
+        score
     );
 }

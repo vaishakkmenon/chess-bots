@@ -63,7 +63,8 @@ fn negamax(
                 // Beta cutoff!
                 // Store killer if it's a quiet move
                 if !mv.is_capture() {
-                    ctx.update_killer(ply, mv); // ADD THIS LINE
+                    ctx.update_killer(ply, mv);
+                    ctx.update_history(mv.piece, mv.to, depth);
                 }
                 return a;
             }
@@ -83,6 +84,7 @@ pub fn search_fixed_depth(
     let mut ctx = SearchContext::new();
     let mut scratch = Vec::with_capacity(256);
     let mut pseudo_scratch = Vec::with_capacity(256);
+    ctx.clear_history();
 
     // Generate root moves
     scratch.clear();
@@ -120,8 +122,6 @@ pub fn search_fixed_depth(
         );
 
         undo_move_basic(board, undo);
-
-        eprintln!("Move: {:?}, Score: {}", mv, score);
 
         // Track best move
         if score > best_score {

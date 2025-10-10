@@ -1,4 +1,6 @@
+use crate::board::Piece;
 use crate::moves::types::Move;
+use crate::square::Square;
 
 const MAX_PLY: usize = 64;
 
@@ -7,12 +9,14 @@ pub struct SearchContext {
     /// killers[ply][0] = primary killer (most recent)
     /// killers[ply][1] = secondary killer
     pub killers: [[Option<Move>; 2]; MAX_PLY],
+    pub history: [[i32; 64]; 6],
 }
 
 impl SearchContext {
     pub fn new() -> Self {
         Self {
             killers: [[None; 2]; MAX_PLY],
+            history: [[0; 64]; 6],
         }
     }
 
@@ -33,6 +37,22 @@ impl SearchContext {
         self.killers[ply][0] = Some(mv);
     }
 
+    /// Update history when a quiet move causes beta cutoff
+    pub fn update_history(&mut self, piece: Piece, to: Square, depth: i32) {
+        let piece_idx = piece as usize;
+        let square_idx = to.index() as usize;
+
+        // Depth-squared bonus: deeper searches are more important
+        self.history[piece_idx][square_idx] += depth * depth;
+    }
+
+    /// Get history score for a move
+    pub fn history_score(&self, piece: Piece, to: Square) -> i32 {
+        let piece_idx = piece as usize;
+        let square_idx = to.index() as usize;
+        self.history[piece_idx][square_idx]
+    }
+
     /// Check if a move is a killer at this ply
     pub fn is_killer(&self, ply: usize, mv: &Move) -> bool {
         if ply >= MAX_PLY {
@@ -40,6 +60,11 @@ impl SearchContext {
         }
 
         self.killers[ply][0] == Some(*mv) || self.killers[ply][1] == Some(*mv)
+    }
+
+    /// Clear history at start of new search
+    pub fn clear_history(&mut self) {
+        self.history = [[0; 64]; 6];
     }
 }
 

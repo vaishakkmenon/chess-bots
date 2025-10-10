@@ -55,7 +55,8 @@ pub fn score_move(mv: &Move, board: &Board, ctx: &SearchContext, ply: usize) -> 
         return 9000;
     }
 
-    0
+    // 3. History heuristic (0-8999)
+    ctx.history_score(mv.piece, mv.to)
 }
 
 #[cfg(test)]
