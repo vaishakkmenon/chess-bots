@@ -61,3 +61,21 @@ fn depth1_prefers_free_capture_white() {
         score
     );
 }
+
+#[test]
+fn test_quiescence_avoids_losing_queen() {
+    // Position where Qxe5 looks good but loses the queen to Nxe5
+    let mut board =
+        Board::from_str("rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5Q2/PPPP1PPP/RNB1KBNR w KQkq - 0 1")
+            .unwrap();
+
+    let tables = load_magic_tables();
+    let (score, _) = search_fixed_depth(&mut board, &tables, 3);
+
+    // Should NOT think position is winning (Qxe5 loses queen)
+    assert!(
+        score < 500,
+        "Should not think Qxe5 is winning, got {}",
+        score
+    );
+}

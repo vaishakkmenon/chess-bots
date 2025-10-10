@@ -1,14 +1,82 @@
 use crate::board::Board;
-use crate::moves::execute::{generate_legal, make_move_basic, undo_move_basic};
+use crate::moves::execute::{generate_captures, generate_legal, make_move_basic, undo_move_basic};
 use crate::moves::magic::MagicTables;
 use crate::moves::square_control::in_check;
 use crate::moves::types::Move;
 use crate::search::context::SearchContext;
 use crate::search::eval::static_eval;
-use crate::search::move_ordering::score_move;
+use crate::search::move_ordering::{mvv_lva_score, score_move};
 
 pub const MATE: i32 = 30_000;
 pub const INFTY: i32 = MATE + 2_000;
+
+/// Quiescence search - searches only captures until position is quiet
+fn quiesce(
+    board: &mut Board,
+    tables: &MagicTables,
+    mut alpha: i32,
+    beta: i32,
+    ctx: &mut SearchContext,
+    scratch: &mut Vec<Move>,
+    ply: i32, // Track depth to prevent infinite loops
+) -> i32 {
+    const MAX_QUIESCE_PLY: i32 = 16; // Safety limit
+
+    // Prevent infinite quiescence
+    if ply > MAX_QUIESCE_PLY {
+        return static_eval(board);
+    }
+
+    // Stand pat: current position evaluation
+    let stand_pat = static_eval(board);
+
+    // Beta cutoff - position is already too good for opponent
+    if stand_pat >= beta {
+        return beta;
+    }
+
+    // Update alpha - we can always "stand pat" and not capture
+    if stand_pat > alpha {
+        alpha = stand_pat;
+    }
+
+    // Generate and sort captures
+    let mut pseudo_scratch = Vec::with_capacity(256);
+    scratch.clear();
+    generate_captures(board, tables, scratch, &mut pseudo_scratch);
+
+    // Sort by MVV-LVA (Most Valuable Victim - Least Valuable Attacker)
+    scratch.sort_unstable_by_key(|mv| -mvv_lva_score(mv, board));
+
+    // Make a copy to avoid borrow issues
+    let captures: Vec<Move> = scratch.clone();
+
+    // Search each capture
+    for &mv in captures.iter() {
+        // Delta pruning (optional but recommended)
+        const QUEEN_VALUE: i32 = 900;
+        if stand_pat + mvv_lva_score(&mv, board) + QUEEN_VALUE < alpha {
+            continue; // Even best case won't beat alpha
+        }
+
+        // Try the capture
+        let undo = make_move_basic(board, mv);
+        let score = -quiesce(board, tables, -beta, -alpha, ctx, scratch, ply + 1);
+        undo_move_basic(board, undo);
+
+        // Beta cutoff
+        if score >= beta {
+            return beta;
+        }
+
+        // Update best score
+        if score > alpha {
+            alpha = score;
+        }
+    }
+
+    alpha
+}
 
 fn negamax(
     board: &mut Board,
@@ -39,8 +107,8 @@ fn negamax(
     }
 
     // Base case
-    if depth == 0 {
-        return static_eval(board);
+    if depth <= 0 {
+        return quiesce(board, tables, alpha, beta, ctx, scratch, 0);
     }
 
     // Sort moves by score (descending = best first)

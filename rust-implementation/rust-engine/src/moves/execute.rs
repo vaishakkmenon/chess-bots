@@ -369,6 +369,37 @@ pub fn generate_legal(
     }
 }
 
+/// Generate only legal capture moves
+pub fn generate_captures(
+    board: &mut Board,
+    tables: &MagicTables,
+    moves: &mut Vec<Move>,
+    scratch: &mut Vec<Move>,
+) {
+    // Generate all pseudo-legal moves
+    scratch.clear();
+    generate_pseudo_legal(board, tables, scratch);
+
+    // Filter for captures only
+    moves.clear();
+    for &mv in scratch.iter() {
+        if mv.is_capture() {
+            let undo = make_move_basic(board, mv);
+            let opponent = if board.side_to_move == Color::White {
+                Color::Black
+            } else {
+                Color::White
+            };
+            let legal = !in_check(board, opponent, tables);
+            undo_move_basic(board, undo);
+
+            if legal {
+                moves.push(mv);
+            }
+        }
+    }
+}
+
 #[cfg(debug_assertions)]
 #[inline]
 pub(crate) fn debug_assert_valid_ep(board: &Board) {
