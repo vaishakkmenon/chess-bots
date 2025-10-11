@@ -200,3 +200,26 @@ pub fn search_fixed_depth(
 
     (best_score, best_move)
 }
+
+pub fn search_iterative_deepening(
+    board: &mut Board,
+    tables: &MagicTables,
+    max_depth: i32,
+) -> (i32, Option<Move>) {
+    let mut best_score = 0;
+    let mut best_move = None;
+
+    for depth in 1..=max_depth {
+        let (score, mv) = search_fixed_depth(board, tables, depth);
+        best_score = score;
+
+        if let Some(m) = mv {
+            best_move = Some(m);
+            println!("info depth {} score cp {} pv {:?}", depth, score, m);
+        } else {
+            println!("info depth {} score cp {} pv (none)", depth, score);
+        }
+    }
+
+    (best_score, best_move)
+}

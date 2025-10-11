@@ -1,6 +1,6 @@
 use rust_engine::board::Board;
 use rust_engine::moves::magic::loader::load_magic_tables;
-use rust_engine::search::search::search_fixed_depth;
+use rust_engine::search::search::search_iterative_deepening;
 use std::env;
 use std::str::FromStr;
 use std::time::Instant;
@@ -42,7 +42,7 @@ fn main() {
     println!("\nSearching...\n");
 
     let start = Instant::now();
-    let (score, best_move) = search_fixed_depth(&mut board, &tables, depth);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, depth);
     let elapsed = start.elapsed();
 
     println!("=== Results ===");
