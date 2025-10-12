@@ -44,7 +44,20 @@ pub fn mvv_lva_score(mv: &Move, board: &Board) -> i32 {
 
 /// Score any move for ordering purposes
 /// Returns higher scores for moves that should be searched first
-pub fn score_move(mv: &Move, board: &Board, ctx: &SearchContext, ply: usize) -> i32 {
+pub fn score_move(
+    mv: &Move,
+    board: &Board,
+    ctx: &SearchContext,
+    ply: usize,
+    tt_move: Option<Move>,
+) -> i32 {
+    // HIGHEST PRIORITY: TT move
+    if let Some(tt_mv) = tt_move {
+        if *mv == tt_mv {
+            return 10_000_000; // Searched first!
+        }
+    }
+
     // 1. Captures get highest priority (10000+)
     if mv.is_capture() {
         return 10000 + mvv_lva_score(mv, board);
@@ -155,7 +168,7 @@ mod tests {
             flags: 0b0000, // No capture
         };
 
-        let score = score_move(&mv, &board, &ctx, ply);
+        let score = score_move(&mv, &board, &ctx, ply, None);
 
         assert_eq!(score, 0, "Quiet moves should score 0 in Phase 1");
     }
@@ -185,8 +198,8 @@ mod tests {
             flags: 0b0000,
         };
 
-        let capture_score = score_move(&capture, &board, &ctx, ply);
-        let quiet_score = score_move(&quiet, &board, &ctx, ply);
+        let capture_score = score_move(&capture, &board, &ctx, ply, None);
+        let quiet_score = score_move(&quiet, &board, &ctx, ply, None);
 
         assert!(
             capture_score > quiet_score,
@@ -223,8 +236,8 @@ mod tests {
             flags: 0b0100,
         };
 
-        let good_score = score_move(&good_capture, &board, &ctx, ply);
-        let bad_score = score_move(&bad_capture, &board, &ctx, ply);
+        let good_score = score_move(&good_capture, &board, &ctx, ply, None);
+        let bad_score = score_move(&bad_capture, &board, &ctx, ply, None);
 
         assert!(good_score > bad_score, "NxQ should score higher than NxN");
     }

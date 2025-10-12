@@ -10,6 +10,7 @@ pub struct SearchContext {
     /// killers[ply][1] = secondary killer
     pub killers: [[Option<Move>; 2]; MAX_PLY],
     pub history: [[i32; 64]; 6],
+    pub tt_move: Option<Move>,
 }
 
 impl SearchContext {
@@ -17,6 +18,7 @@ impl SearchContext {
         Self {
             killers: [[None; 2]; MAX_PLY],
             history: [[0; 64]; 6],
+            tt_move: None,
         }
     }
 
@@ -65,6 +67,14 @@ impl SearchContext {
     /// Clear history at start of new search
     pub fn clear_history(&mut self) {
         self.history = [[0; 64]; 6];
+    }
+
+    pub fn set_best_move(&mut self, mv: &Move) {
+        self.tt_move = Some(*mv);
+    }
+
+    pub fn get_best_move(&mut self) -> Option<Move> {
+        self.tt_move
     }
 }
 

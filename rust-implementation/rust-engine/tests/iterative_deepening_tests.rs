@@ -4,6 +4,7 @@
 use rust_engine::board::Board;
 use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::search::search::{search_fixed_depth, search_iterative_deepening};
+use rust_engine::search::tt::TranspositionTable;
 use std::str::FromStr;
 
 // ============================================================================
@@ -41,7 +42,8 @@ fn test_id_matches_fixed_depth() {
     let tables = load_magic_tables();
 
     let (score_id, move_id) = search_iterative_deepening(&mut board1, &tables, 4);
-    let (score_fixed, move_fixed) = search_fixed_depth(&mut board2, &tables, 4);
+    let mut tt = TranspositionTable::new(64);
+    let (score_fixed, move_fixed) = search_fixed_depth(&mut board2, &tables, 4, &mut tt);
 
     // Scores should be identical (same search, same depth)
     assert_eq!(
@@ -150,7 +152,8 @@ fn test_id_performance() {
 
     // Time fixed depth
     let start_fixed = Instant::now();
-    let _ = search_fixed_depth(&mut board2, &tables, 5);
+    let mut tt = TranspositionTable::new(64);
+    let _ = search_fixed_depth(&mut board2, &tables, 5, &mut tt);
     let time_fixed = start_fixed.elapsed();
 
     println!("ID time: {:?}", time_id);

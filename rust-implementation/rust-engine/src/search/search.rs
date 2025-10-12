@@ -6,6 +6,7 @@ use crate::moves::types::Move;
 use crate::search::context::SearchContext;
 use crate::search::eval::static_eval;
 use crate::search::move_ordering::{mvv_lva_score, score_move};
+use crate::search::tt::{NodeType, TranspositionTable};
 
 pub const MATE: i32 = 30_000;
 pub const INFTY: i32 = MATE + 2_000;
@@ -87,7 +88,22 @@ fn negamax(
     ply: usize,
     ctx: &mut SearchContext,
     scratch: &mut Vec<Move>,
+    tt: &mut TranspositionTable,
 ) -> i32 {
+    let hash = board.compute_zobrist_full();
+
+    let probe_result = tt.probe(hash, depth, alpha, beta);
+
+    // If we got a score cutoff, return it immediately
+    if let Some(tt_score) = probe_result.score {
+        return tt_score;
+    }
+
+    // Save the TT move for move ordering (even if no cutoff)
+    let tt_move = probe_result.best_move;
+
+    let original_alpha = alpha; // ← SAVE ORIGINAL ALPHA
+
     // Draw detection first
     if board.halfmove_clock >= 100 || board.repetition_count() >= 3 {
         return 0; // draw
@@ -112,32 +128,57 @@ fn negamax(
     }
 
     // Sort moves by score (descending = best first)
-    scratch.sort_unstable_by_key(|mv| {
-        -score_move(mv, board, ctx, ply) // Negative because we want descending order
-    });
+    scratch.sort_unstable_by_key(|mv| -score_move(mv, board, ctx, ply, tt_move));
 
     // Copy moves locally since scratch will be reused in recursion
-    let legal_moves: Vec<Move> = scratch.clone(); // ← Must clone before recursion
+    let legal_moves: Vec<Move> = scratch.clone();
 
     let mut a = alpha;
+    let mut best_move = None; // ← TRACK BEST MOVE
+
     for &mv in legal_moves.iter() {
         let undo = make_move_basic(board, mv);
-        let score = -negamax(board, tables, depth - 1, -beta, -a, ply + 1, ctx, scratch);
+        let score = -negamax(
+            board,
+            tables,
+            depth - 1,
+            -beta,
+            -a,
+            ply + 1,
+            ctx,
+            scratch,
+            tt,
+        );
         undo_move_basic(board, undo);
 
         if score > a {
             a = score;
+            best_move = Some(mv); // ← UPDATE BEST MOVE
+
             if a >= beta {
                 // Beta cutoff!
-                // Store killer if it's a quiet move
                 if !mv.is_capture() {
                     ctx.update_killer(ply, mv);
                     ctx.update_history(mv.piece, mv.to, depth);
                 }
+
+                // ← STORE IN TT BEFORE RETURNING
+                tt.store(hash, depth, a, best_move, NodeType::LowerBound);
                 return a;
             }
         }
     }
+
+    // ← DETERMINE NODE TYPE USING CORRECT VARIABLES
+    let node_type = if a >= beta {
+        NodeType::LowerBound
+    } else if a <= original_alpha {
+        NodeType::UpperBound
+    } else {
+        NodeType::Exact
+    };
+
+    tt.store(hash, depth, a, best_move, node_type);
 
     a
 }
@@ -146,12 +187,17 @@ pub fn search_fixed_depth(
     board: &mut Board,
     tables: &MagicTables,
     depth: i32,
+    tt: &mut TranspositionTable,
 ) -> (i32, Option<Move>) {
     debug_assert!(depth >= 0);
 
     let mut ctx = SearchContext::new();
     let mut scratch = Vec::with_capacity(256);
     let mut pseudo_scratch = Vec::with_capacity(256);
+
+    let hash = board.compute_zobrist_full();
+    let root_probe = tt.probe(hash, depth, -INFTY, INFTY);
+    let root_tt_move = root_probe.best_move;
     ctx.clear_history();
 
     // Generate root moves
@@ -167,7 +213,7 @@ pub fn search_fixed_depth(
         return (static_eval(board), None); // Immediate return, no search
     }
     // Sort root moves
-    scratch.sort_unstable_by_key(|mv| -score_move(mv, board, &ctx, 0));
+    scratch.sort_unstable_by_key(|mv| -score_move(mv, board, &ctx, 0, root_tt_move));
 
     let root_moves = scratch.clone();
     let mut best_score = -INFTY;
@@ -187,6 +233,7 @@ pub fn search_fixed_depth(
             1,
             &mut ctx,
             &mut scratch,
+            tt,
         );
 
         undo_move_basic(board, undo);
@@ -206,11 +253,13 @@ pub fn search_iterative_deepening(
     tables: &MagicTables,
     max_depth: i32,
 ) -> (i32, Option<Move>) {
+    let mut tt = TranspositionTable::new(64);
+
     let mut best_score = 0;
     let mut best_move = None;
 
     for depth in 1..=max_depth {
-        let (score, mv) = search_fixed_depth(board, tables, depth);
+        let (score, mv) = search_fixed_depth(board, tables, depth, &mut tt);
         best_score = score;
 
         if let Some(m) = mv {
