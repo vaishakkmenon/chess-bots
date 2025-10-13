@@ -10,6 +10,15 @@ use crate::search::tt::{NodeType, TranspositionTable};
 
 pub const MATE: i32 = 30_000;
 pub const INFTY: i32 = MATE + 2_000;
+const MAX_PLY: i32 = 100;
+
+/// Helper Functions
+
+// Identify if the score is a checkmate
+#[inline]
+pub fn is_mate_score(score: i32) -> bool {
+    score.abs() > MATE - MAX_PLY
+}
 
 /// Quiescence search - searches only captures until position is quiet
 fn quiesce(
@@ -92,7 +101,7 @@ fn negamax(
 ) -> i32 {
     let hash = board.compute_zobrist_full();
 
-    let probe_result = tt.probe(hash, depth, alpha, beta);
+    let probe_result = tt.probe(hash, depth, alpha, beta, ply as i32);
 
     // If we got a score cutoff, return it immediately
     if let Some(tt_score) = probe_result.score {
@@ -163,7 +172,7 @@ fn negamax(
                 }
 
                 // ← STORE IN TT BEFORE RETURNING
-                tt.store(hash, depth, a, best_move, NodeType::LowerBound);
+                tt.store(hash, depth, a, best_move, NodeType::LowerBound, ply as i32);
                 return a;
             }
         }
@@ -178,7 +187,7 @@ fn negamax(
         NodeType::Exact
     };
 
-    tt.store(hash, depth, a, best_move, node_type);
+    tt.store(hash, depth, a, best_move, node_type, ply as i32);
 
     a
 }
@@ -196,7 +205,7 @@ pub fn search_fixed_depth(
     let mut pseudo_scratch = Vec::with_capacity(256);
 
     let hash = board.compute_zobrist_full();
-    let root_probe = tt.probe(hash, depth, -INFTY, INFTY);
+    let root_probe = tt.probe(hash, depth, -INFTY, INFTY, 0);
     let root_tt_move = root_probe.best_move;
     ctx.clear_history();
 

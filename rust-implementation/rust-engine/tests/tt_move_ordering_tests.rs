@@ -1,5 +1,4 @@
 // TT Move Ordering Test Suite
-// Add to tests/tt_move_ordering_tests.rs
 
 use rust_engine::board::Board;
 use rust_engine::moves::magic::loader::load_magic_tables;

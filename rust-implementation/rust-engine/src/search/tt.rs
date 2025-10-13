@@ -1,4 +1,5 @@
 use crate::moves::types::Move;
+use crate::search::search::is_mate_score;
 
 pub struct TranspositionTable {
     entries: Vec<TTEntry>,
@@ -46,7 +47,14 @@ impl TranspositionTable {
         }
     }
 
-    pub fn probe(&self, zobrist_hash: u64, depth: i32, alpha: i32, beta: i32) -> ProbeResult {
+    pub fn probe(
+        &self,
+        zobrist_hash: u64,
+        depth: i32,
+        alpha: i32,
+        beta: i32,
+        ply: i32,
+    ) -> ProbeResult {
         let mut result = ProbeResult::default();
         let index = (zobrist_hash as usize) & (self.size - 1);
         let entry = &self.entries[index];
@@ -64,18 +72,29 @@ impl TranspositionTable {
             return result;
         }
 
+        let mut score = entry.score as i32;
+
+        // Adjust mate scores back to root perspective
+        if is_mate_score(score) {
+            score = if score > 0 {
+                score + ply // We can mate: add ply back
+            } else {
+                score - ply // We get mated: subtract ply
+            };
+        }
+
         // Determine if we can return a score cutoff
         match entry.node_type {
             NodeType::Exact => {
-                result.score = Some(entry.score as i32);
+                result.score = Some(score);
             }
             NodeType::LowerBound => {
-                if entry.score as i32 >= beta {
+                if score >= beta {
                     result.score = Some(beta);
                 }
             }
             NodeType::UpperBound => {
-                if entry.score as i32 <= alpha {
+                if score <= alpha {
                     result.score = Some(alpha);
                 }
             }
@@ -93,10 +112,19 @@ impl TranspositionTable {
         &mut self,
         zobrist_hash: u64,
         depth: i32,
-        score: i32,
+        mut score: i32,
         best_move: Option<Move>,
         node_type: NodeType,
+        ply: i32,
     ) {
+        if is_mate_score(score) {
+            score = if score > 0 {
+                score - ply // We can mate opponent: subtract ply
+            } else {
+                score + ply // We get mated: add ply
+            };
+        }
+
         // 1. Get index from hash
         let index = (zobrist_hash as usize) & (self.size - 1);
         // 2. Decide if we should replace the existing entry
@@ -136,16 +164,6 @@ impl Default for ProbeResult {
     }
 }
 
-impl ProbeResult {
-    pub fn set_best_move(&mut self, mv: Option<Move>) {
-        self.best_move = mv;
-    }
-
-    pub fn set_score(&mut self, score: i32) {
-        self.score = Some(score);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -161,7 +179,7 @@ mod tests {
     #[test]
     fn test_probe_miss() {
         let tt = TranspositionTable::new(1);
-        let result = tt.probe(12345, 5, -1000, 1000);
+        let result = tt.probe(12345, 5, -1000, 1000, 0);
 
         // ProbeResult is always returned, check if it's empty
         assert!(
@@ -179,10 +197,10 @@ mod tests {
         let mut tt = TranspositionTable::new(1);
 
         // Store a position
-        tt.store(12345, 5, 100, None, NodeType::Exact);
+        tt.store(12345, 5, 100, None, NodeType::Exact, 0);
 
         // Retrieve it
-        let result = tt.probe(12345, 5, -1000, 1000);
+        let result = tt.probe(12345, 5, -1000, 1000, 0);
 
         // Check we got a score
         assert!(result.score.is_some(), "Should get score from TT");
@@ -194,13 +212,13 @@ mod tests {
         let mut tt = TranspositionTable::new(1);
 
         // Store shallow search
-        tt.store(12345, 3, 100, None, NodeType::Exact);
+        tt.store(12345, 3, 100, None, NodeType::Exact, 0);
 
         // Store deeper search (should replace)
-        tt.store(12345, 5, 200, None, NodeType::Exact);
+        tt.store(12345, 5, 200, None, NodeType::Exact, 0);
 
         // Should get the deeper search result
-        let result = tt.probe(12345, 5, -1000, 1000);
+        let result = tt.probe(12345, 5, -1000, 1000, 0);
         assert!(result.score.is_some());
         assert_eq!(result.score.unwrap(), 200);
     }
@@ -222,10 +240,10 @@ mod tests {
         };
 
         // Store a move at depth 3
-        tt.store(12345, 3, 100, Some(test_move), NodeType::Exact);
+        tt.store(12345, 3, 100, Some(test_move), NodeType::Exact, 0);
 
         // Probe at depth 5 (depth insufficient for score cutoff)
-        let result = tt.probe(12345, 5, -1000, 1000);
+        let result = tt.probe(12345, 5, -1000, 1000, 0);
 
         // Should NOT get score (depth insufficient)
         assert!(
@@ -258,10 +276,10 @@ mod tests {
         };
 
         // Store a move at depth 5
-        tt.store(12345, 5, 100, Some(test_move), NodeType::Exact);
+        tt.store(12345, 5, 100, Some(test_move), NodeType::Exact, 0);
 
         // Probe at depth 10 (insufficient depth for score cutoff)
-        let result = tt.probe(12345, 10, -1000, 1000);
+        let result = tt.probe(12345, 10, -1000, 1000, 0);
 
         // Should NOT get score (depth insufficient)
         assert!(
@@ -279,5 +297,41 @@ mod tests {
             test_move,
             "TT move should match stored move"
         );
+    }
+
+    #[test]
+    fn test_mate_score_adjustment() {
+        use crate::search::search::MATE;
+        let mut tt = TranspositionTable::new(1);
+
+        // Store mate-in-3 at ply 4
+        let mate_in_3 = MATE - 3;
+        tt.store(12345, 5, mate_in_3, None, NodeType::Exact, 4); // ← ply = 4
+
+        // Probe at ply 2 (closer to root)
+        let result = tt.probe(12345, 5, -100000, 100000, 2); // ← ply = 2
+
+        // Should be adjusted to mate-in-5 from root
+        // Stored: (MATE - 3) - 4 = MATE - 7
+        // Retrieved: (MATE - 7) + 2 = MATE - 5
+        assert_eq!(result.score.unwrap(), MATE - 5);
+    }
+
+    #[test]
+    fn test_mated_score_adjustment() {
+        use crate::search::search::MATE;
+        let mut tt = TranspositionTable::new(1);
+
+        // Store getting-mated-in-2 at ply 3
+        let mated_in_2 = -(MATE - 2);
+        tt.store(54321, 5, mated_in_2, None, NodeType::Exact, 3); // ← ply = 3
+
+        // Probe at ply 1 (closer to root)
+        let result = tt.probe(54321, 5, -100000, 100000, 1); // ← ply = 1
+
+        // Should be adjusted to mated-in-4 from root
+        // Stored: -(MATE - 2) + 3 = -(MATE - 5)
+        // Retrieved: -(MATE - 5) - 1 = -(MATE - 4)
+        assert_eq!(result.score.unwrap(), -(MATE - 4));
     }
 }
