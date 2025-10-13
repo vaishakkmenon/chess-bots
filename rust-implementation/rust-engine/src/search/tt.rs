@@ -47,6 +47,10 @@ impl TranspositionTable {
         }
     }
 
+    pub fn new_search(&mut self) {
+        self.age = self.age.wrapping_add(1);
+    }
+
     pub fn probe(
         &self,
         zobrist_hash: u64,

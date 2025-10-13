@@ -267,6 +267,8 @@ pub fn search_iterative_deepening(
     let mut best_score = 0;
     let mut best_move = None;
 
+    tt.new_search();
+
     for depth in 1..=max_depth {
         let (score, mv) = search_fixed_depth(board, tables, depth, &mut tt);
         best_score = score;
