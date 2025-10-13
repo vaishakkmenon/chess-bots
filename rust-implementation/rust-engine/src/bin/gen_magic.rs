@@ -44,7 +44,7 @@ fn main() {
 
     // 3-c  Persist to data/magic_tables.bin
     std::fs::create_dir_all("data").expect("Couldn't create data directory");
-    let mut file = File::create("data/magic_tables.bin").expect("Couldn't create output file");
+    let mut file = File::create("../data/magic_tables.bin").expect("Couldn't create output file");
     file.write_all(&encoded).expect("Write failed!");
 
     match seed_opt {
