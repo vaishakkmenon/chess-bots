@@ -1,4 +1,4 @@
-use crate::board::Board;
+use crate::board::{Board, Piece};
 use crate::moves::execute::{generate_captures, generate_legal, make_move_basic, undo_move_basic};
 use crate::moves::magic::MagicTables;
 use crate::moves::square_control::in_check;
@@ -14,10 +14,51 @@ const MAX_PLY: i32 = 100;
 
 /// Helper Functions
 
-// Identify if the score is a checkmate
+/// Identify if the score is a checkmate
 #[inline]
 pub fn is_mate_score(score: i32) -> bool {
     score.abs() > MATE - MAX_PLY
+}
+
+/// Detect if position is in endgame (for null move pruning)
+/// Returns true if:
+/// - Side has only king + pawns, OR
+/// - Total material < 1300 centipawns
+#[inline]
+fn is_endgame(board: &Board) -> bool {
+    // Material values (same as your evaluation)
+    const PAWN_VALUE: i32 = 100;
+    const KNIGHT_VALUE: i32 = 320;
+    const BISHOP_VALUE: i32 = 330;
+    const ROOK_VALUE: i32 = 500;
+    const QUEEN_VALUE: i32 = 900;
+
+    let side = board.side_to_move;
+
+    // Count pieces for the side to move
+    let knights = board.pieces(Piece::Knight, side).count_ones();
+    let bishops = board.pieces(Piece::Bishop, side).count_ones();
+    let rooks = board.pieces(Piece::Rook, side).count_ones();
+    let queens = board.pieces(Piece::Queen, side).count_ones();
+
+    // Check if only king + pawns (no minor or major pieces)
+    let only_king_and_pawns = knights == 0 && bishops == 0 && rooks == 0 && queens == 0;
+
+    if only_king_and_pawns {
+        return true;
+    }
+
+    // Calculate total material for side to move
+    let pawns = board.pieces(Piece::Pawn, side).count_ones();
+
+    let material = (pawns * PAWN_VALUE as u32)
+        + (knights * KNIGHT_VALUE as u32)
+        + (bishops * BISHOP_VALUE as u32)
+        + (rooks * ROOK_VALUE as u32)
+        + (queens * QUEEN_VALUE as u32);
+
+    // Endgame if total material < 1300
+    material < 1300
 }
 
 /// Quiescence search - searches only captures until position is quiet
@@ -98,6 +139,7 @@ fn negamax(
     ctx: &mut SearchContext,
     scratch: &mut Vec<Move>,
     tt: &mut TranspositionTable,
+    allow_null_move: bool,
 ) -> i32 {
     let hash = board.compute_zobrist_full();
 
@@ -116,6 +158,46 @@ fn negamax(
     // Draw detection first
     if board.halfmove_clock >= 100 || board.repetition_count() >= 3 {
         return 0; // draw
+    }
+
+    // Null Move Pruning
+    if allow_null_move
+        && !in_check(board, board.side_to_move, tables)
+        && depth >= 3
+        && !is_endgame(board)
+    {
+        const R: i32 = 2; // Reduction factor (can tune this)
+
+        // Make null move (just flip side to move)
+        let old_side = board.side_to_move;
+        board.side_to_move = old_side.opposite();
+
+        use crate::hash::zobrist::zobrist_keys;
+        let keys = zobrist_keys();
+        board.zobrist ^= keys.side_to_move; // Update hash for side change
+
+        // Search with reduced depth and disallow another null move
+        let null_score = -negamax(
+            board,
+            tables,
+            depth - 1 - R, // Reduced depth
+            -beta,
+            -beta + 1, // Null window
+            ply + 1,
+            ctx,
+            scratch,
+            tt,
+            false, // ← IMPORTANT: Don't allow consecutive null moves
+        );
+
+        // Undo null move
+        board.side_to_move = old_side;
+        board.zobrist ^= keys.side_to_move; // Restore hash
+
+        // If null move causes beta cutoff, position is too good
+        if null_score >= beta {
+            return beta; // Cutoff!
+        }
     }
 
     // Generate legal moves ONCE
@@ -157,6 +239,7 @@ fn negamax(
             ctx,
             scratch,
             tt,
+            true,
         );
         undo_move_basic(board, undo);
 
@@ -243,6 +326,7 @@ pub fn search_fixed_depth(
             &mut ctx,
             &mut scratch,
             tt,
+            true,
         );
 
         undo_move_basic(board, undo);
