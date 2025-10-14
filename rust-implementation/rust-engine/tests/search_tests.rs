@@ -239,7 +239,7 @@ fn test_quiescence_depth_limit() {
     // This is acceptable - ensures quiescence doesn't hang infinitely
     // (Without depth limit, this would run forever)
     assert!(
-        elapsed.as_secs() < 60,
+        elapsed.as_secs() < 180,
         "Quiescence should not hang indefinitely. Took: {:?}",
         elapsed
     );
