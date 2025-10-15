@@ -16,6 +16,11 @@ pub struct SearchContext {
     pub lmr_reductions: u64,
     #[cfg(feature = "lmr_stats")]
     pub lmr_researches: u64,
+
+    #[cfg(feature = "aspiration_stats")]
+    pub aspiration_fails_low: u64,
+    #[cfg(feature = "aspiration_stats")]
+    pub aspiration_fails_high: u64,
 }
 
 impl SearchContext {
@@ -28,6 +33,10 @@ impl SearchContext {
             lmr_reductions: 0,
             #[cfg(feature = "lmr_stats")]
             lmr_researches: 0,
+            #[cfg(feature = "aspiration_stats")]
+            aspiration_fails_low: 0,
+            #[cfg(feature = "aspiration_stats")]
+            aspiration_fails_high: 0,
         }
     }
 
@@ -93,6 +102,12 @@ impl SearchContext {
     pub fn reset_lmr_stats(&mut self) {
         self.lmr_reductions = 0;
         self.lmr_researches = 0;
+    }
+
+    #[cfg(feature = "aspiration_stats")]
+    pub fn reset_aspiration_stats(&mut self) {
+        self.aspiration_fails_low = 0;
+        self.aspiration_fails_high = 0;
     }
 }
 

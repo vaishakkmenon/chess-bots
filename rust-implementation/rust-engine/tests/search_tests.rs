@@ -5,6 +5,7 @@ use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::types::Move;
 use rust_engine::search::context::SearchContext;
 use rust_engine::search::eval::static_eval;
+use rust_engine::search::search::INFTY;
 use rust_engine::search::search::search_fixed_depth;
 use rust_engine::search::tt::TranspositionTable;
 use std::str::FromStr;
@@ -19,7 +20,7 @@ fn search_position(f: &str, depth: i32) -> (i32, Option<Move>) {
     let tables = load_magic_tables();
     let mut tt = TranspositionTable::new(64);
     let mut ctx = SearchContext::new();
-    search_fixed_depth(&mut board, &tables, depth, &mut tt, &mut ctx)
+    search_fixed_depth(&mut board, &tables, depth, &mut tt, &mut ctx, -INFTY, INFTY)
 }
 
 #[test]
@@ -31,7 +32,7 @@ fn depth0_equals_static_eval_white_up_pawn() {
     let mut tt = TranspositionTable::new(64);
     let mut ctx = SearchContext::new();
 
-    let (score, _) = search_fixed_depth(&mut b, &tables, 0, &mut tt, &mut ctx);
+    let (score, _) = search_fixed_depth(&mut b, &tables, 0, &mut tt, &mut ctx, -INFTY, INFTY);
 
     // At depth 0, search should return static eval
     assert_eq!(score, static_eval(&b));
@@ -54,7 +55,7 @@ fn stalemate_returns_zero_any_depth() {
     let mut ctx = SearchContext::new();
 
     for d in 0..=3 {
-        let (score, _) = search_fixed_depth(&mut b, &tables, d, &mut tt, &mut ctx);
+        let (score, _) = search_fixed_depth(&mut b, &tables, d, &mut tt, &mut ctx, -INFTY, INFTY);
         assert_eq!(score, 0, "stalemate should return 0 at depth {d}");
     }
 }
@@ -70,7 +71,8 @@ fn depth1_prefers_free_capture_white() {
     let mut tt = TranspositionTable::new(64);
     let mut ctx = SearchContext::new();
 
-    let (score, best_move) = search_fixed_depth(&mut b, &tables, 1, &mut tt, &mut ctx);
+    let (score, best_move) =
+        search_fixed_depth(&mut b, &tables, 1, &mut tt, &mut ctx, -INFTY, INFTY);
 
     // Should find a move
     assert!(best_move.is_some(), "Should find a move at depth 1");

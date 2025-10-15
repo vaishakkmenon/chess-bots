@@ -9,6 +9,7 @@ use rust_engine::moves::execute::{
 use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::search::context::SearchContext;
 use rust_engine::search::eval::static_eval;
+use rust_engine::search::search::INFTY;
 use rust_engine::search::search::search_fixed_depth;
 use rust_engine::search::tt::TranspositionTable;
 use std::str::FromStr;
@@ -62,13 +63,15 @@ fn deep_diagnostic_simple_capture() {
     // Test 5: Search with depth 1 (minimal search)
     println!("\n5. Search depth 1:");
     let mut tt = TranspositionTable::new(64);
-    let (score_d1, best_d1) = search_fixed_depth(&mut board, &tables, 1, &mut tt, &mut ctx);
+    let (score_d1, best_d1) =
+        search_fixed_depth(&mut board, &tables, 1, &mut tt, &mut ctx, -INFTY, INFTY);
     println!("   Score: {}", score_d1);
     println!("   Best move: {:?}", best_d1);
 
     // Test 6: Search with depth 2
     println!("\n6. Search depth 2:");
-    let (score_d2, best_d2) = search_fixed_depth(&mut board, &tables, 2, &mut tt, &mut ctx);
+    let (score_d2, best_d2) =
+        search_fixed_depth(&mut board, &tables, 2, &mut tt, &mut ctx, -INFTY, INFTY);
     println!("   Score: {}", score_d2);
     println!("   Best move: {:?}", best_d2);
 
@@ -201,14 +204,30 @@ fn diagnostic_score_perspective() {
     let tables = load_magic_tables();
     let mut tt = TranspositionTable::new(64);
     let mut ctx = SearchContext::new();
-    let (score_white, _) = search_fixed_depth(&mut board_white, &tables, 2, &mut tt, &mut ctx);
+    let (score_white, _) = search_fixed_depth(
+        &mut board_white,
+        &tables,
+        2,
+        &mut tt,
+        &mut ctx,
+        -INFTY,
+        INFTY,
+    );
 
     println!("White to move, White up knight: {}", score_white);
 
     // Test 2: Black to move, White up a knight (same material)
     let fen_black = "rnbqkb1r/pppppppp/8/8/4N3/8/PPPPPPPP/RNBQKB1R b KQkq - 0 1";
     let mut board_black = Board::from_str(fen_black).unwrap();
-    let (score_black, _) = search_fixed_depth(&mut board_black, &tables, 2, &mut tt, &mut ctx);
+    let (score_black, _) = search_fixed_depth(
+        &mut board_black,
+        &tables,
+        2,
+        &mut tt,
+        &mut ctx,
+        -INFTY,
+        INFTY,
+    );
 
     println!("Black to move, White up knight: {}", score_black);
 
@@ -241,7 +260,7 @@ fn diagnostic_starting_position() {
 
     let mut tt = TranspositionTable::new(64);
     let mut ctx = SearchContext::new();
-    let (score, _) = search_fixed_depth(&mut board, &tables, 1, &mut tt, &mut ctx);
+    let (score, _) = search_fixed_depth(&mut board, &tables, 1, &mut tt, &mut ctx, -INFTY, INFTY);
 
     println!("Starting position score: {}", score);
     assert!(
@@ -264,7 +283,7 @@ fn diagnostic_white_up_queen() {
 
     let mut tt = TranspositionTable::new(64);
     let mut ctx = SearchContext::new();
-    let (score, _) = search_fixed_depth(&mut board, &tables, 1, &mut tt, &mut ctx);
+    let (score, _) = search_fixed_depth(&mut board, &tables, 1, &mut tt, &mut ctx, -INFTY, INFTY);
 
     println!("White up queen score: {}", score);
     assert!(
@@ -287,7 +306,7 @@ fn diagnostic_black_up_queen() {
 
     let mut tt = TranspositionTable::new(64);
     let mut ctx = SearchContext::new();
-    let (score, _) = search_fixed_depth(&mut board, &tables, 1, &mut tt, &mut ctx);
+    let (score, _) = search_fixed_depth(&mut board, &tables, 1, &mut tt, &mut ctx, -INFTY, INFTY);
 
     println!("Black up queen score: {}", score);
     assert!(
@@ -309,7 +328,7 @@ fn diagnostic_simple_capture() {
 
     let mut tt = TranspositionTable::new(64);
     let mut ctx = SearchContext::new();
-    let (score, _) = search_fixed_depth(&mut board, &tables, 2, &mut tt, &mut ctx);
+    let (score, _) = search_fixed_depth(&mut board, &tables, 2, &mut tt, &mut ctx, -INFTY, INFTY);
 
     // CORRECTED: After exd4, White has NO recapture (all pawns still on rank 2)
     // Material: Black wins knight (+320), loses pawn (-100), net +220
@@ -337,10 +356,14 @@ fn diagnostic_compare_depths() {
 
     let mut tt = TranspositionTable::new(64);
     let mut ctx = SearchContext::new();
-    let (score_d1, _) = search_fixed_depth(&mut board, &tables, 1, &mut tt, &mut ctx);
-    let (score_d2, _) = search_fixed_depth(&mut board, &tables, 2, &mut tt, &mut ctx);
-    let (score_d3, _) = search_fixed_depth(&mut board, &tables, 3, &mut tt, &mut ctx);
-    let (score_d4, _) = search_fixed_depth(&mut board, &tables, 4, &mut tt, &mut ctx);
+    let (score_d1, _) =
+        search_fixed_depth(&mut board, &tables, 1, &mut tt, &mut ctx, -INFTY, INFTY);
+    let (score_d2, _) =
+        search_fixed_depth(&mut board, &tables, 2, &mut tt, &mut ctx, -INFTY, INFTY);
+    let (score_d3, _) =
+        search_fixed_depth(&mut board, &tables, 3, &mut tt, &mut ctx, -INFTY, INFTY);
+    let (score_d4, _) =
+        search_fixed_depth(&mut board, &tables, 4, &mut tt, &mut ctx, -INFTY, INFTY);
 
     println!("Depth 1: {}", score_d1);
     println!("Depth 2: {}", score_d2);
@@ -371,7 +394,7 @@ fn diagnostic_stand_pat() {
     // At depth 0, should go into quiescence and stand pat
     let mut tt = TranspositionTable::new(64);
     let mut ctx = SearchContext::new();
-    let (score, _) = search_fixed_depth(&mut board, &tables, 1, &mut tt, &mut ctx);
+    let (score, _) = search_fixed_depth(&mut board, &tables, 1, &mut tt, &mut ctx, -INFTY, INFTY);
 
     println!("Stand pat position score: {}", score);
     // Should be close to equal (no good captures)
@@ -397,12 +420,21 @@ fn diagnostic_sign_error() {
 
     let mut tt = TranspositionTable::new(64);
     let mut ctx = SearchContext::new();
-    let (score_white, _) = search_fixed_depth(&mut board, &tables, 3, &mut tt, &mut ctx);
+    let (score_white, _) =
+        search_fixed_depth(&mut board, &tables, 3, &mut tt, &mut ctx, -INFTY, INFTY);
 
     // Now flip the board (Black to move, same position logic)
     let fen_black = "rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 0 1";
     let mut board_black = Board::from_str(fen_black).unwrap();
-    let (score_black, _) = search_fixed_depth(&mut board_black, &tables, 3, &mut tt, &mut ctx);
+    let (score_black, _) = search_fixed_depth(
+        &mut board_black,
+        &tables,
+        3,
+        &mut tt,
+        &mut ctx,
+        -INFTY,
+        INFTY,
+    );
 
     println!("White to move: {}", score_white);
     println!("Black to move: {}", score_black);
@@ -436,7 +468,7 @@ fn diagnostic_quiescence_depth() {
 
     let mut tt = TranspositionTable::new(64);
     let mut ctx = SearchContext::new();
-    let (score, _) = search_fixed_depth(&mut board, &tables, 4, &mut tt, &mut ctx);
+    let (score, _) = search_fixed_depth(&mut board, &tables, 4, &mut tt, &mut ctx, -INFTY, INFTY);
 
     let elapsed = start.elapsed();
 
@@ -464,7 +496,7 @@ fn diagnostic_alpha_beta_bounds() {
 
     let mut tt = TranspositionTable::new(64);
     let mut ctx = SearchContext::new();
-    let (score, _) = search_fixed_depth(&mut board, &tables, 3, &mut tt, &mut ctx);
+    let (score, _) = search_fixed_depth(&mut board, &tables, 3, &mut tt, &mut ctx, -INFTY, INFTY);
 
     println!("Alpha-beta test score: {}", score);
 
@@ -573,7 +605,8 @@ fn what_does_white_do_after_exd4() {
     let tables = load_magic_tables();
     let mut ctx = SearchContext::new();
     let mut tt = TranspositionTable::new(64);
-    let (score, best_move) = search_fixed_depth(&mut board, &tables, 2, &mut tt, &mut ctx);
+    let (score, best_move) =
+        search_fixed_depth(&mut board, &tables, 2, &mut tt, &mut ctx, -INFTY, INFTY);
 
     println!("After exd4, White's best move: {:?}", best_move);
     println!("Score from White's POV: {}", score);

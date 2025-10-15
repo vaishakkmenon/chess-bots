@@ -12,6 +12,7 @@ use crate::search::tt::{NodeType, TranspositionTable};
 pub const MATE: i32 = 30_000;
 pub const INFTY: i32 = MATE + 2_000;
 const MAX_PLY: i32 = 100;
+const ASPIRATION_WINDOW: i32 = 50;
 
 /// Helper Functions
 
@@ -365,6 +366,8 @@ pub fn search_fixed_depth(
     depth: i32,
     tt: &mut TranspositionTable,
     ctx: &mut SearchContext,
+    alpha: i32,
+    beta: i32,
 ) -> (i32, Option<Move>) {
     debug_assert!(depth >= 0);
 
@@ -372,7 +375,7 @@ pub fn search_fixed_depth(
     let mut pseudo_scratch = Vec::with_capacity(256);
 
     let hash = board.zobrist;
-    let root_probe = tt.probe(hash, depth, -INFTY, INFTY, 0);
+    let root_probe = tt.probe(hash, depth, alpha, beta, 0);
     let root_tt_move = root_probe.best_move;
     ctx.clear_history();
 
@@ -394,6 +397,7 @@ pub fn search_fixed_depth(
     let root_moves = scratch.clone();
     let mut best_score = -INFTY;
     let mut best_move = None;
+    let mut a = alpha;
 
     // Search each root move
     for &mv in root_moves.iter() {
@@ -404,8 +408,8 @@ pub fn search_fixed_depth(
             board,
             tables,
             depth - 1,
-            -INFTY,
-            INFTY,
+            -beta,
+            -a,
             1,
             ctx,
             &mut scratch,
@@ -419,6 +423,14 @@ pub fn search_fixed_depth(
         if score > best_score {
             best_score = score;
             best_move = Some(mv);
+        }
+
+        if score > a {
+            a = score;
+        }
+
+        if score >= beta {
+            break;
         }
     }
 
@@ -435,14 +447,53 @@ pub fn search_iterative_deepening(
 
     let mut best_score = 0;
     let mut best_move = None;
+    let mut prev_score = 0;
 
     tt.new_search();
 
     for depth in 1..=max_depth {
         #[cfg(feature = "lmr_stats")]
         ctx.reset_lmr_stats();
-        let (score, mv) = search_fixed_depth(board, tables, depth, &mut tt, &mut ctx);
+        let (mut score, mut mv);
+        if depth == 1 {
+            // Depth 1: No previous score, use full window
+            (score, mv) =
+                search_fixed_depth(board, tables, depth, &mut tt, &mut ctx, -INFTY, INFTY);
+        } else {
+            // Depth 2+: Use aspiration window around previous score
+            let mut alpha = prev_score - ASPIRATION_WINDOW;
+            let mut beta = prev_score + ASPIRATION_WINDOW;
+
+            // Initial aspiration search
+            (score, mv) = search_fixed_depth(board, tables, depth, &mut tt, &mut ctx, alpha, beta);
+
+            // ← NEW: Handle fail-low (score <= alpha)
+            if score <= alpha {
+                // Score is worse than expected - widen window downward
+                #[cfg(feature = "aspiration_stats")]
+                {
+                    ctx.aspiration_fails_low += 1;
+                }
+                alpha = -INFTY;
+                (score, mv) =
+                    search_fixed_depth(board, tables, depth, &mut tt, &mut ctx, alpha, beta);
+            }
+
+            // ← NEW: Handle fail-high (score >= beta)
+            if score >= beta {
+                // Score is better than expected - widen window upward
+                #[cfg(feature = "aspiration_stats")]
+                {
+                    ctx.aspiration_fails_high += 1;
+                }
+                beta = INFTY;
+                (score, mv) =
+                    search_fixed_depth(board, tables, depth, &mut tt, &mut ctx, alpha, beta);
+            }
+        }
+
         best_score = score;
+        prev_score = score;
 
         if let Some(m) = mv {
             best_move = Some(m);
@@ -461,6 +512,14 @@ pub fn search_iterative_deepening(
                 0.0
             };
             eprintln!("LMR: reductions={} re-searches={} ({:.1}%)", r, m, pct);
+        }
+
+        #[cfg(feature = "aspiration_stats")]
+        {
+            eprintln!(
+                "Aspiration: fails_low={} fails_high={}",
+                ctx.aspiration_fails_low, ctx.aspiration_fails_high
+            );
         }
     }
 
