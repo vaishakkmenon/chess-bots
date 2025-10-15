@@ -2,6 +2,7 @@
 
 use rust_engine::board::Board;
 use rust_engine::moves::magic::loader::load_magic_tables;
+use rust_engine::search::context::SearchContext;
 use rust_engine::search::search::{search_fixed_depth, search_iterative_deepening};
 use rust_engine::search::tt::TranspositionTable;
 use std::str::FromStr;
@@ -17,9 +18,10 @@ fn test_tt_stores_best_move() {
         Board::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
     let tables = load_magic_tables();
     let mut tt = TranspositionTable::new(64);
+    let mut ctx = SearchContext::new();
 
     // Search to depth 3
-    let (score1, move1) = search_fixed_depth(&mut board, &tables, 3, &mut tt);
+    let (score1, move1) = search_fixed_depth(&mut board, &tables, 3, &mut tt, &mut ctx);
 
     println!("Depth 3: score={}, move={:?}", score1, move1);
 
@@ -27,7 +29,7 @@ fn test_tt_stores_best_move() {
     assert!(move1.is_some(), "Should find a move at depth 3");
 
     // Search to depth 4 (should reuse TT move from depth 3)
-    let (score2, move2) = search_fixed_depth(&mut board, &tables, 4, &mut tt);
+    let (score2, move2) = search_fixed_depth(&mut board, &tables, 4, &mut tt, &mut ctx);
 
     println!("Depth 4: score={}, move={:?}", score2, move2);
 
@@ -69,17 +71,18 @@ fn test_tt_move_ordering_improves_performance() {
             .unwrap();
     let mut board2 = board1.clone();
     let tables = load_magic_tables();
+    let mut ctx = SearchContext::new();
 
     // Search with small TT (limited benefit)
     let mut tt_small = TranspositionTable::new(1); // 1 MB
     let start = Instant::now();
-    let _ = search_fixed_depth(&mut board1, &tables, 5, &mut tt_small);
+    let _ = search_fixed_depth(&mut board1, &tables, 5, &mut tt_small, &mut ctx);
     let time_small = start.elapsed();
 
     // Search with larger TT (should be faster due to better TT move usage)
     let mut tt_large = TranspositionTable::new(64); // 64 MB
     let start = Instant::now();
-    let _ = search_fixed_depth(&mut board2, &tables, 5, &mut tt_large);
+    let _ = search_fixed_depth(&mut board2, &tables, 5, &mut tt_large, &mut ctx);
     let time_large = start.elapsed();
 
     println!("Small TT (1 MB):  {:?}", time_small);
@@ -100,15 +103,16 @@ fn test_shallow_search_helps_deep_search() {
         Board::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
     let tables = load_magic_tables();
     let mut tt = TranspositionTable::new(64);
+    let mut ctx = SearchContext::new();
 
     // Do a shallow search first
-    let (_, shallow_move) = search_fixed_depth(&mut board, &tables, 2, &mut tt);
+    let (_, shallow_move) = search_fixed_depth(&mut board, &tables, 2, &mut tt, &mut ctx);
 
     println!("Shallow (depth 2) move: {:?}", shallow_move);
 
     // Now do a deep search (should use the TT move from shallow search)
     let start = Instant::now();
-    let (_, deep_move) = search_fixed_depth(&mut board, &tables, 5, &mut tt);
+    let (_, deep_move) = search_fixed_depth(&mut board, &tables, 5, &mut tt, &mut ctx);
     let time_with_tt = start.elapsed();
 
     println!("Deep (depth 5) move: {:?}", deep_move);
@@ -133,14 +137,17 @@ fn test_tt_move_ordering_same_results() {
             .unwrap();
     let mut board2 = board1.clone();
     let tables = load_magic_tables();
+    let mut ctx = SearchContext::new();
 
     // Search with TT
     let mut tt = TranspositionTable::new(64);
-    let (score_with_tt, move_with_tt) = search_fixed_depth(&mut board1, &tables, 4, &mut tt);
+    let (score_with_tt, move_with_tt) =
+        search_fixed_depth(&mut board1, &tables, 4, &mut tt, &mut ctx);
 
     // Search again (fresh TT)
     let mut tt_fresh = TranspositionTable::new(64);
-    let (score_fresh, move_fresh) = search_fixed_depth(&mut board2, &tables, 4, &mut tt_fresh);
+    let (score_fresh, move_fresh) =
+        search_fixed_depth(&mut board2, &tables, 4, &mut tt_fresh, &mut ctx);
 
     println!(
         "First search:  score={}, move={:?}",
@@ -169,13 +176,14 @@ fn test_tt_populated_during_search() {
         Board::from_str("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1").unwrap();
     let tables = load_magic_tables();
     let mut tt = TranspositionTable::new(64);
+    let mut ctx = SearchContext::new();
 
     // First search should populate TT
-    let (score1, _) = search_fixed_depth(&mut board, &tables, 4, &mut tt);
+    let (score1, _) = search_fixed_depth(&mut board, &tables, 4, &mut tt, &mut ctx);
 
     // Second search of same position should be faster (TT hits)
     let start = Instant::now();
-    let (score2, _) = search_fixed_depth(&mut board, &tables, 4, &mut tt);
+    let (score2, _) = search_fixed_depth(&mut board, &tables, 4, &mut tt, &mut ctx);
     let time_second = start.elapsed();
 
     println!("First search score: {}", score1);
@@ -203,9 +211,10 @@ fn test_tt_move_in_tactical_position() {
         Board::from_str("rnb1kbnr/pppppppp/8/8/8/3q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
     let tables = load_magic_tables();
     let mut tt = TranspositionTable::new(64);
+    let mut ctx = SearchContext::new();
 
     // Should find Qxd3 quickly
-    let (score, best_move) = search_fixed_depth(&mut board, &tables, 3, &mut tt);
+    let (score, best_move) = search_fixed_depth(&mut board, &tables, 3, &mut tt, &mut ctx);
 
     println!("Tactical position score: {}", score);
     println!("Best move: {:?}", best_move);
@@ -223,6 +232,7 @@ fn test_tt_move_in_tactical_position() {
 fn test_tt_with_different_positions() {
     let tables = load_magic_tables();
     let mut tt = TranspositionTable::new(64);
+    let mut ctx = SearchContext::new();
 
     // Search multiple different positions with same TT
     let positions = vec![
@@ -233,7 +243,7 @@ fn test_tt_with_different_positions() {
 
     for (i, fen) in positions.iter().enumerate() {
         let mut board = Board::from_str(fen).unwrap();
-        let (score, best_move) = search_fixed_depth(&mut board, &tables, 3, &mut tt);
+        let (score, best_move) = search_fixed_depth(&mut board, &tables, 3, &mut tt, &mut ctx);
 
         println!("Position {}: score={}, move={:?}", i + 1, score, best_move);
 
@@ -257,9 +267,10 @@ fn test_tt_move_is_always_legal() {
         Board::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
     let tables = load_magic_tables();
     let mut tt = TranspositionTable::new(64);
+    let mut ctx = SearchContext::new();
 
     // Search and get best move
-    let (_, best_move) = search_fixed_depth(&mut board, &tables, 4, &mut tt);
+    let (_, best_move) = search_fixed_depth(&mut board, &tables, 4, &mut tt, &mut ctx);
 
     if let Some(mv) = best_move {
         // Generate legal moves to verify TT move is legal
@@ -286,8 +297,9 @@ fn test_tt_move_ordering_finds_mate() {
     let mut board = Board::from_str("6k1/5ppp/8/8/8/8/5PPP/3Q2K1 w - - 0 1").unwrap();
     let tables = load_magic_tables();
     let mut tt = TranspositionTable::new(64);
+    let mut ctx = SearchContext::new();
 
-    let (score, best_move) = search_fixed_depth(&mut board, &tables, 2, &mut tt);
+    let (score, best_move) = search_fixed_depth(&mut board, &tables, 2, &mut tt, &mut ctx);
 
     println!("Mate position score: {}", score);
     println!("Mate move: {:?}", best_move);
@@ -308,6 +320,7 @@ fn test_performance_comparison() {
         Board::from_str("r1bqkb1r/pppp1ppp/2n2n2/4p3/4P3/3P1N2/PPP2PPP/RNBQKB1R w KQkq - 0 1")
             .unwrap();
     let tables = load_magic_tables();
+    let mut ctx = SearchContext::new();
 
     println!("\n=== PERFORMANCE COMPARISON ===\n");
 
@@ -315,7 +328,7 @@ fn test_performance_comparison() {
         let mut tt = TranspositionTable::new(64);
 
         let start = Instant::now();
-        let (score, _) = search_fixed_depth(&mut board, &tables, depth, &mut tt);
+        let (score, _) = search_fixed_depth(&mut board, &tables, depth, &mut tt, &mut ctx);
         let elapsed = start.elapsed();
 
         println!("Depth {}: score={:4}, time={:?}", depth, score, elapsed);

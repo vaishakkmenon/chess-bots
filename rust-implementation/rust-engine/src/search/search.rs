@@ -1,4 +1,5 @@
 use crate::board::{Board, Piece};
+use crate::hash::zobrist::ep_file_to_hash;
 use crate::moves::execute::{generate_captures, generate_legal, make_move_basic, undo_move_basic};
 use crate::moves::magic::MagicTables;
 use crate::moves::square_control::in_check;
@@ -141,9 +142,8 @@ fn negamax(
     tt: &mut TranspositionTable,
     allow_null_move: bool,
 ) -> i32 {
-    let hash = board.compute_zobrist_full();
-
-    let probe_result = tt.probe(hash, depth, alpha, beta, ply as i32);
+    // DON'T capture hash here - use board.zobrist directly throughout
+    let probe_result = tt.probe(board.zobrist, depth, alpha, beta, ply as i32);
 
     // If we got a score cutoff, return it immediately
     if let Some(tt_score) = probe_result.score {
@@ -153,50 +153,61 @@ fn negamax(
     // Save the TT move for move ordering (even if no cutoff)
     let tt_move = probe_result.best_move;
 
-    let original_alpha = alpha; // ← SAVE ORIGINAL ALPHA
+    let original_alpha = alpha;
 
     // Draw detection first
     if board.halfmove_clock >= 100 || board.repetition_count() >= 3 {
         return 0; // draw
     }
 
-    // Null Move Pruning
-    if allow_null_move
-        && !in_check(board, board.side_to_move, tables)
-        && depth >= 3
-        && !is_endgame(board)
-    {
-        const R: i32 = 2; // Reduction factor (can tune this)
+    let in_check_now = in_check(board, board.side_to_move, tables);
 
-        // Make null move (just flip side to move)
+    // Null Move Pruning
+    // Null Move Pruning
+    if allow_null_move && !in_check_now && depth >= 3 && !is_endgame(board) {
+        const R: i32 = 2;
+
         let old_side = board.side_to_move;
-        board.side_to_move = old_side.opposite();
+        let old_ep = board.en_passant; // ← Save EP
 
         use crate::hash::zobrist::zobrist_keys;
         let keys = zobrist_keys();
-        board.zobrist ^= keys.side_to_move; // Update hash for side change
+
+        // XOR out old EP if it exists
+        if let Some(f) = ep_file_to_hash(board) {
+            board.zobrist ^= keys.ep_file[f as usize];
+        }
+
+        board.side_to_move = old_side.opposite();
+        board.en_passant = None; // ← Clear EP for null move
+        board.zobrist ^= keys.side_to_move;
 
         // Search with reduced depth and disallow another null move
         let null_score = -negamax(
             board,
             tables,
-            depth - 1 - R, // Reduced depth
+            depth - 1 - R,
             -beta,
-            -beta + 1, // Null window
+            -beta + 1,
             ply + 1,
             ctx,
             scratch,
             tt,
-            false, // ← IMPORTANT: Don't allow consecutive null moves
+            false,
         );
 
-        // Undo null move
+        // Restore
         board.side_to_move = old_side;
-        board.zobrist ^= keys.side_to_move; // Restore hash
+        board.en_passant = old_ep; // ← Restore EP
+        board.zobrist ^= keys.side_to_move;
 
-        // If null move causes beta cutoff, position is too good
+        // XOR in restored EP if it exists
+        if let Some(f) = ep_file_to_hash(board) {
+            board.zobrist ^= keys.ep_file[f as usize];
+        }
+
         if null_score >= beta {
-            return beta; // Cutoff!
+            return beta;
         }
     }
 
@@ -207,8 +218,8 @@ fn negamax(
 
     // Terminal check
     if scratch.is_empty() {
-        if in_check(board, board.side_to_move, tables) {
-            return -(MATE - ply as i32); // Mated! Bad for current player
+        if in_check_now {
+            return -(MATE - ply as i32);
         }
         return 0; // stalemate
     }
@@ -225,27 +236,93 @@ fn negamax(
     let legal_moves: Vec<Move> = scratch.clone();
 
     let mut a = alpha;
-    let mut best_move = None; // ← TRACK BEST MOVE
+    let mut best_move = None;
 
-    for &mv in legal_moves.iter() {
+    for (move_index, &mv) in legal_moves.iter().enumerate() {
         let undo = make_move_basic(board, mv);
-        let score = -negamax(
-            board,
-            tables,
-            depth - 1,
-            -beta,
-            -a,
-            ply + 1,
-            ctx,
-            scratch,
-            tt,
-            true,
-        );
+
+        let gives_check = in_check(board, board.side_to_move, tables);
+
+        // Check if this is a killer move
+        let is_killer = ctx.is_killer(ply, mv);
+
+        let mut score;
+
+        let is_tt_move = tt_move.is_some() && tt_move == Some(mv);
+
+        let can_reduce = move_index >= 4
+            && depth >= 3
+            && !in_check_now
+            && !gives_check
+            && !mv.is_capture()
+            && !is_killer
+            && !is_tt_move;
+
+        if can_reduce {
+            #[cfg(feature = "lmr_stats")]
+            {
+                ctx.lmr_reductions = ctx.lmr_reductions.saturating_add(1);
+            }
+            let reduction = if move_index >= 10 && depth >= 5 {
+                2 // Aggressive for very late moves at high depth
+            } else {
+                1 // Conservative otherwise
+            };
+
+            let reduced_depth = (depth - 1 - reduction).max(0);
+
+            score = -negamax(
+                board,
+                tables,
+                reduced_depth,
+                -beta,
+                -a,
+                ply + 1,
+                ctx,
+                scratch,
+                tt,
+                true,
+            );
+
+            // Re-search if promising
+            if score > a {
+                #[cfg(feature = "lmr_stats")]
+                {
+                    ctx.lmr_researches = ctx.lmr_researches.saturating_add(1);
+                }
+                score = -negamax(
+                    board,
+                    tables,
+                    depth - 1,
+                    -beta,
+                    -a,
+                    ply + 1,
+                    ctx,
+                    scratch,
+                    tt,
+                    true,
+                );
+            }
+        } else {
+            // Full depth search
+            score = -negamax(
+                board,
+                tables,
+                depth - 1,
+                -beta,
+                -a,
+                ply + 1,
+                ctx,
+                scratch,
+                tt,
+                true,
+            );
+        }
         undo_move_basic(board, undo);
 
         if score > a {
             a = score;
-            best_move = Some(mv); // ← UPDATE BEST MOVE
+            best_move = Some(mv);
 
             if a >= beta {
                 // Beta cutoff!
@@ -254,14 +331,20 @@ fn negamax(
                     ctx.update_history(mv.piece, mv.to, depth);
                 }
 
-                // ← STORE IN TT BEFORE RETURNING
-                tt.store(hash, depth, a, best_move, NodeType::LowerBound, ply as i32);
+                // Store in TT - use board.zobrist directly (it's current and correct)
+                tt.store(
+                    board.zobrist,
+                    depth,
+                    a,
+                    best_move,
+                    NodeType::LowerBound,
+                    ply as i32,
+                );
                 return a;
             }
         }
     }
 
-    // ← DETERMINE NODE TYPE USING CORRECT VARIABLES
     let node_type = if a >= beta {
         NodeType::LowerBound
     } else if a <= original_alpha {
@@ -270,7 +353,8 @@ fn negamax(
         NodeType::Exact
     };
 
-    tt.store(hash, depth, a, best_move, node_type, ply as i32);
+    // Store in TT - use board.zobrist directly (it's current and correct)
+    tt.store(board.zobrist, depth, a, best_move, node_type, ply as i32);
 
     a
 }
@@ -280,14 +364,14 @@ pub fn search_fixed_depth(
     tables: &MagicTables,
     depth: i32,
     tt: &mut TranspositionTable,
+    ctx: &mut SearchContext,
 ) -> (i32, Option<Move>) {
     debug_assert!(depth >= 0);
 
-    let mut ctx = SearchContext::new();
     let mut scratch = Vec::with_capacity(256);
     let mut pseudo_scratch = Vec::with_capacity(256);
 
-    let hash = board.compute_zobrist_full();
+    let hash = board.zobrist;
     let root_probe = tt.probe(hash, depth, -INFTY, INFTY, 0);
     let root_tt_move = root_probe.best_move;
     ctx.clear_history();
@@ -323,7 +407,7 @@ pub fn search_fixed_depth(
             -INFTY,
             INFTY,
             1,
-            &mut ctx,
+            ctx,
             &mut scratch,
             tt,
             true,
@@ -346,6 +430,7 @@ pub fn search_iterative_deepening(
     tables: &MagicTables,
     max_depth: i32,
 ) -> (i32, Option<Move>) {
+    let mut ctx = SearchContext::new();
     let mut tt = TranspositionTable::new(64);
 
     let mut best_score = 0;
@@ -354,7 +439,9 @@ pub fn search_iterative_deepening(
     tt.new_search();
 
     for depth in 1..=max_depth {
-        let (score, mv) = search_fixed_depth(board, tables, depth, &mut tt);
+        #[cfg(feature = "lmr_stats")]
+        ctx.reset_lmr_stats();
+        let (score, mv) = search_fixed_depth(board, tables, depth, &mut tt, &mut ctx);
         best_score = score;
 
         if let Some(m) = mv {
@@ -362,6 +449,18 @@ pub fn search_iterative_deepening(
             println!("info depth {} score cp {} pv {:?}", depth, score, m);
         } else {
             println!("info depth {} score cp {} pv (none)", depth, score);
+        }
+
+        #[cfg(feature = "lmr_stats")]
+        {
+            let r = ctx.lmr_reductions;
+            let m = ctx.lmr_researches;
+            let pct = if r > 0 {
+                (m as f64 / r as f64) * 100.0
+            } else {
+                0.0
+            };
+            eprintln!("LMR: reductions={} re-searches={} ({:.1}%)", r, m, pct);
         }
     }
 

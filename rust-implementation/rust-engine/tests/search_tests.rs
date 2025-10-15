@@ -3,6 +3,7 @@
 use rust_engine::board::Board;
 use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::types::Move;
+use rust_engine::search::context::SearchContext;
 use rust_engine::search::eval::static_eval;
 use rust_engine::search::search::search_fixed_depth;
 use rust_engine::search::tt::TranspositionTable;
@@ -17,7 +18,8 @@ fn search_position(f: &str, depth: i32) -> (i32, Option<Move>) {
     let mut board = fen(f);
     let tables = load_magic_tables();
     let mut tt = TranspositionTable::new(64);
-    search_fixed_depth(&mut board, &tables, depth, &mut tt)
+    let mut ctx = SearchContext::new();
+    search_fixed_depth(&mut board, &tables, depth, &mut tt, &mut ctx)
 }
 
 #[test]
@@ -27,7 +29,9 @@ fn depth0_equals_static_eval_white_up_pawn() {
     let mut b = fen("k7/8/8/8/4P3/8/8/6K1 w - - 0 1");
     let tables = load_magic_tables();
     let mut tt = TranspositionTable::new(64);
-    let (score, _) = search_fixed_depth(&mut b, &tables, 0, &mut tt);
+    let mut ctx = SearchContext::new();
+
+    let (score, _) = search_fixed_depth(&mut b, &tables, 0, &mut tt, &mut ctx);
 
     // At depth 0, search should return static eval
     assert_eq!(score, static_eval(&b));
@@ -47,8 +51,10 @@ fn stalemate_returns_zero_any_depth() {
     let mut b = fen("7k/5Q2/6K1/8/8/8/8/8 b - - 0 1");
     let tables = load_magic_tables();
     let mut tt = TranspositionTable::new(64);
+    let mut ctx = SearchContext::new();
+
     for d in 0..=3 {
-        let (score, _) = search_fixed_depth(&mut b, &tables, d, &mut tt);
+        let (score, _) = search_fixed_depth(&mut b, &tables, d, &mut tt, &mut ctx);
         assert_eq!(score, 0, "stalemate should return 0 at depth {d}");
     }
 }
@@ -62,7 +68,9 @@ fn depth1_prefers_free_capture_white() {
     let tables = load_magic_tables();
 
     let mut tt = TranspositionTable::new(64);
-    let (score, best_move) = search_fixed_depth(&mut b, &tables, 1, &mut tt);
+    let mut ctx = SearchContext::new();
+
+    let (score, best_move) = search_fixed_depth(&mut b, &tables, 1, &mut tt, &mut ctx);
 
     // Should find a move
     assert!(best_move.is_some(), "Should find a move at depth 1");

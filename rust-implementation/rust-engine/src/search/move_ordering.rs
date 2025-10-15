@@ -64,7 +64,7 @@ pub fn score_move(
     }
 
     // 2. Killer moves get priority (9000)
-    if ctx.is_killer(ply, mv) {
+    if ctx.is_killer(ply, *mv) {
         return 9000;
     }
 

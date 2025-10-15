@@ -11,6 +11,11 @@ pub struct SearchContext {
     pub killers: [[Option<Move>; 2]; MAX_PLY],
     pub history: [[i32; 64]; 6],
     pub tt_move: Option<Move>,
+
+    #[cfg(feature = "lmr_stats")]
+    pub lmr_reductions: u64,
+    #[cfg(feature = "lmr_stats")]
+    pub lmr_researches: u64,
 }
 
 impl SearchContext {
@@ -19,6 +24,10 @@ impl SearchContext {
             killers: [[None; 2]; MAX_PLY],
             history: [[0; 64]; 6],
             tt_move: None,
+            #[cfg(feature = "lmr_stats")]
+            lmr_reductions: 0,
+            #[cfg(feature = "lmr_stats")]
+            lmr_researches: 0,
         }
     }
 
@@ -43,9 +52,11 @@ impl SearchContext {
     pub fn update_history(&mut self, piece: Piece, to: Square, depth: i32) {
         let piece_idx = piece as usize;
         let square_idx = to.index() as usize;
+        let bonus = depth.saturating_mul(depth);
 
         // Depth-squared bonus: deeper searches are more important
-        self.history[piece_idx][square_idx] += depth * depth;
+        self.history[piece_idx][square_idx] =
+            self.history[piece_idx][square_idx].saturating_add(bonus);
     }
 
     /// Get history score for a move
@@ -56,12 +67,12 @@ impl SearchContext {
     }
 
     /// Check if a move is a killer at this ply
-    pub fn is_killer(&self, ply: usize, mv: &Move) -> bool {
+    pub fn is_killer(&self, ply: usize, mv: Move) -> bool {
         if ply >= MAX_PLY {
             return false;
         }
 
-        self.killers[ply][0] == Some(*mv) || self.killers[ply][1] == Some(*mv)
+        self.killers[ply][0] == Some(mv) || self.killers[ply][1] == Some(mv)
     }
 
     /// Clear history at start of new search
@@ -69,12 +80,19 @@ impl SearchContext {
         self.history = [[0; 64]; 6];
     }
 
-    pub fn set_best_move(&mut self, mv: &Move) {
-        self.tt_move = Some(*mv);
+    pub fn set_best_move(&mut self, mv: Move) {
+        self.tt_move = Some(mv);
     }
 
-    pub fn get_best_move(&mut self) -> Option<Move> {
+    pub fn get_best_move(&self) -> Option<Move> {
         self.tt_move
+    }
+
+    #[cfg(feature = "lmr_stats")]
+    #[inline]
+    pub fn reset_lmr_stats(&mut self) {
+        self.lmr_reductions = 0;
+        self.lmr_researches = 0;
     }
 }
 
@@ -107,12 +125,12 @@ mod tests {
         };
 
         ctx.update_killer(0, mv1);
-        assert!(ctx.is_killer(0, &mv1));
+        assert!(ctx.is_killer(0, mv1));
 
         ctx.update_killer(0, mv2);
-        assert!(ctx.is_killer(0, &mv1));
-        assert!(ctx.is_killer(0, &mv2));
+        assert!(ctx.is_killer(0, mv1));
+        assert!(ctx.is_killer(0, mv2));
 
-        assert!(!ctx.is_killer(1, &mv1));
+        assert!(!ctx.is_killer(1, mv1));
     }
 }
