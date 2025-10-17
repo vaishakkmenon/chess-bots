@@ -51,10 +51,10 @@ pub fn score_move(
     ply: usize,
     tt_move: Option<Move>,
 ) -> i32 {
-    // HIGHEST PRIORITY: TT move
+    // HIGHEST PRIORITY: TT move (guaranteed to be searched first)
     if let Some(tt_mv) = tt_move {
         if *mv == tt_mv {
-            return 10_000_000; // Searched first!
+            return 1_000_000; // Absolute highest priority - always search first
         }
     }
 
