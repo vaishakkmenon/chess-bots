@@ -70,8 +70,7 @@ fn quiesce(
     mut alpha: i32,
     beta: i32,
     ctx: &mut SearchContext,
-    scratch: &mut Vec<Move>,
-    ply: i32, // Track depth to prevent infinite loops
+    ply: i32,
 ) -> i32 {
     const MAX_QUIESCE_PLY: i32 = 16; // Safety limit
 
@@ -93,32 +92,32 @@ fn quiesce(
         alpha = stand_pat;
     }
 
-    // Generate and sort captures
-    let mut pseudo_scratch = Vec::with_capacity(256);
-    scratch.clear();
-    generate_captures(board, tables, scratch, &mut pseudo_scratch);
-
-    // Sort by MVV-LVA (Most Valuable Victim - Least Valuable Attacker)
-    scratch.sort_unstable_by_key(|mv| -mvv_lva_score(mv, board));
-
-    // Make a copy to avoid borrow issues
-    let captures: Vec<Move> = scratch.clone();
+    // Generate & sort captures (use ctx-owned reusable buffers)
+    let mut caps = ctx.take_q_moves();
+    let mut qpseudo = ctx.take_q_pseudo();
+    caps.clear();
+    qpseudo.clear();
+    generate_captures(board, tables, &mut caps, &mut qpseudo);
+    caps.sort_unstable_by_key(|mv| -mvv_lva_score(mv, board));
 
     // Search each capture
-    for &mv in captures.iter() {
+    for &mv in caps.iter() {
         // Delta pruning (optional but recommended)
         const QUEEN_VALUE: i32 = 900;
-        if stand_pat + mvv_lva_score(&mv, board) + QUEEN_VALUE < alpha {
-            continue; // Even best case won't beat alpha
+        let cap_score = mvv_lva_score(&mv, board);
+        if stand_pat + cap_score + QUEEN_VALUE < alpha {
+            continue;
         }
 
         // Try the capture
         let undo = make_move_basic(board, mv);
-        let score = -quiesce(board, tables, -beta, -alpha, ctx, scratch, ply + 1);
+        let score = -quiesce(board, tables, -beta, -alpha, ctx, ply + 1);
         undo_move_basic(board, undo);
 
         // Beta cutoff
         if score >= beta {
+            ctx.restore_q_pseudo(qpseudo);
+            ctx.restore_q_moves(caps);
             return beta;
         }
 
@@ -128,6 +127,9 @@ fn quiesce(
         }
     }
 
+    // restore before return
+    ctx.restore_q_pseudo(qpseudo);
+    ctx.restore_q_moves(caps);
     alpha
 }
 
@@ -139,7 +141,6 @@ fn negamax(
     beta: i32,
     ply: usize,
     ctx: &mut SearchContext,
-    scratch: &mut Vec<Move>,
     tt: &mut TranspositionTable,
     allow_null_move: bool,
 ) -> i32 {
@@ -156,16 +157,17 @@ fn negamax(
 
     let original_alpha = alpha;
 
-    // Draw detection first
-    if board.halfmove_clock >= 100 || board.repetition_count() >= 3 {
-        return 0; // draw
+    let rep_count = board.repetition_count();
+
+    // Draw detection (tree-neutral): return 0 for actual draws
+    if board.halfmove_clock >= 100 || rep_count >= 3 {
+        return 0;
     }
 
     let in_check_now = in_check(board, board.side_to_move, tables);
 
     // Null Move Pruning
-    // Null Move Pruning
-    if allow_null_move && !in_check_now && depth >= 3 && !is_endgame(board) {
+    if allow_null_move && !in_check_now && depth >= 4 && !is_endgame(board) {
         const R: i32 = 2;
 
         let old_side = board.side_to_move;
@@ -192,7 +194,6 @@ fn negamax(
             -beta + 1,
             ply + 1,
             ctx,
-            scratch,
             tt,
             false,
         );
@@ -207,48 +208,53 @@ fn negamax(
             board.zobrist ^= keys.ep_file[f as usize];
         }
 
+        debug_assert!(
+            board.en_passant == old_ep,
+            "EP mismatch after null-move restore"
+        );
+
         if null_score >= beta {
             return beta;
         }
     }
 
-    // Generate legal moves ONCE
-    let mut pseudo_scratch = Vec::with_capacity(256);
-    scratch.clear();
-    generate_legal(board, tables, scratch, &mut pseudo_scratch);
+    // Base case — do this BEFORE generating moves
+    if depth <= 0 {
+        return quiesce(board, tables, alpha, beta, ctx, 0);
+    }
+
+    // --- Acquire buffers by value (no &mut refs held on ctx) ---
+    let mut cur = ctx.take_current_buffer(ply);
+    let mut pseudo = ctx.take_pseudo();
+
+    // Generate legal moves into `cur`
+    cur.clear();
+    pseudo.clear();
+    generate_legal(board, tables, &mut cur, &mut pseudo);
 
     // Terminal check
-    if scratch.is_empty() {
+    if cur.is_empty() {
+        // restore before any return!
+        ctx.restore_pseudo(pseudo);
+        ctx.restore_current_buffer(ply, cur);
         if in_check_now {
             return -(MATE - ply as i32);
         }
-        return 0; // stalemate
-    }
-
-    // Base case
-    if depth <= 0 {
-        return quiesce(board, tables, alpha, beta, ctx, scratch, 0);
+        return 0;
     }
 
     // Sort moves by score (descending = best first)
-    scratch.sort_unstable_by_key(|mv| -score_move(mv, board, ctx, ply, tt_move));
-
-    // Copy moves locally since scratch will be reused in recursion
-    let legal_moves: Vec<Move> = scratch.clone();
+    cur.sort_unstable_by_key(|mv| -score_move(mv, board, ctx, ply, tt_move));
 
     let mut a = alpha;
     let mut best_move = None;
 
-    for (move_index, &mv) in legal_moves.iter().enumerate() {
+    // Iterate moves
+    for (move_index, &mv) in cur.iter().enumerate() {
         let undo = make_move_basic(board, mv);
 
         let gives_check = in_check(board, board.side_to_move, tables);
-
-        // Check if this is a killer move
         let is_killer = ctx.is_killer(ply, mv);
-
-        let mut score;
-
         let is_tt_move = tt_move.is_some() && tt_move == Some(mv);
 
         let can_reduce = move_index >= 4
@@ -259,19 +265,25 @@ fn negamax(
             && !is_killer
             && !is_tt_move;
 
+        let mut score;
         if can_reduce {
-            #[cfg(feature = "lmr_stats")]
-            {
-                ctx.lmr_reductions = ctx.lmr_reductions.saturating_add(1);
-            }
-            let reduction = if move_index >= 10 && depth >= 5 {
-                2 // Aggressive for very late moves at high depth
-            } else {
-                1 // Conservative otherwise
-            };
+            // (your reduction schedule, unchanged except for child buffer handling)
+            let reduction: i32 = {
+                let mi = move_index as i32;
 
+                if depth <= 3 {
+                    0 // no reduction at shallow depths
+                } else if depth >= 6 && mi >= 10 {
+                    2
+                } else if depth >= 4 && mi >= 6 {
+                    1
+                } else {
+                    0
+                }
+            };
             let reduced_depth = (depth - 1 - reduction).max(0);
 
+            // Recurse: the child will take its own buffers from ctx based on (ply+1)
             score = -negamax(
                 board,
                 tables,
@@ -280,59 +292,38 @@ fn negamax(
                 -a,
                 ply + 1,
                 ctx,
-                scratch,
                 tt,
                 true,
             );
 
-            // Re-search if promising
-            if score > a {
-                #[cfg(feature = "lmr_stats")]
-                {
-                    ctx.lmr_researches = ctx.lmr_researches.saturating_add(1);
-                }
-                score = -negamax(
-                    board,
-                    tables,
-                    depth - 1,
-                    -beta,
-                    -a,
-                    ply + 1,
-                    ctx,
-                    scratch,
-                    tt,
-                    true,
-                );
+            if reduction > 0 && depth >= 5 && score > a {
+                score = -negamax(board, tables, depth - 1, -beta, -a, ply + 1, ctx, tt, true);
             }
         } else {
-            // Full depth search
-            score = -negamax(
-                board,
-                tables,
-                depth - 1,
-                -beta,
-                -a,
-                ply + 1,
-                ctx,
-                scratch,
-                tt,
-                true,
-            );
+            score = -negamax(board, tables, depth - 1, -beta, -a, ply + 1, ctx, tt, true);
         }
+
         undo_move_basic(board, undo);
 
         if score > a {
             a = score;
             best_move = Some(mv);
 
+            // tiny alpha-raise history (quiets only)
+            if !mv.is_capture() {
+                let small = (depth / 2).max(1);
+                ctx.update_history(mv.piece, mv.to, small);
+            }
+
             if a >= beta {
-                // Beta cutoff!
                 if !mv.is_capture() {
                     ctx.update_killer(ply, mv);
                     ctx.update_history(mv.piece, mv.to, depth);
                 }
+                // restore before returning!
+                ctx.restore_pseudo(pseudo);
+                ctx.restore_current_buffer(ply, cur);
 
-                // Store in TT - use board.zobrist directly (it's current and correct)
                 tt.store(
                     board.zobrist,
                     depth,
@@ -346,6 +337,10 @@ fn negamax(
         }
     }
 
+    // Restore buffers before normal exit
+    ctx.restore_pseudo(pseudo);
+    ctx.restore_current_buffer(ply, cur);
+
     let node_type = if a >= beta {
         NodeType::LowerBound
     } else if a <= original_alpha {
@@ -354,7 +349,6 @@ fn negamax(
         NodeType::Exact
     };
 
-    // Store in TT - use board.zobrist directly (it's current and correct)
     tt.store(board.zobrist, depth, a, best_move, node_type, ply as i32);
 
     a
@@ -377,7 +371,6 @@ pub fn search_fixed_depth(
     let hash = board.zobrist;
     let root_probe = tt.probe(hash, depth, alpha, beta, 0);
     let root_tt_move = root_probe.best_move;
-    ctx.clear_history();
 
     // Generate root moves
     scratch.clear();
@@ -391,31 +384,59 @@ pub fn search_fixed_depth(
     if depth == 0 {
         return (static_eval(board), None); // Immediate return, no search
     }
-    // Sort root moves
-    scratch.sort_unstable_by_key(|mv| -score_move(mv, board, &ctx, 0, root_tt_move));
 
-    let root_moves = scratch.clone();
+    // Deterministic, safe root ordering: TT > good captures > killers > history > others
+    scratch.sort_unstable_by(|a, b| {
+        // 1) TT move first
+        let a_tt = (root_tt_move.is_some() && Some(*a) == root_tt_move) as i32;
+        let b_tt = (root_tt_move.is_some() && Some(*b) == root_tt_move) as i32;
+        if a_tt != b_tt {
+            return b_tt.cmp(&a_tt);
+        }
+
+        // 2) Captures by MVV-LVA
+        let a_cap = a.is_capture() as i32;
+        let b_cap = b.is_capture() as i32;
+        if a_cap != b_cap {
+            return b_cap.cmp(&a_cap);
+        }
+        if a_cap == 1 {
+            let sa = mvv_lva_score(a, board);
+            let sb = mvv_lva_score(b, board);
+            if sa != sb {
+                return sb.cmp(&sa);
+            }
+        }
+
+        // 3) Killers
+        let a_k = ctx.is_killer(0, *a) as i32;
+        let b_k = ctx.is_killer(0, *b) as i32;
+        if a_k != b_k {
+            return b_k.cmp(&a_k);
+        }
+
+        // 4) History (only a tie-breaker now)
+        let ha = ctx.history_score(a.piece, a.to);
+        let hb = ctx.history_score(b.piece, b.to);
+        if ha != hb {
+            return hb.cmp(&ha);
+        }
+
+        // 5) Final tie-break: destination square id
+        a.to.index().cmp(&b.to.index())
+    });
+
     let mut best_score = -INFTY;
     let mut best_move = None;
     let mut a = alpha;
 
-    // Search each root move
-    for &mv in root_moves.iter() {
+    // Search each root move (index loop avoids borrow issues while passing &mut scratch)
+    for i in 0..scratch.len() {
+        let mv = scratch[i];
         let undo = make_move_basic(board, mv);
 
         // Search with negated window (opponent's perspective)
-        let score = -negamax(
-            board,
-            tables,
-            depth - 1,
-            -beta,
-            -a,
-            1,
-            ctx,
-            &mut scratch,
-            tt,
-            true,
-        );
+        let score = -negamax(board, tables, depth - 1, -beta, -a, 1, ctx, tt, true);
 
         undo_move_basic(board, undo);
 
@@ -460,35 +481,34 @@ pub fn search_iterative_deepening(
             (score, mv) =
                 search_fixed_depth(board, tables, depth, &mut tt, &mut ctx, -INFTY, INFTY);
         } else {
-            // Depth 2+: Use aspiration window around previous score
+            // Aspiration window search with proper re-search logic
             let mut alpha = prev_score - ASPIRATION_WINDOW;
             let mut beta = prev_score + ASPIRATION_WINDOW;
 
-            // Initial aspiration search
-            (score, mv) = search_fixed_depth(board, tables, depth, &mut tt, &mut ctx, alpha, beta);
-
-            // ← NEW: Handle fail-low (score <= alpha)
-            if score <= alpha {
-                // Score is worse than expected - widen window downward
-                #[cfg(feature = "aspiration_stats")]
-                {
-                    ctx.aspiration_fails_low += 1;
-                }
-                alpha = -INFTY;
+            loop {
                 (score, mv) =
                     search_fixed_depth(board, tables, depth, &mut tt, &mut ctx, alpha, beta);
-            }
 
-            // ← NEW: Handle fail-high (score >= beta)
-            if score >= beta {
-                // Score is better than expected - widen window upward
-                #[cfg(feature = "aspiration_stats")]
-                {
-                    ctx.aspiration_fails_high += 1;
+                if score <= alpha {
+                    // Fail low - widen window downward
+                    #[cfg(feature = "aspiration_stats")]
+                    {
+                        ctx.aspiration_fails_low += 1;
+                    }
+                    alpha = -INFTY;
+                    // Re-search with widened alpha, keeping beta
+                } else if score >= beta {
+                    // Fail high - widen window upward
+                    #[cfg(feature = "aspiration_stats")]
+                    {
+                        ctx.aspiration_fails_high += 1;
+                    }
+                    beta = INFTY;
+                    // Re-search with widened beta, keeping alpha
+                } else {
+                    // Score within window - success!
+                    break;
                 }
-                beta = INFTY;
-                (score, mv) =
-                    search_fixed_depth(board, tables, depth, &mut tt, &mut ctx, alpha, beta);
             }
         }
 

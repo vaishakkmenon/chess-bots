@@ -5,12 +5,14 @@ use crate::square::Square;
 const MAX_PLY: usize = 64;
 
 pub struct SearchContext {
-    /// Store 2 killer moves per ply level
-    /// killers[ply][0] = primary killer (most recent)
-    /// killers[ply][1] = secondary killer
     pub killers: [[Option<Move>; 2]; MAX_PLY],
     pub history: [[i32; 64]; 6],
     pub tt_move: Option<Move>,
+    pub moves_a: Vec<Move>,
+    pub moves_b: Vec<Move>,
+    pub pseudo: Vec<Move>,
+    pub q_moves: Vec<Move>,
+    pub q_pseudo: Vec<Move>,
 
     #[cfg(feature = "lmr_stats")]
     pub lmr_reductions: u64,
@@ -29,6 +31,11 @@ impl SearchContext {
             killers: [[None; 2]; MAX_PLY],
             history: [[0; 64]; 6],
             tt_move: None,
+            moves_a: Vec::with_capacity(256),
+            moves_b: Vec::with_capacity(256),
+            pseudo: Vec::with_capacity(256),
+            q_moves: Vec::with_capacity(256),
+            q_pseudo: Vec::with_capacity(256),
             #[cfg(feature = "lmr_stats")]
             lmr_reductions: 0,
             #[cfg(feature = "lmr_stats")]
@@ -65,7 +72,7 @@ impl SearchContext {
 
         // Depth-squared bonus: deeper searches are more important
         self.history[piece_idx][square_idx] =
-            self.history[piece_idx][square_idx].saturating_add(bonus);
+            (self.history[piece_idx][square_idx] + bonus).clamp(-4000, 4000);
     }
 
     /// Get history score for a move
@@ -95,6 +102,72 @@ impl SearchContext {
 
     pub fn get_best_move(&self) -> Option<Move> {
         self.tt_move
+    }
+
+    /// Returns (current_buffer, child_buffer) alternating by ply parity.
+    #[inline]
+    pub fn buffers_for(&mut self, ply: usize) -> (&mut Vec<Move>, &mut Vec<Move>) {
+        if (ply & 1) == 0 {
+            (&mut self.moves_a, &mut self.moves_b)
+        } else {
+            (&mut self.moves_b, &mut self.moves_a)
+        }
+    }
+
+    #[inline]
+    pub fn take_current_buffer(&mut self, ply: usize) -> Vec<Move> {
+        if (ply & 1) == 0 {
+            std::mem::take(&mut self.moves_a)
+        } else {
+            std::mem::take(&mut self.moves_b)
+        }
+    }
+
+    #[inline]
+    pub fn restore_current_buffer(&mut self, ply: usize, buf: Vec<Move>) {
+        if (ply & 1) == 0 {
+            self.moves_a = buf;
+        } else {
+            self.moves_b = buf;
+        }
+    }
+
+    #[inline]
+    pub fn take_pseudo(&mut self) -> Vec<Move> {
+        std::mem::take(&mut self.pseudo)
+    }
+
+    #[inline]
+    pub fn restore_pseudo(&mut self, buf: Vec<Move>) {
+        self.pseudo = buf;
+    }
+
+    #[inline]
+    pub fn take_q_moves(&mut self) -> Vec<Move> {
+        std::mem::take(&mut self.q_moves)
+    }
+
+    #[inline]
+    pub fn restore_q_moves(&mut self, buf: Vec<Move>) {
+        self.q_moves = buf;
+    }
+
+    #[inline]
+    pub fn take_q_pseudo(&mut self) -> Vec<Move> {
+        std::mem::take(&mut self.q_pseudo)
+    }
+
+    #[inline]
+    pub fn restore_q_pseudo(&mut self, buf: Vec<Move>) {
+        self.q_pseudo = buf;
+    }
+
+    pub fn decay_history(&mut self) {
+        for p in 0..self.history.len() {
+            for sq in 0..64 {
+                self.history[p][sq] /= 2;
+            }
+        }
     }
 
     #[cfg(feature = "lmr_stats")]
