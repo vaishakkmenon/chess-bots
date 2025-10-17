@@ -7,6 +7,11 @@ const R: i32 = 500;
 const Q: i32 = 900;
 const TEMPO_BONUS: i32 = 10;
 
+/// Contempt factor: Penalty for accepting draws (0.1 pawns)
+/// Higher values = engine avoids draws more aggressively
+/// Set to 0 to disable contempt
+pub const CONTEMPT: i32 = 10;
+
 #[cfg(feature = "psqt")]
 // Helper to mirror file
 #[inline(always)]
@@ -18,47 +23,68 @@ pub const fn mirror_vert(sq: u8) -> u8 {
 mod psqt_tables {
     // Pawn PST - encourages center control and advancement
     // Rewards pushing pawns forward, especially in center
+    // Table is vertically symmetric (rank 1 = rank 8, rank 2 = rank 7, etc.)
     pub const PAWN: [i16; 64] = [
         0, 0, 0, 0, 0, 0, 0, 0, // Rank 1
         5, 10, 10, -20, -20, 10, 10, 5, // Rank 2
         5, -5, -10, 0, 0, -10, -5, 5, // Rank 3
         0, 0, 0, 20, 20, 0, 0, 0, // Rank 4
-        5, 5, 10, 25, 25, 10, 5, 5, // Rank 5
-        10, 10, 20, 30, 30, 20, 10, 10, // Rank 6
-        50, 50, 50, 50, 50, 50, 50, 50, // Rank 7
+        0, 0, 0, 20, 20, 0, 0, 0, // Rank 5 (mirror of rank 4)
+        5, -5, -10, 0, 0, -10, -5, 5, // Rank 6 (mirror of rank 3)
+        5, 10, 10, -20, -20, 10, 10, 5, // Rank 7 (mirror of rank 2)
         0, 0, 0, 0, 0, 0, 0, 0, // Rank 8
     ];
 
     // Knight PST - prefers center, heavily penalizes edges
-    // Knights on the rim are dim!
+    // Knights on the rim are dim! (vertically symmetric)
     pub const KNIGHT: [i16; 64] = [
-        -50, -40, -30, -30, -30, -30, -40, -50, -40, -20, 0, 5, 5, 0, -20, -40, -30, 5, 10, 15, 15,
-        10, 5, -30, -30, 0, 15, 20, 20, 15, 0, -30, -30, 5, 15, 20, 20, 15, 5, -30, -30, 0, 10, 15,
-        15, 10, 0, -30, -40, -20, 0, 0, 0, 0, -20, -40, -50, -40, -30, -30, -30, -30, -40, -50,
+        -50, -40, -30, -30, -30, -30, -40, -50, // Rank 1
+        -40, -20, 0, 5, 5, 0, -20, -40, // Rank 2
+        -30, 5, 10, 15, 15, 10, 5, -30, // Rank 3
+        -30, 0, 15, 20, 20, 15, 0, -30, // Rank 4
+        -30, 0, 15, 20, 20, 15, 0, -30, // Rank 5
+        -30, 5, 10, 15, 15, 10, 5, -30, // Rank 6
+        -40, -20, 0, 5, 5, 0, -20, -40, // Rank 7
+        -50, -40, -30, -30, -30, -30, -40, -50, // Rank 8
     ];
 
     // Bishop PST - likes long diagonals and fianchetto
-    // Penalizes being blocked by own pawns
+    // Penalizes being blocked by own pawns (vertically symmetric)
     pub const BISHOP: [i16; 64] = [
-        -20, -10, -10, -10, -10, -10, -10, -20, -10, 5, 0, 0, 0, 0, 5, -10, -10, 10, 10, 10, 10,
-        10, 10, -10, -10, 0, 10, 10, 10, 10, 0, -10, -10, 5, 5, 10, 10, 5, 5, -10, -10, 0, 5, 10,
-        10, 5, 0, -10, -10, 0, 0, 0, 0, 0, 0, -10, -20, -10, -10, -10, -10, -10, -10, -20,
+        -20, -10, -10, -10, -10, -10, -10, -20, // Rank 1
+        -10, 5, 0, 0, 0, 0, 5, -10, // Rank 2
+        -10, 10, 10, 10, 10, 10, 10, -10, // Rank 3
+        -10, 0, 10, 10, 10, 10, 0, -10, // Rank 4
+        -10, 0, 10, 10, 10, 10, 0, -10, // Rank 5
+        -10, 10, 10, 10, 10, 10, 10, -10, // Rank 6
+        -10, 5, 0, 0, 0, 0, 5, -10, // Rank 7
+        -20, -10, -10, -10, -10, -10, -10, -20, // Rank 8
     ];
 
-    // Rook PST - loves 7th rank, prefers central files
-    // Generally wants to be active
+    // Rook PST - prefers central files and back rank
+    // Generally wants to be active (vertically symmetric)
     pub const ROOK: [i16; 64] = [
-        0, 0, 0, 5, 5, 0, 0, 0, -5, 0, 0, 0, 0, 0, 0, -5, -5, 0, 0, 0, 0, 0, 0, -5, -5, 0, 0, 0, 0,
-        0, 0, -5, -5, 0, 0, 0, 0, 0, 0, -5, -5, 0, 0, 0, 0, 0, 0, -5, 5, 10, 10, 10, 10, 10, 10, 5,
-        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 5, 5, 0, 0, 0, // Rank 1
+        -5, 0, 0, 0, 0, 0, 0, -5, // Rank 2
+        -5, 0, 0, 0, 0, 0, 0, -5, // Rank 3
+        -5, 0, 0, 0, 0, 0, 0, -5, // Rank 4
+        -5, 0, 0, 0, 0, 0, 0, -5, // Rank 5
+        -5, 0, 0, 0, 0, 0, 0, -5, // Rank 6
+        -5, 0, 0, 0, 0, 0, 0, -5, // Rank 7
+        0, 0, 0, 5, 5, 0, 0, 0, // Rank 8
     ];
 
     // Queen PST - discourages early development
-    // Penalizes moving queen out too soon (classic beginner mistake)
+    // Penalizes moving queen out too soon (vertically symmetric)
     pub const QUEEN: [i16; 64] = [
-        -20, -10, -10, -5, -5, -10, -10, -20, -10, 0, 5, 0, 0, 0, 0, -10, -10, 5, 5, 5, 5, 5, 0,
-        -10, 0, 0, 5, 5, 5, 5, 0, -5, -5, 0, 5, 5, 5, 5, 0, -5, -10, 0, 5, 5, 5, 5, 0, -10, -10, 0,
-        0, 0, 0, 0, 0, -10, -20, -10, -10, -5, -5, -10, -10, -20,
+        -20, -10, -10, -5, -5, -10, -10, -20, // Rank 1
+        -10, 0, 5, 0, 0, 0, 0, -10, // Rank 2
+        -10, 5, 5, 5, 5, 5, 0, -10, // Rank 3
+        0, 0, 5, 5, 5, 5, 0, 0, // Rank 4
+        0, 0, 5, 5, 5, 5, 0, 0, // Rank 5
+        -10, 5, 5, 5, 5, 5, 0, -10, // Rank 6
+        -10, 0, 5, 0, 0, 0, 0, -10, // Rank 7
+        -20, -10, -10, -5, -5, -10, -10, -20, // Rank 8
     ];
 }
 
@@ -162,7 +188,7 @@ pub fn eval_psqt(_board: &Board) -> i32 {
 pub fn static_eval(board: &Board) -> i32 {
     let material = eval_material(board);
     let psqt = eval_psqt(board);
-    let mut white_score = material + (psqt / 5);
+    let mut white_score = material + psqt;
 
     // Give small advantage to side to move
     white_score += if board.side_to_move == Color::White {
