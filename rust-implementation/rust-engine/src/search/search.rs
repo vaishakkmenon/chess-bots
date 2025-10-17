@@ -1,11 +1,11 @@
-use crate::board::{Board, Piece};
+use crate::board::{Board, Color, Piece};
 use crate::hash::zobrist::ep_file_to_hash;
 use crate::moves::execute::{generate_captures, generate_legal, make_move_basic, undo_move_basic};
 use crate::moves::magic::MagicTables;
 use crate::moves::square_control::in_check;
 use crate::moves::types::Move;
 use crate::search::context::SearchContext;
-use crate::search::eval::static_eval;
+use crate::search::eval::{eval_material, static_eval};
 use crate::search::move_ordering::{mvv_lva_score, score_move};
 use crate::search::tt::{NodeType, TranspositionTable};
 
@@ -159,8 +159,39 @@ fn negamax(
 
     let rep_count = board.repetition_count();
 
-    // Draw detection (tree-neutral): return 0 for actual draws
-    if board.halfmove_clock >= 100 || rep_count >= 3 {
+    // 50-move rule is a true draw
+    if board.halfmove_clock >= 100 {
+        return 0;
+    }
+
+    // Threefold repetition with contempt
+    if rep_count >= 3 {
+        let material_eval = eval_material(board);
+
+        // If position is significantly unequal (> 3 pawns advantage)
+        if material_eval.abs() > 300 {
+            let contempt = 200; // 2 pawns worth of penalty
+
+            // If we're winning, draw is bad
+            // If we're losing, draw is good
+            if material_eval > 0 {
+                // White is winning
+                return if board.side_to_move == Color::White {
+                    -contempt // White to move: draw is bad for White
+                } else {
+                    contempt // Black to move: draw is good for Black
+                };
+            } else {
+                // Black is winning
+                return if board.side_to_move == Color::Black {
+                    -contempt // Black to move: draw is bad for Black
+                } else {
+                    contempt // White to move: draw is good for White
+                };
+            }
+        }
+
+        // Position is roughly equal, draw is acceptable
         return 0;
     }
 
