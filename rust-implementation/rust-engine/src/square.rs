@@ -14,6 +14,25 @@ impl Square {
     pub fn index(self) -> u8 {
         self.0
     }
+
+    /// Returns the rank (0-7, where 0 is rank 1 and 7 is rank 8)
+    #[inline(always)]
+    pub fn rank(self) -> u8 {
+        self.0 / 8
+    }
+
+    /// Returns the file (0-7, where 0 is 'a' and 7 is 'h')
+    #[inline(always)]
+    pub fn file(self) -> u8 {
+        self.0 % 8
+    }
+
+    /// Creates a Square from file and rank indices (both 0-7)
+    #[inline(always)]
+    pub fn from_file_rank(file: u8, rank: u8) -> Self {
+        assert!(file < 8 && rank < 8, "File and rank must be 0-7");
+        Square(rank * 8 + file)
+    }
 }
 
 impl fmt::Display for Square {

@@ -7,6 +7,7 @@ use crate::moves::types::Move;
 use crate::search::context::SearchContext;
 use crate::search::eval::static_eval;
 use crate::search::move_ordering::{mvv_lva_score, score_move};
+use crate::search::opening_book::OpeningBook;
 use crate::search::tt::{NodeType, TranspositionTable};
 
 pub const MATE: i32 = 30_000;
@@ -462,7 +463,29 @@ pub fn search_iterative_deepening(
     board: &mut Board,
     tables: &MagicTables,
     max_depth: i32,
+    book: Option<&OpeningBook>,
 ) -> (i32, Option<Move>) {
+    // Try opening book first (only in opening phase)
+    if board.fullmove_number <= 15 {
+        // First 15 moves
+        if let Some(book) = book {
+            if let Some(book_move) = book.probe(board) {
+                // Validate that book move is legal
+                let mut legal_moves = Vec::new();
+                let mut pseudo = Vec::new();
+                generate_legal(board, tables, &mut legal_moves, &mut pseudo);
+
+                if legal_moves.contains(&book_move) {
+                    println!("info string book move");
+                    let score = 0; // Book moves don't have scores
+                    return (score, Some(book_move));
+                } else {
+                    println!("info string book move illegal, falling back to search");
+                }
+            }
+        }
+    }
+
     let mut ctx = SearchContext::new();
     let mut tt = TranspositionTable::new(64);
 
@@ -517,7 +540,7 @@ pub fn search_iterative_deepening(
 
         if let Some(m) = mv {
             best_move = Some(m);
-            println!("info depth {} score cp {} pv {:?}", depth, score, m);
+            println!("info depth {} score cp {} pv {}", depth, score, m.to_uci());
         } else {
             println!("info depth {} score cp {} pv (none)", depth, score);
         }

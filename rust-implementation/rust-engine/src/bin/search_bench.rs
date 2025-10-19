@@ -42,7 +42,7 @@ fn main() {
     println!("\nSearching...\n");
 
     let start = Instant::now();
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, depth);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, depth, None);
     let elapsed = start.elapsed();
 
     println!("=== Results ===");

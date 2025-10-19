@@ -9,7 +9,7 @@ fn test_aspiration_finds_correct_move() {
     let mut board = Board::from_str("6k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1").unwrap();
     let tables = load_magic_tables();
 
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 6);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 6, None);
 
     assert!(best_move.is_some(), "Should find a best move");
 
@@ -38,7 +38,7 @@ fn test_aspiration_handles_score_drop() {
     let tables = load_magic_tables();
 
     // Should handle score drops gracefully (fail-low)
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 6);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 6, None);
 
     assert!(
         best_move.is_some(),
@@ -61,7 +61,7 @@ fn test_aspiration_handles_score_jump() {
     let tables = load_magic_tables();
 
     // Should handle score jumps gracefully (fail-high)
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 6);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 6, None);
 
     assert!(best_move.is_some(), "Should find a move despite score jump");
     assert!(score > 0, "White should be winning in this position");
@@ -78,7 +78,7 @@ fn test_aspiration_performance() {
     let tables = load_magic_tables();
 
     let start = Instant::now();
-    let (_score, best_move) = search_iterative_deepening(&mut board, &tables, 8);
+    let (_score, best_move) = search_iterative_deepening(&mut board, &tables, 8, None);
     let duration = start.elapsed();
 
     println!("Aspiration Windows: Search to depth 8 took: {:?}", duration);
@@ -107,7 +107,7 @@ fn test_aspiration_vs_full_window() {
     let tables = load_magic_tables();
 
     // Search with aspiration windows
-    let (asp_score, asp_move) = search_iterative_deepening(&mut board, &tables, 5);
+    let (asp_score, asp_move) = search_iterative_deepening(&mut board, &tables, 5, None);
 
     // Both searches should find same/similar move
     assert!(asp_move.is_some(), "Aspiration search should find a move");
@@ -128,7 +128,7 @@ fn test_aspiration_with_mate_scores() {
     let mut board = Board::from_str("6k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1").unwrap();
     let tables = load_magic_tables();
 
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 4);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 4, None);
 
     assert!(best_move.is_some(), "Should find mate move");
 
@@ -148,7 +148,7 @@ fn test_aspiration_depth_1_uses_full_window() {
     let tables = load_magic_tables();
 
     // Depth 1 should always work (uses full window)
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 1);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 1, None);
 
     assert!(best_move.is_some(), "Depth 1 should find a move");
     assert!(score.abs() < 200, "Depth 1 should give reasonable score");
@@ -171,7 +171,7 @@ fn test_aspiration_consistency_across_depths() {
             Board::from_str("r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 1")
                 .unwrap();
 
-        let (score, mv) = search_iterative_deepening(&mut board_copy, &tables, depth);
+        let (score, mv) = search_iterative_deepening(&mut board_copy, &tables, depth, None);
 
         println!("  Depth {}: score={}, move={:?}", depth, score, mv);
 
@@ -202,7 +202,7 @@ fn test_aspiration_doesnt_miss_tactics() {
     let mut board = Board::from_str("6k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1").unwrap();
     let tables = load_magic_tables();
 
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 5);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 5, None);
 
     assert!(best_move.is_some(), "Should find mate move");
 
@@ -221,7 +221,7 @@ fn test_aspiration_window_size() {
     let mut board = Board::from_str("8/4k3/8/8/8/8/4K3/8 w - - 0 1").unwrap();
     let tables = load_magic_tables();
 
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 6);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 6, None);
 
     assert!(best_move.is_some(), "Should find a move");
 

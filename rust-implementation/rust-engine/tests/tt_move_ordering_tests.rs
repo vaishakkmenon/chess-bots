@@ -53,7 +53,7 @@ fn test_iterative_deepening_uses_tt_moves() {
     // Iterative deepening should be faster than searching depth N directly
     // because TT moves from depth N-1 help search depth N
 
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 5);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 5, None);
 
     println!("ID depth 5: score={}, move={:?}", score, best_move);
 

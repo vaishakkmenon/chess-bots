@@ -269,6 +269,31 @@ impl Board {
         self.bb(color, piece)
     }
 
+    /// Returns the piece and color at a given square, or None if empty.
+    #[inline(always)]
+    pub fn piece_at(&self, sq: Square) -> Option<(Color, Piece)> {
+        let val = self.piece_on_sq[sq.index() as usize];
+        if val == EMPTY_SQ {
+            None
+        } else {
+            let color = Color::from_u8((val >> 3) & 1);
+            let piece = Piece::from_u8(val & 0b111);
+            Some((color, piece))
+        }
+    }
+
+    /// Returns just the piece at a given square (ignoring color), or None if empty.
+    #[inline(always)]
+    pub fn piece_type_at(&self, sq: Square) -> Option<Piece> {
+        self.piece_at(sq).map(|(_, piece)| piece)
+    }
+
+    /// Returns just the color at a given square, or None if empty.
+    #[inline(always)]
+    pub fn color_at(&self, sq: Square) -> Option<Color> {
+        self.piece_at(sq).map(|(color, _)| color)
+    }
+
     // Utility Aliases
     #[inline(always)]
     pub fn en_passant_target(&self) -> Option<Square> {

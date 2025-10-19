@@ -4,12 +4,23 @@ use rust_engine::moves::magic::MagicTables;
 use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::types::Move;
 use rust_engine::search::context::SearchContext;
-use rust_engine::search::search::search_fixed_depth;
+use rust_engine::search::opening_book::OpeningBook;
+use rust_engine::search::search::search_iterative_deepening;
 use rust_engine::search::tt::TranspositionTable;
 use std::io::{self, BufRead};
 use std::str::FromStr;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
 fn main() {
+    // Load opening book at startup
+    let book = OpeningBook::load("../books/Performance.bin")
+        .map_err(|e| eprintln!("Warning: Could not load opening book: {}", e))
+        .ok();
+
+    if book.is_some() {
+        println!("info string Opening book loaded successfully");
+    }
+
     // Load magic tables once at startup
     let magic_tables = load_magic_tables();
 
@@ -46,7 +57,14 @@ fn main() {
                 }
             }
             "go" => {
-                handle_go(&parts, &mut board, &mut tt, &mut ctx, &magic_tables);
+                handle_go(
+                    &parts,
+                    &mut board,
+                    &mut tt,
+                    &mut ctx,
+                    &magic_tables,
+                    book.as_ref(),
+                );
             }
             "quit" => break,
             "d" | "display" => {
@@ -161,6 +179,7 @@ fn handle_go(
     tt: &mut TranspositionTable,
     ctx: &mut SearchContext,
     tables: &MagicTables,
+    book: Option<&OpeningBook>,
 ) {
     let mut depth = 6;
     let mut time_limit = None;
@@ -240,44 +259,11 @@ fn handle_go(
         }
     }
 
-    // Perform iterative deepening search
-    let start_time = Instant::now();
-    let mut best_move = None;
-
     tt.new_search();
     ctx.clear_history();
 
-    for d in 1..=depth {
-        if let Some(limit) = time_limit {
-            if start_time.elapsed() >= limit {
-                break;
-            }
-        }
-
-        let alpha = -32000;
-        let beta = 32000;
-
-        let (score, mv) = search_fixed_depth(board, tables, d, tt, ctx, alpha, beta);
-
-        if let Some(m) = mv {
-            best_move = Some(m);
-
-            let elapsed = start_time.elapsed();
-
-            println!(
-                "info depth {} score cp {} time {} pv {}",
-                d,
-                score,
-                elapsed.as_millis(),
-                m // Uses Display trait - already UCI format!
-            );
-        }
-
-        // Stop if mate found
-        if score.abs() > 29000 {
-            break;
-        }
-    }
+    // Perform iterative deepening search
+    let (_score, best_move) = search_iterative_deepening(board, tables, depth, book);
 
     // Output best move
     if let Some(m) = best_move {

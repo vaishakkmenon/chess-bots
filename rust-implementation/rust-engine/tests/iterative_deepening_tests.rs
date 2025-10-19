@@ -18,7 +18,7 @@ fn test_id_returns_move() {
         Board::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
     let tables = load_magic_tables();
 
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 3);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 3, None);
 
     assert!(
         best_move.is_some(),
@@ -44,7 +44,7 @@ fn test_id_matches_fixed_depth() {
     let mut ctx = SearchContext::new();
     let mut tt = TranspositionTable::new(64);
 
-    let (score_id, move_id) = search_iterative_deepening(&mut board1, &tables, 4);
+    let (score_id, move_id) = search_iterative_deepening(&mut board1, &tables, 4, None);
 
     // ← FIX: Add alpha and beta parameters (-INFTY, INFTY for full window)
     let (score_fixed, move_fixed) =
@@ -77,7 +77,7 @@ fn test_id_multiple_depths() {
 
     // Test depths 1 through 5
     for depth in 1..=5 {
-        let (score, best_move) = search_iterative_deepening(&mut board, &tables, depth);
+        let (score, best_move) = search_iterative_deepening(&mut board, &tables, depth, None);
 
         assert!(best_move.is_some(), "Should find move at depth {}", depth);
 
@@ -101,7 +101,7 @@ fn test_id_finds_capture() {
         Board::from_str("rnb1kbnr/pppppppp/8/8/8/3q4/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
     let tables = load_magic_tables();
 
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 3);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 3, None);
 
     assert!(best_move.is_some(), "Should find a move");
 
@@ -123,7 +123,7 @@ fn test_id_finds_mate_in_1() {
     let mut board = Board::from_str("6k1/5ppp/8/8/8/8/5PPP/3Q2K1 w - - 0 1").unwrap();
     let tables = load_magic_tables();
 
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 2);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 2, None);
 
     assert!(best_move.is_some(), "Should find mate move");
 
@@ -154,7 +154,7 @@ fn test_id_performance() {
 
     // Time iterative deepening
     let start_id = Instant::now();
-    let _ = search_iterative_deepening(&mut board1, &tables, 5);
+    let _ = search_iterative_deepening(&mut board1, &tables, 5, None);
     let time_id = start_id.elapsed();
 
     // Time fixed depth
@@ -195,7 +195,7 @@ fn test_id_limited_moves() {
     let mut board = Board::from_str("8/8/8/8/8/3k4/8/3K4 w - - 0 1").unwrap();
     let tables = load_magic_tables();
 
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 4);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 4, None);
 
     assert!(
         best_move.is_some(),
@@ -219,8 +219,8 @@ fn test_id_deterministic() {
     let mut board2 = board1.clone();
     let tables = load_magic_tables();
 
-    let (score1, move1) = search_iterative_deepening(&mut board1, &tables, 4);
-    let (score2, move2) = search_iterative_deepening(&mut board2, &tables, 4);
+    let (score1, move1) = search_iterative_deepening(&mut board1, &tables, 4, None);
+    let (score2, move2) = search_iterative_deepening(&mut board2, &tables, 4, None);
 
     assert_eq!(score1, score2, "Should get same score on repeated searches");
     assert_eq!(move1, move2, "Should get same move on repeated searches");
@@ -236,7 +236,7 @@ fn test_id_depth_1() {
         Board::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
     let tables = load_magic_tables();
 
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 1);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 1, None);
 
     assert!(best_move.is_some(), "Should work at depth 1");
     assert!(
@@ -259,7 +259,7 @@ fn test_id_complex_position() {
     let tables = load_magic_tables();
 
     // Should complete without crashing
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 4);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 4, None);
 
     assert!(best_move.is_some(), "Should handle complex positions");
     assert!(
@@ -280,8 +280,8 @@ fn test_id_score_stability() {
         Board::from_str("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1").unwrap();
     let tables = load_magic_tables();
 
-    let (score_d2, _) = search_iterative_deepening(&mut board, &tables, 2);
-    let (score_d4, _) = search_iterative_deepening(&mut board, &tables, 4);
+    let (score_d2, _) = search_iterative_deepening(&mut board, &tables, 2, None);
+    let (score_d4, _) = search_iterative_deepening(&mut board, &tables, 4, None);
 
     println!("Score at depth 2: {}", score_d2);
     println!("Score at depth 4: {}", score_d4);
@@ -294,31 +294,4 @@ fn test_id_score_stability() {
         score_d2,
         score_d4
     );
-}
-
-// ============================================================================
-// INTEGRATION TEST: Full Game Opening
-// ============================================================================
-
-#[test]
-fn test_id_opening_sequence() {
-    let mut board =
-        Board::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
-    let tables = load_magic_tables();
-
-    // Play 3 moves with iterative deepening
-    for move_num in 1..=3 {
-        let (score, best_move) = search_iterative_deepening(&mut board, &tables, 4);
-
-        assert!(
-            best_move.is_some(),
-            "Should find move {} in opening",
-            move_num
-        );
-
-        println!("Move {}: {:?}, Score: {}", move_num, best_move, score);
-
-        // Make the move (you'll need make_move_basic for this)
-        // let undo = make_move_basic(&mut board, best_move.unwrap());
-    }
 }

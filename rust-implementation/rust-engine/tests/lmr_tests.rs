@@ -22,7 +22,7 @@ fn test_scholar_mate_position_analysis() {
             Board::from_str("r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 1")
                 .unwrap();
         let tables = load_magic_tables();
-        let (score, mv) = search_iterative_deepening(&mut board, &tables, depth);
+        let (score, mv) = search_iterative_deepening(&mut board, &tables, depth, None);
 
         if let Some(m) = mv {
             let to_idx = m.to.index();
@@ -61,7 +61,7 @@ fn test_check_vs_quiet_move() {
     let mut board = Board::from_str("6k1/8/8/8/8/8/4Q3/6K1 w - - 0 1").unwrap();
     let tables = load_magic_tables();
 
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 5);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 5, None);
 
     assert!(best_move.is_some(), "Should find a best move");
 
@@ -82,7 +82,7 @@ fn test_simple_capture_is_best() {
     let mut board = Board::from_str("6k1/8/8/2q5/3P4/8/8/6K1 w - - 0 1").unwrap();
     let tables = load_magic_tables();
 
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 4);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 4, None);
 
     assert!(best_move.is_some(), "Should find a best move");
     let bm = best_move.unwrap();
@@ -144,7 +144,7 @@ fn test_lmr_finds_tactical_move() {
     let tables = load_magic_tables();
 
     // Search to depth 6 - should find Re8#
-    let (best_score, best_move) = search_iterative_deepening(&mut board, &tables, 6);
+    let (best_score, best_move) = search_iterative_deepening(&mut board, &tables, 6, None);
 
     assert!(best_move.is_some(), "Should find a best move");
     let bm = best_move.unwrap();
@@ -175,7 +175,7 @@ fn test_lmr_performance_improvement() {
     let tables = load_magic_tables();
 
     let start = Instant::now();
-    let (_score, _mv) = search_iterative_deepening(&mut board, &tables, 8);
+    let (_score, _mv) = search_iterative_deepening(&mut board, &tables, 8, None);
     let duration = start.elapsed();
 
     println!("Search to depth 8 took: {:?}", duration);
@@ -199,7 +199,7 @@ fn test_lmr_research_accuracy() {
     let tables = load_magic_tables();
 
     // Search to depth 10
-    let (best_score, best_move) = search_iterative_deepening(&mut board, &tables, 10);
+    let (best_score, best_move) = search_iterative_deepening(&mut board, &tables, 10, None);
 
     // Should find the winning pawn push
     assert!(best_move.is_some(), "Should find a best move");
@@ -218,7 +218,7 @@ fn test_lmr_reaches_expected_depth() {
     let tables = load_magic_tables();
 
     // Search to depth 8
-    let (_score, best_move) = search_iterative_deepening(&mut board, &tables, 8);
+    let (_score, best_move) = search_iterative_deepening(&mut board, &tables, 8, None);
 
     // Should complete all 8 depths and find a move
     // Your search_iterative_deepening prints depth info, so we just verify it completes
@@ -240,7 +240,7 @@ fn test_lmr_doesnt_miss_forced_sequences() {
     let mut board = Board::from_str("6k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1").unwrap();
     let tables = load_magic_tables();
 
-    let (_score, best_move) = search_iterative_deepening(&mut board, &tables, 8);
+    let (_score, best_move) = search_iterative_deepening(&mut board, &tables, 8, None);
 
     assert!(best_move.is_some(), "Should find a tactical move");
     let mv = best_move.unwrap();
@@ -263,7 +263,7 @@ fn test_lmr_with_multiple_good_moves() {
             .unwrap();
     let tables = load_magic_tables();
 
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 6);
+    let (score, best_move) = search_iterative_deepening(&mut board, &tables, 6, None);
 
     assert!(best_move.is_some(), "Should find a best move");
     // Score should be reasonable (not wildly wrong)

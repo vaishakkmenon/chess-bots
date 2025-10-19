@@ -65,6 +65,22 @@ impl Move {
     pub fn is_quiet(&self) -> bool {
         self.flags == QUIET_MOVE
     }
+
+    pub fn to_uci(&self) -> String {
+        let promo = if let Some(p) = self.promotion {
+            match p {
+                Piece::Queen => "q",
+                Piece::Rook => "r",
+                Piece::Bishop => "b",
+                Piece::Knight => "n",
+                _ => "",
+            }
+        } else {
+            ""
+        };
+
+        format!("{}{}{}", self.from, self.to, promo)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

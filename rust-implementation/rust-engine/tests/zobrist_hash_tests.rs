@@ -1561,7 +1561,7 @@ fn test_zobrist_consistency_during_search() {
 
     // Do a shallow search
     use rust_engine::search::search::search_iterative_deepening;
-    let (_score, _mv) = search_iterative_deepening(&mut board, &tables, 3);
+    let (_score, _mv) = search_iterative_deepening(&mut board, &tables, 3, None);
 
     let after_hash = board.zobrist;
     let after_full_hash = board.compute_zobrist_full();
@@ -1649,7 +1649,7 @@ fn test_zobrist_deep_search() {
     assert_eq!(hash_before, full_before, "Hash mismatch before search!");
 
     use rust_engine::search::search::search_iterative_deepening;
-    let (_score, _mv) = search_iterative_deepening(&mut board, &tables, 4);
+    let (_score, _mv) = search_iterative_deepening(&mut board, &tables, 4, None);
 
     let hash_after = board.zobrist;
     let full_after = board.compute_zobrist_full();
@@ -1756,7 +1756,7 @@ fn test_search_iterative_deepening_zobrist() {
         );
 
         use rust_engine::search::search::search_iterative_deepening;
-        let (_score, _mv) = search_iterative_deepening(&mut board, &tables, depth);
+        let (_score, _mv) = search_iterative_deepening(&mut board, &tables, depth, None);
 
         let hash_after = board.zobrist;
         let full_after = board.compute_zobrist_full();
