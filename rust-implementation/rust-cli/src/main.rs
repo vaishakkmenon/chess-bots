@@ -66,6 +66,9 @@ fn main() {
                     book.as_ref(),
                 );
             }
+            "fen" => {
+                println!("{}", board.to_fen());
+            }
             "quit" => break,
             "d" | "display" => {
                 println!("{}", board);
@@ -264,6 +267,7 @@ fn handle_go(
 
     // Perform iterative deepening search
     let (_score, best_move) = search_iterative_deepening(board, tables, depth, book);
+    // let (_score, best_move) = search_iterative_deepening(board, tables, depth);
 
     // Output best move
     if let Some(m) = best_move {

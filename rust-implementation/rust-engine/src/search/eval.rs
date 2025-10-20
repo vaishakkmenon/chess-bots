@@ -5,12 +5,6 @@ const N: i32 = 320;
 const B: i32 = 330;
 const R: i32 = 500;
 const Q: i32 = 900;
-const TEMPO_BONUS: i32 = 10;
-
-/// Contempt factor: Penalty for accepting draws (0.1 pawns)
-/// Higher values = engine avoids draws more aggressively
-/// Set to 0 to disable contempt
-pub const CONTEMPT: i32 = 10;
 
 #[cfg(feature = "psqt")]
 // Helper to mirror file
@@ -188,14 +182,7 @@ pub fn eval_psqt(_board: &Board) -> i32 {
 pub fn static_eval(board: &Board) -> i32 {
     let material = eval_material(board);
     let psqt = eval_psqt(board);
-    let mut white_score = material + psqt;
-
-    // Give small advantage to side to move
-    white_score += if board.side_to_move == Color::White {
-        TEMPO_BONUS
-    } else {
-        -TEMPO_BONUS
-    };
+    let white_score = material + psqt;
 
     if board.side_to_move == Color::White {
         white_score

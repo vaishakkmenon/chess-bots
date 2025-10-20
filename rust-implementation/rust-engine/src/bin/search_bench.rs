@@ -1,6 +1,6 @@
 use rust_engine::board::Board;
 use rust_engine::moves::magic::loader::load_magic_tables;
-use rust_engine::search::search::search_iterative_deepening;
+use rust_engine::search::search::minimax_basic;
 use std::env;
 use std::str::FromStr;
 use std::time::Instant;
@@ -31,7 +31,7 @@ fn main() {
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string()
     };
 
-    println!("=== Chess Engine Search Benchmark ===\n");
+    println!("=== Chess Engine Search Benchmark Depth: {} ===\n", depth);
     println!("Loading magic tables...");
     let tables = load_magic_tables();
 
@@ -42,7 +42,7 @@ fn main() {
     println!("\nSearching...\n");
 
     let start = Instant::now();
-    let (score, best_move) = search_iterative_deepening(&mut board, &tables, depth, None);
+    let (score, best_move) = minimax_basic(&mut board, &tables, depth, true);
     let elapsed = start.elapsed();
 
     println!("=== Results ===");
@@ -50,7 +50,7 @@ fn main() {
 
     match best_move {
         Some(mv) => {
-            println!("Best move: {:?}", mv);
+            println!("Best move: {:?}", mv.to_uci());
             println!("Score:     {} centipawns", score);
         }
         None => {
