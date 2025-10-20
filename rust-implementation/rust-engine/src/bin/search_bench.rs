@@ -1,6 +1,6 @@
 use rust_engine::board::Board;
 use rust_engine::moves::magic::loader::load_magic_tables;
-use rust_engine::search::search::minimax_basic;
+use rust_engine::search::search::{minimax, search};
 use std::env;
 use std::str::FromStr;
 use std::time::Instant;
@@ -9,11 +9,13 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
-        eprintln!("Usage: search_bench <depth> [fen]");
+        eprintln!("Usage: search_bench <depth> [search type] [fen]");
         eprintln!();
+        eprintln!("Default assumes search is alpha-beta and fen is startpos");
         eprintln!("Examples:");
-        eprintln!("  search_bench 6");
-        eprintln!("  search_bench 7 \"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1\"");
+        eprintln!("  search_bench 3");
+        eprintln!("  search_bench 4 minimax");
+        eprintln!("  search_bench 6 \"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1\"");
         eprintln!();
         eprintln!("Tactical position to test:");
         eprintln!(
@@ -24,14 +26,25 @@ fn main() {
 
     let depth: i32 = args[1].parse().expect("Depth must be a number");
 
-    let fen = if args.len() > 2 {
+    let search_type = if args.len() > 2 {
         args[2].clone()
+    } else {
+        "search (alpha-beta)".to_string()
+    };
+
+    let fen = if args.len() > 3 {
+        args[3].clone()
     } else {
         // Default: starting position
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string()
     };
 
-    println!("=== Chess Engine Search Benchmark Depth: {} ===\n", depth);
+    println!("=== Chess Engine Search Benchmark Depth: {} ===", depth);
+    if search_type == "minimax" {
+        println!("         === Search Type: {} ===\n", search_type);
+    } else {
+        println!("   === Search Type: {} ===\n", search_type);
+    }
     println!("Loading magic tables...");
     let tables = load_magic_tables();
 
@@ -42,7 +55,13 @@ fn main() {
     println!("\nSearching...\n");
 
     let start = Instant::now();
-    let (score, best_move) = minimax_basic(&mut board, &tables, depth, true);
+    let score;
+    let best_move;
+    if search_type == "minimax" {
+        (score, best_move) = minimax(&mut board, &tables, depth, true);
+    } else {
+        (score, best_move) = search(&mut board, &tables, depth);
+    }
     let elapsed = start.elapsed();
 
     println!("=== Results ===");
@@ -58,4 +77,5 @@ fn main() {
             println!("Score:     {}", score);
         }
     }
+    println!("===============\n");
 }

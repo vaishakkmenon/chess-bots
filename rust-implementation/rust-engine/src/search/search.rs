@@ -5,7 +5,7 @@ use crate::moves::square_control::in_check;
 use crate::moves::types::Move;
 use crate::search::eval::static_eval;
 
-pub fn minimax_basic(
+pub fn minimax(
     board: &mut Board,
     tables: &MagicTables,
     depth: i32,
@@ -25,10 +25,10 @@ pub fn minimax_basic(
         if in_check(board, board.side_to_move, tables) {
             // Checkmate
             return (if maximizing { -100000 } else { 100000 }, None);
-        } else {
-            // Stalemate
-            return (0, None);
         }
+
+        // Stalemate
+        return (0, None);
     }
 
     let mut best_move = None;
@@ -37,7 +37,7 @@ pub fn minimax_basic(
         let mut max_eval = i32::MIN;
         for mv in moves {
             let undo = make_move_basic(board, mv);
-            let (eval, _) = minimax_basic(board, tables, depth - 1, false);
+            let (eval, _) = minimax(board, tables, depth - 1, false);
             undo_move_basic(board, undo);
 
             if eval > max_eval {
@@ -50,7 +50,7 @@ pub fn minimax_basic(
         let mut min_eval = i32::MAX;
         for mv in moves {
             let undo = make_move_basic(board, mv);
-            let (eval, _) = minimax_basic(board, tables, depth - 1, true);
+            let (eval, _) = minimax(board, tables, depth - 1, true);
             undo_move_basic(board, undo);
 
             if eval < min_eval {
@@ -60,4 +60,56 @@ pub fn minimax_basic(
         }
         (min_eval, best_move)
     }
+}
+
+pub fn alpha_beta(
+    board: &mut Board,
+    tables: &MagicTables,
+    depth: i32,
+    mut alpha: i32,
+    beta: i32,
+) -> (i32, Option<Move>) {
+    if depth == 0 {
+        return (static_eval(board), None);
+    }
+
+    let mut moves = Vec::with_capacity(128);
+    let mut scratch = Vec::with_capacity(128);
+
+    generate_legal(board, tables, &mut moves, &mut scratch);
+
+    if moves.is_empty() {
+        if in_check(board, board.side_to_move, tables) {
+            // Checkmate
+            return (-100000, None);
+        }
+
+        //Stalemate
+        return (0, None);
+    }
+
+    let mut best_move = None;
+
+    for mv in moves {
+        let undo = make_move_basic(board, mv);
+        let (score, _) = alpha_beta(board, tables, depth - 1, -beta, -alpha);
+        let score = -score;
+        undo_move_basic(board, undo);
+
+        if score >= beta {
+            // Beta cutoff
+            return (beta, Some(mv));
+        }
+
+        if score > alpha {
+            alpha = score;
+            best_move = Some(mv);
+        }
+    }
+
+    (alpha, best_move)
+}
+
+pub fn search(board: &mut Board, tables: &MagicTables, depth: i32) -> (i32, Option<Move>) {
+    alpha_beta(board, tables, depth, i32::MIN + 1, i32::MAX)
 }

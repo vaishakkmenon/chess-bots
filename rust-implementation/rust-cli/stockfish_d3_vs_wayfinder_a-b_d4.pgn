@@ -1,0 +1,317 @@
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "1"]
+[White "Wayfinder (Alpha-Beta)"]
+[Black "Stockfish"]
+[Result "0-1"]
+[BlackTimeControl "60+0.6"]
+[ECO "A00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-20T18:35:17.351 UTC"]
+[GameStartTime "2025-10-20T18:35:16.679 UTC"]
+[Opening "Dunst (Sleipner, Heinrichsen) Opening"]
+[PlyCount "58"]
+[WhiteTimeControl "60+0.6"]
+
+1. Nc3 d5 {+0.13/3 0s} 2. Nf3 Nc6 {+0.10/3 0s} 3. d3 e5 {+0.51/3 0s} 4. Bg5
+f6 {+0.97/3 0.001s} 5. Bd2 d4 {+1.07/3 0s} 6. Nb1 g5 {+1.73/3 0.001s} 7. h3
+Be6 {+1.33/3 0.001s} 8. e4 Qd7 {+1.32/3 0.001s} 9. c3 O-O-O {+1.14/3 0.001s}
+10. Be2 h5 {+1.99/3 0s} 11. Qc2 Nge7 {+2.22/3 0.001s} 12. a3
+Ng6 {+2.52/3 0.001s} 13. Rf1 Qf7 {+3.08/3 0.001s} 14. cxd4 exd4 {+3.78/3 0s}
+15. Bc1 g4 {+3.28/3 0.001s} 16. Nfd2 gxh3 {+3.57/3 0.001s} 17. gxh3
+Bxh3 {+3.85/3 0s} 18. Rg1 Nf4 {+4.52/3 0.001s} 19. Nf3 Nxe2 {+4.27/3 0.001s}
+20. Kxe2 Bg4 {+5.88/3 0.001s} 21. Nd2 Ne5 {+5.57/3 0.001s} 22. Rxg4
+hxg4 {+4.85/3 0.001s} 23. Nxe5 fxe5 {+5.42/3 0.001s} 24. Qb3
+Qf6 {+5.95/3 0.001s} 25. Qa4 Kb8 {+5.68/3 0.001s} 26. Nb3 Rh2 {+8.65/3 0.001s}
+27. Qc4 Rxf2+ {+8.63/3 0.001s} 28. Kd1 Qf3+ {+8.21/3 0.001s} 29. Ke1
+Qe2# {+M1/3 0s, Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "2"]
+[White "Stockfish"]
+[Black "Wayfinder (Alpha-Beta)"]
+[Result "1-0"]
+[BlackTimeControl "60+0.6"]
+[ECO "B00"]
+[GameDuration "00:00:01"]
+[GameEndTime "2025-10-20T18:35:18.404 UTC"]
+[GameStartTime "2025-10-20T18:35:17.357 UTC"]
+[Opening "King's pawn"]
+[PlyCount "91"]
+[Variation "Nimzowitsch defense"]
+[WhiteTimeControl "60+0.6"]
+
+1. e4 {+0.42/3 0s} Nc6 2. d4 {+1.08/3 0.001s} e5 3. c3 {+0.46/3 0.001s} exd4
+4. cxd4 {+0.47/3 0s} Bb4+ 5. Nc3 {+0.96/3 0s} Nf6 6. f3 {+0.47/3 0.001s} Bxc3+
+7. bxc3 {+1.98/3 0s} Nh5 8. g4 {+1.80/3 0s} Qh4+ 9. Kd2 {+2.78/3 0.003s} Ng3
+10. Qe1 {-0.46/3 0.005s} Nxf1+ 11. Ke2 {-0.39/3 0s} Qxe1+ 12. Kxe1 {-0.37/3 0s}
+Nxh2 13. Rxh2 {-0.13/3 0s} d6 14. a4 {-0.32/3 0s} a6 15. a5 {-0.06/3 0s} b6
+16. axb6 {+0.43/3 0s} cxb6 17. Bf4 {+0.69/3 0s} Kd7 18. g5 {+0.67/3 0.001s} b5
+19. d5 {+0.91/3 0s} Ne5 20. Kd1 {+0.01/3 0.001s} Nd3 21. Be3 {+0.41/3 0s} Bb7
+22. Bd4 {+0.58/3 0.001s} Rag8 23. Kd2 {+1.03/3 0.001s} Nb2
+24. Ne2 {+0.97/3 0.001s} Nc4+ 25. Kd3 {+1.09/3 0s} Ne5+ 26. Ke3 {+0.85/3 0s} Rd8
+27. Ng3 {+1.24/3 0s} Nc4+ 28. Kd3 {+1.61/3 0.001s} Ne5+ 29. Ke3 {+1.61/3 0s}
+Nc4+ 30. Kf4 {+1.79/3 0s} Ne5 31. Bxe5 {+2.27/3 0.001s} dxe5+
+32. Kxe5 {+2.80/3 0s} Rc8 33. Kd4 {+2.44/3 0s} f6 34. Nf5 {+2.67/3 0.001s} fxg5
+35. Nxg7 {+2.65/3 0s} h6 36. Ne6 {+2.66/3 0s} Rc4+ 37. Kd3 {+3.54/3 0s} Rhc8
+38. Rxh6 {+2.04/3 0.001s} Rxc3+ 39. Kd4 {+2.72/3 0s} R8c4+ 40. Ke5 {+3.13/3 0s}
+Kc8 41. Rh8+ {+4.37/3 0s} Kd7 42. Rd8+ {+5.11/3 0s} Ke7 43. d6+ {+5.44/3 0s} Kf7
+44. Nxg5+ {+6.14/3 0s} Kg6 45. Rg8+ {+6.88/3 0s} Kh5
+46. Rh1# {+M1/3 0s, White mates} 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "3"]
+[White "Wayfinder (Alpha-Beta)"]
+[Black "Stockfish"]
+[Result "0-1"]
+[BlackTimeControl "60+0.6"]
+[ECO "A00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-20T18:35:19.070 UTC"]
+[GameStartTime "2025-10-20T18:35:18.407 UTC"]
+[Opening "Dunst (Sleipner, Heinrichsen) Opening"]
+[PlyCount "58"]
+[WhiteTimeControl "60+0.6"]
+
+1. Nc3 d5 {+0.13/3 0s} 2. Nf3 Nc6 {+0.10/3 0s} 3. d3 e5 {+0.51/3 0s} 4. Bg5
+f6 {+0.97/3 0s} 5. Bd2 d4 {+1.07/3 0s} 6. Nb1 g5 {+1.73/3 0.001s} 7. h3
+Be6 {+1.33/3 0.001s} 8. e4 Qd7 {+1.32/3 0.001s} 9. c3 O-O-O {+1.14/3 0.001s}
+10. Be2 h5 {+1.99/3 0.001s} 11. Qc2 Nge7 {+2.22/3 0s} 12. a3 Ng6 {+2.52/3 0s}
+13. Rf1 Qf7 {+3.08/3 0.001s} 14. cxd4 exd4 {+3.78/3 0s} 15. Bc1 g4 {+3.28/3 0s}
+16. Nfd2 gxh3 {+3.57/3 0.001s} 17. gxh3 Bxh3 {+3.85/3 0s} 18. Rg1
+Nf4 {+4.52/3 0s} 19. Nf3 Nxe2 {+4.27/3 0.001s} 20. Kxe2 Bg4 {+5.88/3 0s} 21. Nd2
+Ne5 {+5.57/3 0s} 22. Rxg4 hxg4 {+4.85/3 0.001s} 23. Nxe5 fxe5 {+5.42/3 0s}
+24. Qb3 Qf6 {+5.95/3 0.001s} 25. Qa4 Kb8 {+5.68/3 0.001s} 26. Nb3
+Rh2 {+8.65/3 0.001s} 27. Qc4 Rxf2+ {+8.63/3 0.001s} 28. Kd1
+Qf3+ {+8.21/3 0.001s} 29. Ke1 Qe2# {+M1/3 0s, Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "4"]
+[White "Stockfish"]
+[Black "Wayfinder (Alpha-Beta)"]
+[Result "1-0"]
+[BlackTimeControl "60+0.6"]
+[ECO "B00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-20T18:35:20.040 UTC"]
+[GameStartTime "2025-10-20T18:35:19.073 UTC"]
+[Opening "King's pawn"]
+[PlyCount "91"]
+[Variation "Nimzowitsch defense"]
+[WhiteTimeControl "60+0.6"]
+
+1. e4 {+0.42/3 0.001s} Nc6 2. d4 {+1.08/3 0.001s} e5 3. c3 {+0.46/3 0s} exd4
+4. cxd4 {+0.47/3 0s} Bb4+ 5. Nc3 {+0.96/3 0s} Nf6 6. f3 {+0.47/3 0.001s} Bxc3+
+7. bxc3 {+1.98/3 0s} Nh5 8. g4 {+1.80/3 0s} Qh4+ 9. Kd2 {+2.78/3 0s} Ng3
+10. Qe1 {-0.46/3 0.001s} Nxf1+ 11. Ke2 {-0.39/3 0s} Qxe1+ 12. Kxe1 {-0.37/3 0s}
+Nxh2 13. Rxh2 {-0.13/3 0s} d6 14. a4 {-0.32/3 0s} a6 15. a5 {-0.06/3 0s} b6
+16. axb6 {+0.43/3 0s} cxb6 17. Bf4 {+0.69/3 0.001s} Kd7 18. g5 {+0.67/3 0.001s}
+b5 19. d5 {+0.91/3 0.001s} Ne5 20. Kd1 {+0.01/3 0.001s} Nd3
+21. Be3 {+0.41/3 0.001s} Bb7 22. Bd4 {+0.58/3 0.001s} Rag8
+23. Kd2 {+1.03/3 0.001s} Nb2 24. Ne2 {+0.97/3 0.001s} Nc4+
+25. Kd3 {+1.09/3 0.001s} Ne5+ 26. Ke3 {+0.85/3 0s} Rd8 27. Ng3 {+1.24/3 0s} Nc4+
+28. Kd3 {+1.61/3 0s} Ne5+ 29. Ke3 {+1.61/3 0s} Nc4+ 30. Kf4 {+1.79/3 0s} Ne5
+31. Bxe5 {+2.27/3 0s} dxe5+ 32. Kxe5 {+2.80/3 0s} Rc8 33. Kd4 {+2.44/3 0s} f6
+34. Nf5 {+2.67/3 0.001s} fxg5 35. Nxg7 {+2.65/3 0.001s} h6
+36. Ne6 {+2.66/3 0.001s} Rc4+ 37. Kd3 {+3.54/3 0s} Rhc8
+38. Rxh6 {+2.04/3 0.001s} Rxc3+ 39. Kd4 {+2.72/3 0s} R8c4+ 40. Ke5 {+3.13/3 0s}
+Kc8 41. Rh8+ {+4.37/3 0.001s} Kd7 42. Rd8+ {+5.11/3 0s} Ke7 43. d6+ {+5.44/3 0s}
+Kf7 44. Nxg5+ {+6.14/3 0.001s} Kg6 45. Rg8+ {+6.88/3 0s} Kh5
+46. Rh1# {+M1/3 0s, White mates} 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "5"]
+[White "Wayfinder (Alpha-Beta)"]
+[Black "Stockfish"]
+[Result "0-1"]
+[BlackTimeControl "60+0.6"]
+[ECO "A00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-20T18:35:20.756 UTC"]
+[GameStartTime "2025-10-20T18:35:20.043 UTC"]
+[Opening "Dunst (Sleipner, Heinrichsen) Opening"]
+[PlyCount "58"]
+[WhiteTimeControl "60+0.6"]
+
+1. Nc3 d5 {+0.13/3 0s} 2. Nf3 Nc6 {+0.10/3 0.001s} 3. d3 e5 {+0.51/3 0s} 4. Bg5
+f6 {+0.97/3 0.001s} 5. Bd2 d4 {+1.07/3 0s} 6. Nb1 g5 {+1.73/3 0.001s} 7. h3
+Be6 {+1.33/3 0.001s} 8. e4 Qd7 {+1.32/3 0.001s} 9. c3 O-O-O {+1.14/3 0.001s}
+10. Be2 h5 {+1.99/3 0s} 11. Qc2 Nge7 {+2.22/3 0s} 12. a3 Ng6 {+2.52/3 0.001s}
+13. Rf1 Qf7 {+3.08/3 0.001s} 14. cxd4 exd4 {+3.78/3 0s} 15. Bc1 g4 {+3.28/3 0s}
+16. Nfd2 gxh3 {+3.57/3 0s} 17. gxh3 Bxh3 {+3.85/3 0s} 18. Rg1 Nf4 {+4.52/3 0s}
+19. Nf3 Nxe2 {+4.27/3 0.001s} 20. Kxe2 Bg4 {+5.88/3 0s} 21. Nd2 Ne5 {+5.57/3 0s}
+22. Rxg4 hxg4 {+4.85/3 0.001s} 23. Nxe5 fxe5 {+5.42/3 0.001s} 24. Qb3
+Qf6 {+5.95/3 0.001s} 25. Qa4 Kb8 {+5.68/3 0.001s} 26. Nb3 Rh2 {+8.65/3 0s}
+27. Qc4 Rxf2+ {+8.63/3 0.001s} 28. Kd1 Qf3+ {+8.21/3 0s} 29. Ke1
+Qe2# {+M1/3 0s, Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "6"]
+[White "Stockfish"]
+[Black "Wayfinder (Alpha-Beta)"]
+[Result "1-0"]
+[BlackTimeControl "60+0.6"]
+[ECO "B00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-20T18:35:21.735 UTC"]
+[GameStartTime "2025-10-20T18:35:20.758 UTC"]
+[Opening "King's pawn"]
+[PlyCount "91"]
+[Variation "Nimzowitsch defense"]
+[WhiteTimeControl "60+0.6"]
+
+1. e4 {+0.42/3 0s} Nc6 2. d4 {+1.08/3 0.001s} e5 3. c3 {+0.46/3 0s} exd4
+4. cxd4 {+0.47/3 0s} Bb4+ 5. Nc3 {+0.96/3 0s} Nf6 6. f3 {+0.47/3 0.001s} Bxc3+
+7. bxc3 {+1.98/3 0.001s} Nh5 8. g4 {+1.80/3 0s} Qh4+ 9. Kd2 {+2.78/3 0.001s} Ng3
+10. Qe1 {-0.46/3 0.001s} Nxf1+ 11. Ke2 {-0.39/3 0s} Qxe1+ 12. Kxe1 {-0.37/3 0s}
+Nxh2 13. Rxh2 {-0.13/3 0s} d6 14. a4 {-0.32/3 0.001s} a6 15. a5 {-0.06/3 0s} b6
+16. axb6 {+0.43/3 0s} cxb6 17. Bf4 {+0.69/3 0.001s} Kd7 18. g5 {+0.67/3 0.001s}
+b5 19. d5 {+0.91/3 0.001s} Ne5 20. Kd1 {+0.01/3 0s} Nd3 21. Be3 {+0.41/3 0.001s}
+Bb7 22. Bd4 {+0.58/3 0.001s} Rag8 23. Kd2 {+1.03/3 0.001s} Nb2
+24. Ne2 {+0.97/3 0.001s} Nc4+ 25. Kd3 {+1.09/3 0s} Ne5+ 26. Ke3 {+0.85/3 0s} Rd8
+27. Ng3 {+1.24/3 0s} Nc4+ 28. Kd3 {+1.61/3 0s} Ne5+ 29. Ke3 {+1.61/3 0s} Nc4+
+30. Kf4 {+1.79/3 0s} Ne5 31. Bxe5 {+2.27/3 0.001s} dxe5+ 32. Kxe5 {+2.80/3 0s}
+Rc8 33. Kd4 {+2.44/3 0s} f6 34. Nf5 {+2.67/3 0.001s} fxg5 35. Nxg7 {+2.65/3 0s}
+h6 36. Ne6 {+2.66/3 0.001s} Rc4+ 37. Kd3 {+3.54/3 0s} Rhc8
+38. Rxh6 {+2.04/3 0.001s} Rxc3+ 39. Kd4 {+2.72/3 0s} R8c4+ 40. Ke5 {+3.13/3 0s}
+Kc8 41. Rh8+ {+4.37/3 0.001s} Kd7 42. Rd8+ {+5.11/3 0.001s} Ke7
+43. d6+ {+5.44/3 0s} Kf7 44. Nxg5+ {+6.14/3 0s} Kg6 45. Rg8+ {+6.88/3 0s} Kh5
+46. Rh1# {+M1/3 0s, White mates} 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "7"]
+[White "Wayfinder (Alpha-Beta)"]
+[Black "Stockfish"]
+[Result "0-1"]
+[BlackTimeControl "60+0.6"]
+[ECO "A00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-20T18:35:22.394 UTC"]
+[GameStartTime "2025-10-20T18:35:21.738 UTC"]
+[Opening "Dunst (Sleipner, Heinrichsen) Opening"]
+[PlyCount "58"]
+[WhiteTimeControl "60+0.6"]
+
+1. Nc3 d5 {+0.13/3 0s} 2. Nf3 Nc6 {+0.10/3 0s} 3. d3 e5 {+0.51/3 0s} 4. Bg5
+f6 {+0.97/3 0s} 5. Bd2 d4 {+1.07/3 0s} 6. Nb1 g5 {+1.73/3 0.001s} 7. h3
+Be6 {+1.33/3 0.001s} 8. e4 Qd7 {+1.32/3 0.001s} 9. c3 O-O-O {+1.14/3 0.001s}
+10. Be2 h5 {+1.99/3 0s} 11. Qc2 Nge7 {+2.22/3 0s} 12. a3 Ng6 {+2.52/3 0s}
+13. Rf1 Qf7 {+3.08/3 0.001s} 14. cxd4 exd4 {+3.78/3 0.001s} 15. Bc1
+g4 {+3.28/3 0.001s} 16. Nfd2 gxh3 {+3.57/3 0.001s} 17. gxh3 Bxh3 {+3.85/3 0s}
+18. Rg1 Nf4 {+4.52/3 0s} 19. Nf3 Nxe2 {+4.27/3 0s} 20. Kxe2 Bg4 {+5.88/3 0s}
+21. Nd2 Ne5 {+5.57/3 0.001s} 22. Rxg4 hxg4 {+4.85/3 0.001s} 23. Nxe5
+fxe5 {+5.42/3 0s} 24. Qb3 Qf6 {+5.95/3 0s} 25. Qa4 Kb8 {+5.68/3 0.001s} 26. Nb3
+Rh2 {+8.65/3 0.001s} 27. Qc4 Rxf2+ {+8.63/3 0.001s} 28. Kd1
+Qf3+ {+8.21/3 0.001s} 29. Ke1 Qe2# {+M1/3 0s, Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "8"]
+[White "Stockfish"]
+[Black "Wayfinder (Alpha-Beta)"]
+[Result "1-0"]
+[BlackTimeControl "60+0.6"]
+[ECO "B00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-20T18:35:23.351 UTC"]
+[GameStartTime "2025-10-20T18:35:22.397 UTC"]
+[Opening "King's pawn"]
+[PlyCount "91"]
+[Variation "Nimzowitsch defense"]
+[WhiteTimeControl "60+0.6"]
+
+1. e4 {+0.42/3 0s} Nc6 2. d4 {+1.08/3 0.001s} e5 3. c3 {+0.46/3 0.001s} exd4
+4. cxd4 {+0.47/3 0s} Bb4+ 5. Nc3 {+0.96/3 0s} Nf6 6. f3 {+0.47/3 0.001s} Bxc3+
+7. bxc3 {+1.98/3 0s} Nh5 8. g4 {+1.80/3 0.001s} Qh4+ 9. Kd2 {+2.78/3 0.001s} Ng3
+10. Qe1 {-0.46/3 0.001s} Nxf1+ 11. Ke2 {-0.39/3 0s} Qxe1+ 12. Kxe1 {-0.37/3 0s}
+Nxh2 13. Rxh2 {-0.13/3 0s} d6 14. a4 {-0.32/3 0.001s} a6 15. a5 {-0.06/3 0s} b6
+16. axb6 {+0.43/3 0s} cxb6 17. Bf4 {+0.69/3 0.001s} Kd7 18. g5 {+0.67/3 0.001s}
+b5 19. d5 {+0.91/3 0s} Ne5 20. Kd1 {+0.01/3 0.001s} Nd3 21. Be3 {+0.41/3 0s} Bb7
+22. Bd4 {+0.58/3 0.001s} Rag8 23. Kd2 {+1.03/3 0.001s} Nb2
+24. Ne2 {+0.97/3 0.001s} Nc4+ 25. Kd3 {+1.09/3 0s} Ne5+ 26. Ke3 {+0.85/3 0s} Rd8
+27. Ng3 {+1.24/3 0s} Nc4+ 28. Kd3 {+1.61/3 0s} Ne5+ 29. Ke3 {+1.61/3 0s} Nc4+
+30. Kf4 {+1.79/3 0s} Ne5 31. Bxe5 {+2.27/3 0.001s} dxe5+ 32. Kxe5 {+2.80/3 0s}
+Rc8 33. Kd4 {+2.44/3 0s} f6 34. Nf5 {+2.67/3 0.001s} fxg5
+35. Nxg7 {+2.65/3 0.001s} h6 36. Ne6 {+2.66/3 0s} Rc4+ 37. Kd3 {+3.54/3 0s} Rhc8
+38. Rxh6 {+2.04/3 0.001s} Rxc3+ 39. Kd4 {+2.72/3 0s} R8c4+ 40. Ke5 {+3.13/3 0s}
+Kc8 41. Rh8+ {+4.37/3 0.001s} Kd7 42. Rd8+ {+5.11/3 0s} Ke7 43. d6+ {+5.44/3 0s}
+Kf7 44. Nxg5+ {+6.14/3 0s} Kg6 45. Rg8+ {+6.88/3 0s} Kh5
+46. Rh1# {+M1/3 0s, White mates} 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "9"]
+[White "Wayfinder (Alpha-Beta)"]
+[Black "Stockfish"]
+[Result "0-1"]
+[BlackTimeControl "60+0.6"]
+[ECO "A00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-20T18:35:24.013 UTC"]
+[GameStartTime "2025-10-20T18:35:23.354 UTC"]
+[Opening "Dunst (Sleipner, Heinrichsen) Opening"]
+[PlyCount "58"]
+[WhiteTimeControl "60+0.6"]
+
+1. Nc3 d5 {+0.13/3 0s} 2. Nf3 Nc6 {+0.10/3 0.001s} 3. d3 e5 {+0.51/3 0s} 4. Bg5
+f6 {+0.97/3 0s} 5. Bd2 d4 {+1.07/3 0s} 6. Nb1 g5 {+1.73/3 0.001s} 7. h3
+Be6 {+1.33/3 0.001s} 8. e4 Qd7 {+1.32/3 0.001s} 9. c3 O-O-O {+1.14/3 0.001s}
+10. Be2 h5 {+1.99/3 0s} 11. Qc2 Nge7 {+2.22/3 0s} 12. a3 Ng6 {+2.52/3 0s}
+13. Rf1 Qf7 {+3.08/3 0.001s} 14. cxd4 exd4 {+3.78/3 0.001s} 15. Bc1
+g4 {+3.28/3 0.001s} 16. Nfd2 gxh3 {+3.57/3 0.001s} 17. gxh3 Bxh3 {+3.85/3 0s}
+18. Rg1 Nf4 {+4.52/3 0s} 19. Nf3 Nxe2 {+4.27/3 0.001s} 20. Kxe2
+Bg4 {+5.88/3 0.001s} 21. Nd2 Ne5 {+5.57/3 0s} 22. Rxg4 hxg4 {+4.85/3 0.001s}
+23. Nxe5 fxe5 {+5.42/3 0.001s} 24. Qb3 Qf6 {+5.95/3 0.001s} 25. Qa4
+Kb8 {+5.68/3 0s} 26. Nb3 Rh2 {+8.65/3 0.001s} 27. Qc4 Rxf2+ {+8.63/3 0.001s}
+28. Kd1 Qf3+ {+8.21/3 0.001s} 29. Ke1 Qe2# {+M1/3 0s, Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "10"]
+[White "Stockfish"]
+[Black "Wayfinder (Alpha-Beta)"]
+[Result "1-0"]
+[BlackTimeControl "60+0.6"]
+[ECO "B00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-20T18:35:24.971 UTC"]
+[GameStartTime "2025-10-20T18:35:24.016 UTC"]
+[Opening "King's pawn"]
+[PlyCount "91"]
+[Variation "Nimzowitsch defense"]
+[WhiteTimeControl "60+0.6"]
+
+1. e4 {+0.42/3 0s} Nc6 2. d4 {+1.08/3 0.001s} e5 3. c3 {+0.46/3 0s} exd4
+4. cxd4 {+0.47/3 0.001s} Bb4+ 5. Nc3 {+0.96/3 0s} Nf6 6. f3 {+0.47/3 0.001s}
+Bxc3+ 7. bxc3 {+1.98/3 0s} Nh5 8. g4 {+1.80/3 0s} Qh4+ 9. Kd2 {+2.78/3 0s} Ng3
+10. Qe1 {-0.46/3 0s} Nxf1+ 11. Ke2 {-0.39/3 0s} Qxe1+ 12. Kxe1 {-0.37/3 0s} Nxh2
+13. Rxh2 {-0.13/3 0s} d6 14. a4 {-0.32/3 0.001s} a6 15. a5 {-0.06/3 0s} b6
+16. axb6 {+0.43/3 0s} cxb6 17. Bf4 {+0.69/3 0.001s} Kd7 18. g5 {+0.67/3 0.001s}
+b5 19. d5 {+0.91/3 0s} Ne5 20. Kd1 {+0.01/3 0.001s} Nd3 21. Be3 {+0.41/3 0.001s}
+Bb7 22. Bd4 {+0.58/3 0.001s} Rag8 23. Kd2 {+1.03/3 0.001s} Nb2
+24. Ne2 {+0.97/3 0.001s} Nc4+ 25. Kd3 {+1.09/3 0s} Ne5+ 26. Ke3 {+0.85/3 0s} Rd8
+27. Ng3 {+1.24/3 0s} Nc4+ 28. Kd3 {+1.61/3 0s} Ne5+ 29. Ke3 {+1.61/3 0s} Nc4+
+30. Kf4 {+1.79/3 0s} Ne5 31. Bxe5 {+2.27/3 0s} dxe5+ 32. Kxe5 {+2.80/3 0s} Rc8
+33. Kd4 {+2.44/3 0s} f6 34. Nf5 {+2.67/3 0.001s} fxg5 35. Nxg7 {+2.65/3 0.001s}
+h6 36. Ne6 {+2.66/3 0s} Rc4+ 37. Kd3 {+3.54/3 0s} Rhc8 38. Rxh6 {+2.04/3 0.001s}
+Rxc3+ 39. Kd4 {+2.72/3 0s} R8c4+ 40. Ke5 {+3.13/3 0s} Kc8
+41. Rh8+ {+4.37/3 0.001s} Kd7 42. Rd8+ {+5.11/3 0s} Ke7 43. d6+ {+5.44/3 0s} Kf7
+44. Nxg5+ {+6.14/3 0s} Kg6 45. Rg8+ {+6.88/3 0s} Kh5
+46. Rh1# {+M1/3 0s, White mates} 1-0
+

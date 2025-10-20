@@ -1,0 +1,270 @@
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "1"]
+[White "Wayfinder (Alpha-Beta)"]
+[Black "Stockfish"]
+[Result "0-1"]
+[BlackTimeControl "60+0.6"]
+[ECO "A00"]
+[GameDuration "00:01:20"]
+[GameEndTime "2025-10-20T18:45:28.688 UTC"]
+[GameStartTime "2025-10-20T18:44:08.296 UTC"]
+[Opening "Van't Kruijs Opening"]
+[PlyCount "56"]
+[Termination "time forfeit"]
+[WhiteTimeControl "60+0.6"]
+
+1. e3 {0.94s} e5 {+0.09/3 0s} 2. d4 {3.6s} Nc6 {-0.25/3 0.001s} 3. d5 {2.6s}
+Nce7 {-0.03/3 0s} 4. Nc3 {2.5s} Ng6 {-0.40/3 0.001s} 5. Bd3 {5.2s}
+Bb4 {-0.37/3 0.001s} 6. a3 {1.7s} Bxc3+ {+0.02/3 0.001s} 7. bxc3
+Qe7 {+0.15/3 0.001s} 8. e4 {1.7s} d6 {-0.07/3 0.001s} 9. Nf3 {1.7s}
+Nf6 {0.00/3 0.001s} 10. Bg5 {1.4s} h6 {+0.30/3 0.001s} 11. Bxf6 {3.3s}
+Qxf6 {+0.61/3 0.001s} 12. Nd2 {1.4s} Nf4 {+0.81/3 0.001s} 13. Bb5+ {0.82s}
+c6 {+1.36/3 0s} 14. dxc6 {1.0s} Nxg2+ {+1.79/3 0.001s} 15. Ke2
+O-O {+3.83/3 0.001s} 16. Qf1 {1.8s} bxc6 {+3.49/3 0.006s} 17. Bxc6 {3.7s}
+Bh3 {+3.18/3 0.001s} 18. Qc1 {2.8s} Nf4+ {+4.95/3 0.001s} 19. Kd1 {0.61s}
+Rac8 {+7.19/3 0s} 20. Bb7 {2.7s} Rxc3 {+5.53/3 0.001s} 21. Qb2 {1.8s}
+Rc7 {+5.05/3 0.001s} 22. Bd5 {4.2s} Rfc8 {+5.67/3 0.001s} 23. Bb3 {3.2s}
+a5 {+5.78/3 0.001s} 24. Ba4 {1.9s} Qh4 {+6.24/3 0.001s} 25. Qb6 {6.8s}
+Rc5 {+6.09/3 0.001s} 26. Nb3 {5.9s} Rxc2 {+6.81/3 0.001s} 27. Nd2 {4.4s}
+R2c7 {+6.60/3 0.001s} 28. Rg1 {4.6s} Rc5 {+7.04/3 0.001s, White loses on time}
+0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "2"]
+[White "Stockfish"]
+[Black "Wayfinder (Alpha-Beta)"]
+[Result "1-0"]
+[BlackTimeControl "60+0.6"]
+[ECO "B01"]
+[GameDuration "00:01:11"]
+[GameEndTime "2025-10-20T18:46:40.507 UTC"]
+[GameStartTime "2025-10-20T18:45:28.693 UTC"]
+[Opening "Scandinavian (centre counter) defense"]
+[PlyCount "11"]
+[Termination "time forfeit"]
+[WhiteTimeControl "60+0.6"]
+
+1. e4 {+0.42/3 0s} d5 {1.9s} 2. exd5 {+0.02/3 0.001s} Qxd5 {9.1s}
+3. d4 {+0.43/3 0.001s} Nc6 {11s} 4. Nf3 {+0.92/3 0.001s} Nf6 {12s}
+5. c4 {+0.53/3 0s} Qa5+ {18s} 6. Bd2 {+1.27/3 0.001s, Black loses on time} 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "3"]
+[White "Wayfinder (Alpha-Beta)"]
+[Black "Stockfish"]
+[Result "0-1"]
+[BlackTimeControl "60+0.6"]
+[ECO "A00"]
+[GameDuration "00:01:19"]
+[GameEndTime "2025-10-20T18:48:00.216 UTC"]
+[GameStartTime "2025-10-20T18:46:40.509 UTC"]
+[Opening "Van't Kruijs Opening"]
+[PlyCount "56"]
+[Termination "time forfeit"]
+[WhiteTimeControl "60+0.6"]
+
+1. e3 {1.1s} e5 {+0.09/3 0.002s} 2. d4 {3.7s} Nc6 {-0.25/3 0.001s} 3. d5 {2.6s}
+Nce7 {-0.03/3 0.001s} 4. Nc3 {2.6s} Ng6 {-0.40/3 0.002s} 5. Bd3 {5.1s}
+Bb4 {-0.37/3 0.001s} 6. a3 {1.7s} Bxc3+ {+0.02/3 0.001s} 7. bxc3
+Qe7 {+0.15/3 0.001s} 8. e4 {1.8s} d6 {-0.07/3 0.001s} 9. Nf3 {1.6s}
+Nf6 {0.00/3 0s} 10. Bg5 {1.4s} h6 {+0.30/3 0.001s} 11. Bxf6 {3.3s}
+Qxf6 {+0.61/3 0.001s} 12. Nd2 {1.5s} Nf4 {+0.81/3 0s} 13. Bb5+ {0.83s}
+c6 {+1.36/3 0s} 14. dxc6 {1.2s} Nxg2+ {+1.79/3 0.001s} 15. Ke2
+O-O {+3.83/3 0.001s} 16. Qf1 {1.6s} bxc6 {+3.49/3 0.001s} 17. Bxc6 {3.4s}
+Bh3 {+3.18/3 0.001s} 18. Qc1 {3.0s} Nf4+ {+4.95/3 0.001s} 19. Kd1 {0.66s}
+Rac8 {+7.19/3 0.001s} 20. Bb7 {3.0s} Rxc3 {+5.53/3 0.001s} 21. Qb2 {1.8s}
+Rc7 {+5.05/3 0.001s} 22. Bd5 {4.1s} Rfc8 {+5.67/3 0.001s} 23. Bb3 {3.2s}
+a5 {+5.78/3 0.003s} 24. Ba4 {1.9s} Qh4 {+6.24/3 0.001s} 25. Qb6 {6.6s}
+Rc5 {+6.09/3 0.001s} 26. Nb3 {5.5s} Rxc2 {+6.81/3 0.001s} 27. Nd2 {4.0s}
+R2c7 {+6.60/3 0.001s} 28. Rg1 {4.4s} Rc5 {+7.04/3 0.001s, White loses on time}
+0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "4"]
+[White "Stockfish"]
+[Black "Wayfinder (Alpha-Beta)"]
+[Result "1-0"]
+[BlackTimeControl "60+0.6"]
+[ECO "B01"]
+[GameDuration "00:01:06"]
+[GameEndTime "2025-10-20T18:49:06.282 UTC"]
+[GameStartTime "2025-10-20T18:48:00.218 UTC"]
+[Opening "Scandinavian (centre counter) defense"]
+[PlyCount "11"]
+[Termination "time forfeit"]
+[WhiteTimeControl "60+0.6"]
+
+1. e4 {+0.42/3 0s} d5 {1.9s} 2. exd5 {+0.02/3 0.001s} Qxd5 {8.8s}
+3. d4 {+0.43/3 0s} Nc6 {11s} 4. Nf3 {+0.92/3 0.001s} Nf6 {10s}
+5. c4 {+0.53/3 0s} Qa5+ {16s} 6. Bd2 {+1.27/3 0.001s, Black loses on time} 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "5"]
+[White "Wayfinder (Alpha-Beta)"]
+[Black "Stockfish"]
+[Result "0-1"]
+[BlackTimeControl "60+0.6"]
+[ECO "A00"]
+[GameDuration "00:01:18"]
+[GameEndTime "2025-10-20T18:50:24.479 UTC"]
+[GameStartTime "2025-10-20T18:49:06.285 UTC"]
+[Opening "Van't Kruijs Opening"]
+[PlyCount "56"]
+[Termination "time forfeit"]
+[WhiteTimeControl "60+0.6"]
+
+1. e3 {0.85s} e5 {+0.09/3 0s} 2. d4 {3.6s} Nc6 {-0.25/3 0.001s} 3. d5 {2.6s}
+Nce7 {-0.03/3 0s} 4. Nc3 {2.3s} Ng6 {-0.40/3 0.001s} 5. Bd3 {5.0s}
+Bb4 {-0.37/3 0.001s} 6. a3 {1.7s} Bxc3+ {+0.02/3 0.001s} 7. bxc3
+Qe7 {+0.15/3 0.001s} 8. e4 {1.7s} d6 {-0.07/3 0.001s} 9. Nf3 {1.5s}
+Nf6 {0.00/3 0s} 10. Bg5 {1.4s} h6 {+0.30/3 0.001s} 11. Bxf6 {3.4s}
+Qxf6 {+0.61/3 0s} 12. Nd2 {1.4s} Nf4 {+0.81/3 0.001s} 13. Bb5+ {0.81s}
+c6 {+1.36/3 0s} 14. dxc6 {0.98s} Nxg2+ {+1.79/3 0.001s} 15. Ke2
+O-O {+3.83/3 0.001s} 16. Qf1 {1.6s} bxc6 {+3.49/3 0.001s} 17. Bxc6 {3.2s}
+Bh3 {+3.18/3 0.001s} 18. Qc1 {2.8s} Nf4+ {+4.95/3 0s} 19. Kd1 {0.60s}
+Rac8 {+7.19/3 0.001s} 20. Bb7 {2.6s} Rxc3 {+5.53/3 0.001s} 21. Qb2 {1.7s}
+Rc7 {+5.05/3 0.001s} 22. Bd5 {4.2s} Rfc8 {+5.67/3 0.001s} 23. Bb3 {3.2s}
+a5 {+5.78/3 0.001s} 24. Ba4 {1.8s} Qh4 {+6.24/3 0.001s} 25. Qb6 {6.7s}
+Rc5 {+6.09/3 0.001s} 26. Nb3 {5.8s} Rxc2 {+6.81/3 0.001s} 27. Nd2 {4.1s}
+R2c7 {+6.60/3 0.001s} 28. Rg1 {4.5s} Rc5 {+7.04/3 0.001s, White loses on time}
+0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "6"]
+[White "Stockfish"]
+[Black "Wayfinder (Alpha-Beta)"]
+[Result "1-0"]
+[BlackTimeControl "60+0.6"]
+[ECO "B01"]
+[GameDuration "00:01:08"]
+[GameEndTime "2025-10-20T18:51:32.541 UTC"]
+[GameStartTime "2025-10-20T18:50:24.482 UTC"]
+[Opening "Scandinavian (centre counter) defense"]
+[PlyCount "11"]
+[Termination "time forfeit"]
+[WhiteTimeControl "60+0.6"]
+
+1. e4 {+0.42/3 0s} d5 {1.8s} 2. exd5 {+0.02/3 0.001s} Qxd5 {10.0s}
+3. d4 {+0.43/3 0.001s} Nc6 {11s} 4. Nf3 {+0.92/3 0.001s} Nf6 {10s}
+5. c4 {+0.53/3 0s} Qa5+ {16s} 6. Bd2 {+1.27/3 0.001s, Black loses on time} 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "7"]
+[White "Wayfinder (Alpha-Beta)"]
+[Black "Stockfish"]
+[Result "0-1"]
+[BlackTimeControl "60+0.6"]
+[ECO "A00"]
+[GameDuration "00:01:19"]
+[GameEndTime "2025-10-20T18:52:51.902 UTC"]
+[GameStartTime "2025-10-20T18:51:32.544 UTC"]
+[Opening "Van't Kruijs Opening"]
+[PlyCount "56"]
+[Termination "time forfeit"]
+[WhiteTimeControl "60+0.6"]
+
+1. e3 {0.91s} e5 {+0.09/3 0s} 2. d4 {3.6s} Nc6 {-0.25/3 0.001s} 3. d5 {2.8s}
+Nce7 {-0.03/3 0.001s} 4. Nc3 {2.5s} Ng6 {-0.40/3 0.001s} 5. Bd3 {5.1s}
+Bb4 {-0.37/3 0.001s} 6. a3 {1.8s} Bxc3+ {+0.02/3 0s} 7. bxc3
+Qe7 {+0.15/3 0.001s} 8. e4 {1.7s} d6 {-0.07/3 0.001s} 9. Nf3 {1.6s}
+Nf6 {0.00/3 0s} 10. Bg5 {1.4s} h6 {+0.30/3 0.001s} 11. Bxf6 {3.3s}
+Qxf6 {+0.61/3 0.001s} 12. Nd2 {1.5s} Nf4 {+0.81/3 0.001s} 13. Bb5+ {0.82s}
+c6 {+1.36/3 0s} 14. dxc6 {1.0s} Nxg2+ {+1.79/3 0.001s} 15. Ke2
+O-O {+3.83/3 0.001s} 16. Qf1 {1.6s} bxc6 {+3.49/3 0.001s} 17. Bxc6 {3.2s}
+Bh3 {+3.18/3 0.001s} 18. Qc1 {2.9s} Nf4+ {+4.95/3 0.001s} 19. Kd1 {0.61s}
+Rac8 {+7.19/3 0.001s} 20. Bb7 {2.7s} Rxc3 {+5.53/3 0s} 21. Qb2 {1.8s}
+Rc7 {+5.05/3 0.001s} 22. Bd5 {4.2s} Rfc8 {+5.67/3 0s} 23. Bb3 {3.3s}
+a5 {+5.78/3 0.001s} 24. Ba4 {1.8s} Qh4 {+6.24/3 0.001s} 25. Qb6 {6.7s}
+Rc5 {+6.09/3 0.001s} 26. Nb3 {5.5s} Rxc2 {+6.81/3 0.001s} 27. Nd2 {4.1s}
+R2c7 {+6.60/3 0.001s} 28. Rg1 {4.8s} Rc5 {+7.04/3 0.001s, White loses on time}
+0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "8"]
+[White "Stockfish"]
+[Black "Wayfinder (Alpha-Beta)"]
+[Result "1-0"]
+[BlackTimeControl "60+0.6"]
+[ECO "B01"]
+[GameDuration "00:01:08"]
+[GameEndTime "2025-10-20T18:54:00.315 UTC"]
+[GameStartTime "2025-10-20T18:52:51.904 UTC"]
+[Opening "Scandinavian (centre counter) defense"]
+[PlyCount "11"]
+[Termination "time forfeit"]
+[WhiteTimeControl "60+0.6"]
+
+1. e4 {+0.42/3 0s} d5 {1.9s} 2. exd5 {+0.02/3 0.001s} Qxd5 {9.6s}
+3. d4 {+0.43/3 0s} Nc6 {12s} 4. Nf3 {+0.92/3 0.001s} Nf6 {10s}
+5. c4 {+0.53/3 0s} Qa5+ {16s} 6. Bd2 {+1.27/3 0.001s, Black loses on time} 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "9"]
+[White "Wayfinder (Alpha-Beta)"]
+[Black "Stockfish"]
+[Result "0-1"]
+[BlackTimeControl "60+0.6"]
+[ECO "A00"]
+[GameDuration "00:01:18"]
+[GameEndTime "2025-10-20T18:55:19.089 UTC"]
+[GameStartTime "2025-10-20T18:54:00.318 UTC"]
+[Opening "Van't Kruijs Opening"]
+[PlyCount "56"]
+[Termination "time forfeit"]
+[WhiteTimeControl "60+0.6"]
+
+1. e3 {0.92s} e5 {+0.09/3 0s} 2. d4 {3.6s} Nc6 {-0.25/3 0.001s} 3. d5 {2.6s}
+Nce7 {-0.03/3 0s} 4. Nc3 {2.4s} Ng6 {-0.40/3 0.001s} 5. Bd3 {4.9s}
+Bb4 {-0.37/3 0.001s} 6. a3 {1.7s} Bxc3+ {+0.02/3 0.001s} 7. bxc3
+Qe7 {+0.15/3 0.001s} 8. e4 {1.7s} d6 {-0.07/3 0.001s} 9. Nf3 {1.6s}
+Nf6 {0.00/3 0s} 10. Bg5 {1.4s} h6 {+0.30/3 0.001s} 11. Bxf6 {3.3s}
+Qxf6 {+0.61/3 0.001s} 12. Nd2 {1.4s} Nf4 {+0.81/3 0s} 13. Bb5+ {0.82s}
+c6 {+1.36/3 0s} 14. dxc6 {1.0s} Nxg2+ {+1.79/3 0.001s} 15. Ke2
+O-O {+3.83/3 0.001s} 16. Qf1 {1.7s} bxc6 {+3.49/3 0.001s} 17. Bxc6 {3.2s}
+Bh3 {+3.18/3 0.001s} 18. Qc1 {2.7s} Nf4+ {+4.95/3 0.001s} 19. Kd1 {0.60s}
+Rac8 {+7.19/3 0s} 20. Bb7 {2.7s} Rxc3 {+5.53/3 0.001s} 21. Qb2 {1.8s}
+Rc7 {+5.05/3 0.001s} 22. Bd5 {4.3s} Rfc8 {+5.67/3 0.001s} 23. Bb3 {3.2s}
+a5 {+5.78/3 0.001s} 24. Ba4 {2.0s} Qh4 {+6.24/3 0.001s} 25. Qb6 {6.7s}
+Rc5 {+6.09/3 0.001s} 26. Nb3 {5.5s} Rxc2 {+6.81/3 0.001s} 27. Nd2 {4.0s}
+R2c7 {+6.60/3 0.001s} 28. Rg1 {4.6s} Rc5 {+7.04/3 0.001s, White loses on time}
+0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.20"]
+[Round "10"]
+[White "Stockfish"]
+[Black "Wayfinder (Alpha-Beta)"]
+[Result "1-0"]
+[BlackTimeControl "60+0.6"]
+[ECO "B01"]
+[GameDuration "00:01:07"]
+[GameEndTime "2025-10-20T18:56:26.148 UTC"]
+[GameStartTime "2025-10-20T18:55:19.092 UTC"]
+[Opening "Scandinavian (centre counter) defense"]
+[PlyCount "11"]
+[Termination "time forfeit"]
+[WhiteTimeControl "60+0.6"]
+
+1. e4 {+0.42/3 0s} d5 {1.9s} 2. exd5 {+0.02/3 0.001s} Qxd5 {8.9s}
+3. d4 {+0.43/3 0s} Nc6 {11s} 4. Nf3 {+0.92/3 0.001s} Nf6 {10s}
+5. c4 {+0.53/3 0.001s} Qa5+ {16s} 6. Bd2 {+1.27/3 0.001s, Black loses on time}
+1-0

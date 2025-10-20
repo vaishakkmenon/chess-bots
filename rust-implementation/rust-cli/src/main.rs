@@ -5,7 +5,7 @@ use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::types::Move;
 // use rust_engine::search::context::SearchContext;
 // use rust_engine::search::opening_book::OpeningBook;
-use rust_engine::search::search::minimax_basic;
+use rust_engine::search::search::search;
 // use rust_engine::search::tt::TranspositionTable;
 use std::io::{self, BufRead};
 use std::str::FromStr;
@@ -74,7 +74,7 @@ fn main() {
 }
 
 fn handle_uci() {
-    println!("id name Wayfinder 1.0 (Minimax)");
+    println!("id name Wayfinder 1.0 (Alpha-Beta)");
     println!("id author Vaishak Menon");
     println!("uciok");
 }
@@ -259,7 +259,8 @@ fn handle_go(
     // ctx.clear_history();
 
     // Perform minimax search
-    let (_score, best_move) = minimax_basic(board, tables, depth, true);
+    // let (_score, best_move) = minimax(board, tables, depth, true);
+    let (_score, best_move) = search(board, tables, depth);
     // let (_score, best_move) = search_iterative_deepening(board, tables, depth);
 
     // Output best move
