@@ -3,30 +3,30 @@ use rust_engine::moves::execute::{generate_legal, make_move_basic};
 use rust_engine::moves::magic::MagicTables;
 use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::types::Move;
-use rust_engine::search::context::SearchContext;
-use rust_engine::search::opening_book::OpeningBook;
-use rust_engine::search::search::search_iterative_deepening;
-use rust_engine::search::tt::TranspositionTable;
+// use rust_engine::search::context::SearchContext;
+// use rust_engine::search::opening_book::OpeningBook;
+use rust_engine::search::search::minimax_basic;
+// use rust_engine::search::tt::TranspositionTable;
 use std::io::{self, BufRead};
 use std::str::FromStr;
 use std::time::Duration;
 
 fn main() {
-    // Load opening book at startup
-    let book = OpeningBook::load("../books/Performance.bin")
-        .map_err(|e| eprintln!("Warning: Could not load opening book: {}", e))
-        .ok();
+    // // Load opening book at startup
+    // let book = OpeningBook::load("../books/Performance.bin")
+    //     .map_err(|e| eprintln!("Warning: Could not load opening book: {}", e))
+    //     .ok();
 
-    if book.is_some() {
-        println!("info string Opening book loaded successfully");
-    }
+    // if book.is_some() {
+    //     println!("info string Opening book loaded successfully");
+    // }
 
     // Load magic tables once at startup
     let magic_tables = load_magic_tables();
 
     let mut board = Board::new(); // Start position
-    let mut tt = TranspositionTable::new(64); // 64 MB
-    let mut ctx = SearchContext::new();
+    // let mut tt = TranspositionTable::new(64); // 64 MB
+    // let mut ctx = SearchContext::new();
 
     // Main UCI loop
     let stdin = io::stdin();
@@ -48,8 +48,8 @@ fn main() {
             "isready" => println!("readyok"),
             "ucinewgame" => {
                 board = Board::new();
-                tt = TranspositionTable::new(64);
-                ctx = SearchContext::new();
+                // tt = TranspositionTable::new(64);
+                // ctx = SearchContext::new();
             }
             "position" => {
                 if let Some(new_board) = handle_position(&parts, &magic_tables) {
@@ -57,14 +57,7 @@ fn main() {
                 }
             }
             "go" => {
-                handle_go(
-                    &parts,
-                    &mut board,
-                    &mut tt,
-                    &mut ctx,
-                    &magic_tables,
-                    book.as_ref(),
-                );
+                handle_go(&parts, &mut board, &magic_tables);
             }
             "fen" => {
                 println!("{}", board.to_fen());
@@ -81,7 +74,7 @@ fn main() {
 }
 
 fn handle_uci() {
-    println!("id name Wayfinder 1.0");
+    println!("id name Wayfinder 1.0 (Minimax)");
     println!("id author Vaishak Menon");
     println!("uciok");
 }
@@ -179,12 +172,12 @@ fn parse_uci_move(board: &Board, move_str: &str, tables: &MagicTables) -> Option
 fn handle_go(
     parts: &[&str],
     board: &mut Board,
-    tt: &mut TranspositionTable,
-    ctx: &mut SearchContext,
+    // tt: &mut TranspositionTable,
+    // ctx: &mut SearchContext,
     tables: &MagicTables,
-    book: Option<&OpeningBook>,
+    // book: Option<&OpeningBook>,
 ) {
-    let mut depth = 6;
+    let mut depth = 5;
     let mut time_limit = None;
 
     let mut i = 1;
@@ -262,11 +255,11 @@ fn handle_go(
         }
     }
 
-    tt.new_search();
-    ctx.clear_history();
+    // tt.new_search();
+    // ctx.clear_history();
 
-    // Perform iterative deepening search
-    let (_score, best_move) = search_iterative_deepening(board, tables, depth, book);
+    // Perform minimax search
+    let (_score, best_move) = minimax_basic(board, tables, depth, true);
     // let (_score, best_move) = search_iterative_deepening(board, tables, depth);
 
     // Output best move
