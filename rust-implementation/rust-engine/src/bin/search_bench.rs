@@ -60,7 +60,7 @@ fn main() {
     if search_type == "minimax" {
         (score, best_move) = minimax(&mut board, &tables, depth, true);
     } else {
-        (score, best_move) = search(&mut board, &tables, depth);
+        (score, best_move) = search(&mut board, &tables, depth, 0);
     }
     let elapsed = start.elapsed();
 

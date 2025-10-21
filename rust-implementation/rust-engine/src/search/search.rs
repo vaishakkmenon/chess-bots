@@ -3,6 +3,7 @@ use crate::moves::execute::{generate_legal, make_move_basic, undo_move_basic};
 use crate::moves::magic::MagicTables;
 use crate::moves::square_control::in_check;
 use crate::moves::types::Move;
+use crate::search::context::SearchContext;
 use crate::search::eval::static_eval;
 use crate::search::ordering::order_moves;
 
@@ -66,7 +67,9 @@ pub fn minimax(
 pub fn alpha_beta(
     board: &mut Board,
     tables: &MagicTables,
+    ctx: &mut SearchContext,
     depth: i32,
+    ply: usize,
     mut alpha: i32,
     beta: i32,
 ) -> (i32, Option<Move>) {
@@ -78,7 +81,7 @@ pub fn alpha_beta(
     let mut scratch = Vec::with_capacity(128);
 
     generate_legal(board, tables, &mut moves, &mut scratch);
-    order_moves(&mut moves, board);
+    order_moves(&mut moves, board, &ctx.killer_moves[ply], &ctx.history);
 
     if moves.is_empty() {
         if in_check(board, board.side_to_move, tables) {
@@ -95,24 +98,33 @@ pub fn alpha_beta(
 
     for mv in moves {
         let undo = make_move_basic(board, mv);
-        let (score, _) = alpha_beta(board, tables, depth - 1, -beta, -alpha);
+        let (score, _) = alpha_beta(board, tables, ctx, depth - 1, ply + 1, -beta, -alpha);
         let score = -score;
         undo_move_basic(board, undo);
 
         if score >= beta {
             // Beta cutoff
+            ctx.update_killer(ply, mv);
+            ctx.update_history(mv, depth);
             return (beta, Some(mv));
         }
 
         if score > alpha {
             alpha = score;
             best_move = Some(mv);
+            ctx.update_history(mv, depth);
         }
     }
 
     (alpha, best_move)
 }
 
-pub fn search(board: &mut Board, tables: &MagicTables, depth: i32) -> (i32, Option<Move>) {
-    alpha_beta(board, tables, depth, i32::MIN + 1, i32::MAX)
+pub fn search(
+    board: &mut Board,
+    tables: &MagicTables,
+    depth: i32,
+    ply: usize,
+) -> (i32, Option<Move>) {
+    let mut ctx = SearchContext::new();
+    alpha_beta(board, tables, &mut ctx, depth, ply, i32::MIN + 1, i32::MAX)
 }

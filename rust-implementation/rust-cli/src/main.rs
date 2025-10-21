@@ -260,7 +260,7 @@ fn handle_go(
 
     // Perform minimax search
     // let (_score, best_move) = minimax(board, tables, depth, true);
-    let (_score, best_move) = search(board, tables, depth);
+    let (_score, best_move) = search(board, tables, depth, 0);
     // let (_score, best_move) = search_iterative_deepening(board, tables, depth);
 
     // Output best move
