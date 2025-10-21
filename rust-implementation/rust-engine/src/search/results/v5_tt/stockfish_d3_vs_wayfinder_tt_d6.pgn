@@ -1,0 +1,335 @@
+[Event "?"]
+[Site "?"]
+[Date "2025.10.21"]
+[Round "1"]
+[White "Wayfinder (Transposition-Table)"]
+[Black "Stockfish"]
+[Result "0-1"]
+[BlackTimeControl "60+0.6"]
+[ECO "A00"]
+[GameDuration "00:00:06"]
+[GameEndTime "2025-10-21T20:15:05.085 UTC"]
+[GameStartTime "2025-10-21T20:14:58.259 UTC"]
+[Opening "Van't Kruijs Opening"]
+[PlyCount "96"]
+[WhiteTimeControl "60+0.6"]
+
+1. e3 e5 {+0.09/3 0s} 2. d4 Nc6 {-0.25/3 0.001s} 3. d5 Nce7 {-0.03/3 0s} 4. Nc3
+Ng6 {-0.40/3 0.001s} 5. Bd3 Bb4 {-0.37/3 0.001s} 6. a3 Bxc3+ {+0.02/3 0s}
+7. bxc3 Qe7 {+0.15/3 0s} 8. e4 d6 {-0.07/3 0s} 9. Nf3 Nf6 {0.00/3 0s} 10. Bg5
+h6 {+0.30/3 0s} 11. Bxf6 Qxf6 {+0.61/3 0s} 12. Nd2 Nf4 {+0.81/3 0s} 13. Bb5+
+c6 {+1.36/3 0s} 14. dxc6 Nxg2+ {+1.79/3 0s} 15. Ke2 O-O {+3.83/3 0.001s} 16. Qf1
+bxc6 {+3.49/3 0s} 17. Bxc6 Bh3 {+3.18/3 0.001s} 18. Qc1 Nf4+ {+4.95/3 0s}
+19. Kd1 Rac8 {+7.19/3 0s} 20. Bb7 Rxc3 {+5.53/3 0.001s} 21. Qb2
+Rc7 {+5.05/3 0.001s} 22. Bd5 Rfc8 {+5.67/3 0.001s} 23. Bc4 Rxc4 {+6.03/3 0.001s}
+24. Nxc4 Bg4+ {+6.31/3 0.001s} 25. Kc1 Rxc4 {+5.89/3 0s} 26. Qb8+
+Rc8 {+7.00/3 0s} 27. Qxa7 d5 {+5.42/3 0s} 28. exd5 Nxd5 {+6.14/3 0.001s} 29. Qb7
+Qxf2 {+6.96/3 0.001s} 30. Ra2 Be6 {+6.67/3 0.001s} 31. h3 Qf4+ {+7.08/3 0.001s}
+32. Kb2 Qd4+ {+7.08/3 0s} 33. Kc1 Qf4+ {+6.84/3 0s} 34. Kb2 Qd4+ {+6.70/3 0s}
+35. Kc1 Qc4 {+7.69/3 0s} 36. Rb2 h5 {+6.34/3 0s} 37. Qa7 g6 {+6.58/3 0.001s}
+38. h4 Qc6 {+8.11/3 0s} 39. Qb7 Qc5 {+6.48/3 0.001s} 40. Qa6 e4 {+6.70/3 0s}
+41. Kb1 e3 {+6.80/3 0.001s} 42. c4 Nf4 {+6.92/3 0.001s} 43. Rbh2
+e2 {+8.02/3 0.001s} 44. Re1 Rb8+ {+7.99/3 0.001s} 45. Ka2 Bxc4+ {+9.44/3 0s}
+46. Qxc4 Qxc4+ {+9.68/3 0s} 47. Ka1 Qc3+ {+9.96/3 0s} 48. Ka2
+Qb2# {+M1/3 0s, Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.21"]
+[Round "2"]
+[White "Stockfish"]
+[Black "Wayfinder (Transposition-Table)"]
+[Result "1/2-1/2"]
+[BlackTimeControl "60+0.6"]
+[ECO "B01"]
+[GameDuration "00:00:05"]
+[GameEndTime "2025-10-21T20:15:10.231 UTC"]
+[GameStartTime "2025-10-21T20:15:05.091 UTC"]
+[Opening "Scandinavian (centre counter) defense"]
+[PlyCount "77"]
+[WhiteTimeControl "60+0.6"]
+
+1. e4 {+0.42/3 0s} d5 2. exd5 {+0.02/3 0.001s} Qxd5 3. d4 {+0.43/3 0s} Nc6
+4. Nf3 {+0.92/3 0s} Nf6 5. c4 {+0.53/3 0s} Qa5+ 6. Bd2 {+1.27/3 0s} Qf5
+7. Nc3 {+1.46/3 0s} Ne4 {0.65s} 8. d5 {+1.96/3 0.001s} Ne5
+9. Be2 {+1.08/3 0.001s} Nxd2 10. Qxd2 {+1.08/3 0s} Nxf3+ 11. gxf3 {+0.57/3 0s}
+e5 12. Nb5 {+1.44/3 0s} Kd7 13. d6 {+1.31/3 0.001s} cxd6 14. c5 {+2.08/3 0s} Qf4
+15. Qd5 {+1.31/3 0.001s} Qb4+ 16. Nc3 {+1.45/3 0s} Qxb2 17. O-O {+0.32/3 0.001s}
+Qxc3 18. cxd6 {+0.32/3 0.001s} Bxd6 19. Qxf7+ {+0.43/3 0.001s} Kd8
+20. Qxg7 {+1.41/3 0s} Re8 21. Rfd1 {+2.51/3 0.001s} Bd7 22. Rac1 {+1.69/3 0s}
+Qb2 23. Rc4 {+0.82/3 0.001s} Qxe2 24. Rxd6 {+1.37/3 0s} Re7
+25. Qg8+ {+1.15/3 0s} Re8 26. Qg7 {+2.44/3 0s} Re7 27. Qf8+ {+1.19/3 0s} Re8
+28. Rxd7+ {+1.24/3 0s} Kxd7 29. Qf7+ {+0.02/3 0s} Kd6 30. h3 {-1.63/3 0.001s}
+Re7 31. Qf6+ {-3.45/3 0s} Re6 32. Rd4+ {-3.47/3 0s} exd4 33. Qxd4+ {-3.76/3 0s}
+Kc6 34. Qc3+ {-2.31/3 0s} Kb5 35. Qb3+ {-4.14/3 0.001s} Ka5
+36. Qc3+ {-4.12/3 0.001s} Kb5 37. Qb3+ {-4.33/3 0.001s} Ka5
+38. Qa3+ {-3.29/3 0s} Kb5 39. Qb3+ {0.00/3 0s, Draw by 3-fold repetition}
+1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.21"]
+[Round "3"]
+[White "Wayfinder (Transposition-Table)"]
+[Black "Stockfish"]
+[Result "0-1"]
+[BlackTimeControl "60+0.6"]
+[ECO "A00"]
+[GameDuration "00:00:06"]
+[GameEndTime "2025-10-21T20:15:17.077 UTC"]
+[GameStartTime "2025-10-21T20:15:10.234 UTC"]
+[Opening "Van't Kruijs Opening"]
+[PlyCount "96"]
+[WhiteTimeControl "60+0.6"]
+
+1. e3 e5 {+0.09/3 0s} 2. d4 Nc6 {-0.25/3 0.001s} 3. d5 Nce7 {-0.03/3 0s} 4. Nc3
+Ng6 {-0.40/3 0.001s} 5. Bd3 Bb4 {-0.37/3 0.001s} 6. a3 Bxc3+ {+0.02/3 0.001s}
+7. bxc3 Qe7 {+0.15/3 0s} 8. e4 d6 {-0.07/3 0.001s} 9. Nf3 Nf6 {0.00/3 0s}
+10. Bg5 h6 {+0.30/3 0.001s} 11. Bxf6 Qxf6 {+0.61/3 0s} 12. Nd2 Nf4 {+0.81/3 0s}
+13. Bb5+ c6 {+1.36/3 0s} 14. dxc6 Nxg2+ {+1.79/3 0s} 15. Ke2
+O-O {+3.83/3 0.001s} 16. Qf1 bxc6 {+3.49/3 0s} 17. Bxc6 Bh3 {+3.18/3 0s} 18. Qc1
+Nf4+ {+4.95/3 0s} 19. Kd1 Rac8 {+7.19/3 0.001s} 20. Bb7 Rxc3 {+5.53/3 0.001s}
+21. Qb2 Rc7 {+5.05/3 0s} 22. Bd5 Rfc8 {+5.67/3 0s} 23. Bc4 Rxc4 {+6.03/3 0.001s}
+24. Nxc4 Bg4+ {+6.31/3 0.001s} 25. Kc1 Rxc4 {+5.89/3 0s} 26. Qb8+
+Rc8 {+7.00/3 0s} 27. Qxa7 d5 {+5.42/3 0s} 28. exd5 Nxd5 {+6.14/3 0.001s} 29. Qb7
+Qxf2 {+6.96/3 0.001s} 30. Ra2 Be6 {+6.67/3 0s} 31. h3 Qf4+ {+7.08/3 0s} 32. Kb2
+Qd4+ {+7.08/3 0s} 33. Kc1 Qf4+ {+6.84/3 0s} 34. Kb2 Qd4+ {+6.70/3 0s} 35. Kc1
+Qc4 {+7.69/3 0s} 36. Rb2 h5 {+6.34/3 0s} 37. Qa7 g6 {+6.58/3 0s} 38. h4
+Qc6 {+8.11/3 0s} 39. Qb7 Qc5 {+6.48/3 0.001s} 40. Qa6 e4 {+6.70/3 0s} 41. Kb1
+e3 {+6.80/3 0s} 42. c4 Nf4 {+6.92/3 0.001s} 43. Rbh2 e2 {+8.02/3 0s} 44. Re1
+Rb8+ {+7.99/3 0.001s} 45. Ka2 Bxc4+ {+9.44/3 0.001s} 46. Qxc4 Qxc4+ {+9.68/3 0s}
+47. Ka1 Qc3+ {+9.96/3 0s} 48. Ka2 Qb2# {+M1/3 0s, Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.21"]
+[Round "4"]
+[White "Stockfish"]
+[Black "Wayfinder (Transposition-Table)"]
+[Result "1/2-1/2"]
+[BlackTimeControl "60+0.6"]
+[ECO "B01"]
+[GameDuration "00:00:05"]
+[GameEndTime "2025-10-21T20:15:22.186 UTC"]
+[GameStartTime "2025-10-21T20:15:17.080 UTC"]
+[Opening "Scandinavian (centre counter) defense"]
+[PlyCount "77"]
+[WhiteTimeControl "60+0.6"]
+
+1. e4 {+0.42/3 0s} d5 2. exd5 {+0.02/3 0s} Qxd5 3. d4 {+0.43/3 0s} Nc6
+4. Nf3 {+0.92/3 0s} Nf6 5. c4 {+0.53/3 0s} Qa5+ 6. Bd2 {+1.27/3 0s} Qf5
+7. Nc3 {+1.46/3 0s} Ne4 {0.63s} 8. d5 {+1.96/3 0s} Ne5 9. Be2 {+1.08/3 0.002s}
+Nxd2 10. Qxd2 {+1.08/3 0s} Nxf3+ 11. gxf3 {+0.57/3 0s} e5 12. Nb5 {+1.44/3 0s}
+Kd7 13. d6 {+1.31/3 0.001s} cxd6 14. c5 {+2.08/3 0.001s} Qf4
+15. Qd5 {+1.31/3 0.001s} Qb4+ 16. Nc3 {+1.45/3 0s} Qxb2 17. O-O {+0.32/3 0.001s}
+Qxc3 18. cxd6 {+0.32/3 0s} Bxd6 19. Qxf7+ {+0.43/3 0s} Kd8 20. Qxg7 {+1.41/3 0s}
+Re8 21. Rfd1 {+2.51/3 0s} Bd7 22. Rac1 {+1.69/3 0.002s} Qb2
+23. Rc4 {+0.82/3 0.001s} Qxe2 24. Rxd6 {+1.37/3 0s} Re7
+25. Qg8+ {+1.15/3 0.001s} Re8 26. Qg7 {+2.44/3 0.001s} Re7 27. Qf8+ {+1.19/3 0s}
+Re8 28. Rxd7+ {+1.24/3 0s} Kxd7 29. Qf7+ {+0.02/3 0s} Kd6
+30. h3 {-1.63/3 0.001s} Re7 31. Qf6+ {-3.45/3 0.001s} Re6 32. Rd4+ {-3.47/3 0s}
+exd4 33. Qxd4+ {-3.76/3 0s} Kc6 34. Qc3+ {-2.31/3 0s} Kb5 35. Qb3+ {-4.14/3 0s}
+Ka5 36. Qc3+ {-4.12/3 0s} Kb5 37. Qb3+ {-4.33/3 0s} Ka5 38. Qa3+ {-3.29/3 0s}
+Kb5 39. Qb3+ {0.00/3 0s, Draw by 3-fold repetition} 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.21"]
+[Round "5"]
+[White "Wayfinder (Transposition-Table)"]
+[Black "Stockfish"]
+[Result "0-1"]
+[BlackTimeControl "60+0.6"]
+[ECO "A00"]
+[GameDuration "00:00:06"]
+[GameEndTime "2025-10-21T20:15:28.835 UTC"]
+[GameStartTime "2025-10-21T20:15:22.189 UTC"]
+[Opening "Van't Kruijs Opening"]
+[PlyCount "96"]
+[WhiteTimeControl "60+0.6"]
+
+1. e3 e5 {+0.09/3 0s} 2. d4 Nc6 {-0.25/3 0s} 3. d5 Nce7 {-0.03/3 0.001s} 4. Nc3
+Ng6 {-0.40/3 0.001s} 5. Bd3 Bb4 {-0.37/3 0.001s} 6. a3 Bxc3+ {+0.02/3 0.001s}
+7. bxc3 Qe7 {+0.15/3 0.001s} 8. e4 d6 {-0.07/3 0.001s} 9. Nf3 Nf6 {0.00/3 0s}
+10. Bg5 h6 {+0.30/3 0s} 11. Bxf6 Qxf6 {+0.61/3 0s} 12. Nd2 Nf4 {+0.81/3 0s}
+13. Bb5+ c6 {+1.36/3 0s} 14. dxc6 Nxg2+ {+1.79/3 0s} 15. Ke2 O-O {+3.83/3 0s}
+16. Qf1 bxc6 {+3.49/3 0.001s} 17. Bxc6 Bh3 {+3.18/3 0s} 18. Qc1
+Nf4+ {+4.95/3 0s} 19. Kd1 Rac8 {+7.19/3 0s} 20. Bb7 Rxc3 {+5.53/3 0s} 21. Qb2
+Rc7 {+5.05/3 0.001s} 22. Bd5 Rfc8 {+5.67/3 0s} 23. Bc4 Rxc4 {+6.03/3 0.001s}
+24. Nxc4 Bg4+ {+6.31/3 0.001s} 25. Kc1 Rxc4 {+5.89/3 0s} 26. Qb8+
+Rc8 {+7.00/3 0s} 27. Qxa7 d5 {+5.42/3 0.001s} 28. exd5 Nxd5 {+6.14/3 0s} 29. Qb7
+Qxf2 {+6.96/3 0s} 30. Ra2 Be6 {+6.67/3 0s} 31. h3 Qf4+ {+7.08/3 0s} 32. Kb2
+Qd4+ {+7.08/3 0.001s} 33. Kc1 Qf4+ {+6.84/3 0s} 34. Kb2 Qd4+ {+6.70/3 0s}
+35. Kc1 Qc4 {+7.69/3 0s} 36. Rb2 h5 {+6.34/3 0s} 37. Qa7 g6 {+6.58/3 0s} 38. h4
+Qc6 {+8.11/3 0s} 39. Qb7 Qc5 {+6.48/3 0s} 40. Qa6 e4 {+6.70/3 0.001s} 41. Kb1
+e3 {+6.80/3 0.001s} 42. c4 Nf4 {+6.92/3 0.001s} 43. Rbh2 e2 {+8.02/3 0.001s}
+44. Re1 Rb8+ {+7.99/3 0.001s} 45. Ka2 Bxc4+ {+9.44/3 0s} 46. Qxc4
+Qxc4+ {+9.68/3 0s} 47. Ka1 Qc3+ {+9.96/3 0s} 48. Ka2
+Qb2# {+M1/3 0s, Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.21"]
+[Round "6"]
+[White "Stockfish"]
+[Black "Wayfinder (Transposition-Table)"]
+[Result "1/2-1/2"]
+[BlackTimeControl "60+0.6"]
+[ECO "B01"]
+[GameDuration "00:00:05"]
+[GameEndTime "2025-10-21T20:15:33.975 UTC"]
+[GameStartTime "2025-10-21T20:15:28.839 UTC"]
+[Opening "Scandinavian (centre counter) defense"]
+[PlyCount "77"]
+[WhiteTimeControl "60+0.6"]
+
+1. e4 {+0.42/3 0s} d5 2. exd5 {+0.02/3 0s} Qxd5 3. d4 {+0.43/3 0s} Nc6
+4. Nf3 {+0.92/3 0s} Nf6 5. c4 {+0.53/3 0s} Qa5+ 6. Bd2 {+1.27/3 0s} Qf5
+7. Nc3 {+1.46/3 0s} Ne4 {0.63s} 8. d5 {+1.96/3 0s} Ne5 9. Be2 {+1.08/3 0.001s}
+Nxd2 10. Qxd2 {+1.08/3 0.001s} Nxf3+ 11. gxf3 {+0.57/3 0s} e5
+12. Nb5 {+1.44/3 0s} Kd7 13. d6 {+1.31/3 0.001s} cxd6 14. c5 {+2.08/3 0.001s}
+Qf4 15. Qd5 {+1.31/3 0.001s} Qb4+ 16. Nc3 {+1.45/3 0s} Qxb2
+17. O-O {+0.32/3 0.001s} Qxc3 18. cxd6 {+0.32/3 0s} Bxd6
+19. Qxf7+ {+0.43/3 0.001s} Kd8 20. Qxg7 {+1.41/3 0s} Re8 21. Rfd1 {+2.51/3 0s}
+Bd7 22. Rac1 {+1.69/3 0.001s} Qb2 23. Rc4 {+0.82/3 0s} Qxe2
+24. Rxd6 {+1.37/3 0s} Re7 25. Qg8+ {+1.15/3 0.001s} Re8 26. Qg7 {+2.44/3 0.001s}
+Re7 27. Qf8+ {+1.19/3 0.001s} Re8 28. Rxd7+ {+1.24/3 0s} Kxd7
+29. Qf7+ {+0.02/3 0s} Kd6 30. h3 {-1.63/3 0.001s} Re7 31. Qf6+ {-3.45/3 0s} Re6
+32. Rd4+ {-3.47/3 0s} exd4 33. Qxd4+ {-3.76/3 0s} Kc6 34. Qc3+ {-2.31/3 0s} Kb5
+35. Qb3+ {-4.14/3 0.001s} Ka5 36. Qc3+ {-4.12/3 0s} Kb5 37. Qb3+ {-4.33/3 0s}
+Ka5 38. Qa3+ {-3.29/3 0.001s} Kb5
+39. Qb3+ {0.00/3 0s, Draw by 3-fold repetition} 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.21"]
+[Round "7"]
+[White "Wayfinder (Transposition-Table)"]
+[Black "Stockfish"]
+[Result "0-1"]
+[BlackTimeControl "60+0.6"]
+[ECO "A00"]
+[GameDuration "00:00:06"]
+[GameEndTime "2025-10-21T20:15:40.627 UTC"]
+[GameStartTime "2025-10-21T20:15:33.977 UTC"]
+[Opening "Van't Kruijs Opening"]
+[PlyCount "96"]
+[WhiteTimeControl "60+0.6"]
+
+1. e3 e5 {+0.09/3 0s} 2. d4 Nc6 {-0.25/3 0.001s} 3. d5 Nce7 {-0.03/3 0.001s}
+4. Nc3 Ng6 {-0.40/3 0.001s} 5. Bd3 Bb4 {-0.37/3 0.001s} 6. a3 Bxc3+ {+0.02/3 0s}
+7. bxc3 Qe7 {+0.15/3 0s} 8. e4 d6 {-0.07/3 0.001s} 9. Nf3 Nf6 {0.00/3 0s}
+10. Bg5 h6 {+0.30/3 0s} 11. Bxf6 Qxf6 {+0.61/3 0s} 12. Nd2 Nf4 {+0.81/3 0s}
+13. Bb5+ c6 {+1.36/3 0s} 14. dxc6 Nxg2+ {+1.79/3 0s} 15. Ke2 O-O {+3.83/3 0s}
+16. Qf1 bxc6 {+3.49/3 0s} 17. Bxc6 Bh3 {+3.18/3 0s} 18. Qc1 Nf4+ {+4.95/3 0s}
+19. Kd1 Rac8 {+7.19/3 0s} 20. Bb7 Rxc3 {+5.53/3 0s} 21. Qb2 Rc7 {+5.05/3 0s}
+22. Bd5 Rfc8 {+5.67/3 0s} 23. Bc4 Rxc4 {+6.03/3 0.001s} 24. Nxc4
+Bg4+ {+6.31/3 0s} 25. Kc1 Rxc4 {+5.89/3 0.001s} 26. Qb8+ Rc8 {+7.00/3 0s}
+27. Qxa7 d5 {+5.42/3 0.001s} 28. exd5 Nxd5 {+6.14/3 0s} 29. Qb7
+Qxf2 {+6.96/3 0.001s} 30. Ra2 Be6 {+6.67/3 0s} 31. h3 Qf4+ {+7.08/3 0s} 32. Kb2
+Qd4+ {+7.08/3 0s} 33. Kc1 Qf4+ {+6.84/3 0s} 34. Kb2 Qd4+ {+6.70/3 0s} 35. Kc1
+Qc4 {+7.69/3 0s} 36. Rb2 h5 {+6.34/3 0s} 37. Qa7 g6 {+6.58/3 0s} 38. h4
+Qc6 {+8.11/3 0s} 39. Qb7 Qc5 {+6.48/3 0s} 40. Qa6 e4 {+6.70/3 0s} 41. Kb1
+e3 {+6.80/3 0s} 42. c4 Nf4 {+6.92/3 0.001s} 43. Rbh2 e2 {+8.02/3 0.001s} 44. Re1
+Rb8+ {+7.99/3 0.001s} 45. Ka2 Bxc4+ {+9.44/3 0.001s} 46. Qxc4 Qxc4+ {+9.68/3 0s}
+47. Ka1 Qc3+ {+9.96/3 0s} 48. Ka2 Qb2# {+M1/3 0s, Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.21"]
+[Round "8"]
+[White "Stockfish"]
+[Black "Wayfinder (Transposition-Table)"]
+[Result "1/2-1/2"]
+[BlackTimeControl "60+0.6"]
+[ECO "B01"]
+[GameDuration "00:00:05"]
+[GameEndTime "2025-10-21T20:15:45.857 UTC"]
+[GameStartTime "2025-10-21T20:15:40.631 UTC"]
+[Opening "Scandinavian (centre counter) defense"]
+[PlyCount "77"]
+[WhiteTimeControl "60+0.6"]
+
+1. e4 {+0.42/3 0s} d5 2. exd5 {+0.02/3 0s} Qxd5 3. d4 {+0.43/3 0s} Nc6
+4. Nf3 {+0.92/3 0.001s} Nf6 5. c4 {+0.53/3 0s} Qa5+ 6. Bd2 {+1.27/3 0s} Qf5
+7. Nc3 {+1.46/3 0s} Ne4 {0.62s} 8. d5 {+1.96/3 0s} Ne5 9. Be2 {+1.08/3 0.001s}
+Nxd2 10. Qxd2 {+1.08/3 0s} Nxf3+ 11. gxf3 {+0.57/3 0s} e5 12. Nb5 {+1.44/3 0s}
+Kd7 13. d6 {+1.31/3 0.001s} cxd6 14. c5 {+2.08/3 0s} Qf4
+15. Qd5 {+1.31/3 0.001s} Qb4+ 16. Nc3 {+1.45/3 0s} Qxb2 17. O-O {+0.32/3 0.001s}
+Qxc3 18. cxd6 {+0.32/3 0s} Bxd6 19. Qxf7+ {+0.43/3 0s} Kd8 20. Qxg7 {+1.41/3 0s}
+Re8 21. Rfd1 {+2.51/3 0s} Bd7 22. Rac1 {+1.69/3 0.001s} Qb2
+23. Rc4 {+0.82/3 0.001s} Qxe2 24. Rxd6 {+1.37/3 0s} Re7
+25. Qg8+ {+1.15/3 0.001s} Re8 26. Qg7 {+2.44/3 0s} Re7 27. Qf8+ {+1.19/3 0s} Re8
+28. Rxd7+ {+1.24/3 0s} Kxd7 29. Qf7+ {+0.02/3 0s} Kd6 30. h3 {-1.63/3 0.001s}
+Re7 31. Qf6+ {-3.45/3 0.001s} Re6 32. Rd4+ {-3.47/3 0s} exd4
+33. Qxd4+ {-3.76/3 0s} Kc6 34. Qc3+ {-2.31/3 0s} Kb5 35. Qb3+ {-4.14/3 0s} Ka5
+36. Qc3+ {-4.12/3 0s} Kb5 37. Qb3+ {-4.33/3 0s} Ka5 38. Qa3+ {-3.29/3 0s} Kb5
+39. Qb3+ {0.00/3 0s, Draw by 3-fold repetition} 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.21"]
+[Round "9"]
+[White "Wayfinder (Transposition-Table)"]
+[Black "Stockfish"]
+[Result "0-1"]
+[BlackTimeControl "60+0.6"]
+[ECO "A00"]
+[GameDuration "00:00:06"]
+[GameEndTime "2025-10-21T20:15:52.524 UTC"]
+[GameStartTime "2025-10-21T20:15:45.860 UTC"]
+[Opening "Van't Kruijs Opening"]
+[PlyCount "96"]
+[WhiteTimeControl "60+0.6"]
+
+1. e3 e5 {+0.09/3 0s} 2. d4 Nc6 {-0.25/3 0.001s} 3. d5 Nce7 {-0.03/3 0s} 4. Nc3
+Ng6 {-0.40/3 0.001s} 5. Bd3 Bb4 {-0.37/3 0.001s} 6. a3 Bxc3+ {+0.02/3 0.001s}
+7. bxc3 Qe7 {+0.15/3 0s} 8. e4 d6 {-0.07/3 0s} 9. Nf3 Nf6 {0.00/3 0s} 10. Bg5
+h6 {+0.30/3 0s} 11. Bxf6 Qxf6 {+0.61/3 0s} 12. Nd2 Nf4 {+0.81/3 0s} 13. Bb5+
+c6 {+1.36/3 0s} 14. dxc6 Nxg2+ {+1.79/3 0s} 15. Ke2 O-O {+3.83/3 0s} 16. Qf1
+bxc6 {+3.49/3 0.001s} 17. Bxc6 Bh3 {+3.18/3 0s} 18. Qc1 Nf4+ {+4.95/3 0s}
+19. Kd1 Rac8 {+7.19/3 0s} 20. Bb7 Rxc3 {+5.53/3 0.001s} 21. Qb2
+Rc7 {+5.05/3 0.001s} 22. Bd5 Rfc8 {+5.67/3 0.001s} 23. Bc4 Rxc4 {+6.03/3 0.001s}
+24. Nxc4 Bg4+ {+6.31/3 0s} 25. Kc1 Rxc4 {+5.89/3 0s} 26. Qb8+ Rc8 {+7.00/3 0s}
+27. Qxa7 d5 {+5.42/3 0s} 28. exd5 Nxd5 {+6.14/3 0s} 29. Qb7 Qxf2 {+6.96/3 0s}
+30. Ra2 Be6 {+6.67/3 0.001s} 31. h3 Qf4+ {+7.08/3 0s} 32. Kb2
+Qd4+ {+7.08/3 0.001s} 33. Kc1 Qf4+ {+6.84/3 0s} 34. Kb2 Qd4+ {+6.70/3 0s}
+35. Kc1 Qc4 {+7.69/3 0s} 36. Rb2 h5 {+6.34/3 0s} 37. Qa7 g6 {+6.58/3 0s} 38. h4
+Qc6 {+8.11/3 0.001s} 39. Qb7 Qc5 {+6.48/3 0.001s} 40. Qa6 e4 {+6.70/3 0s}
+41. Kb1 e3 {+6.80/3 0s} 42. c4 Nf4 {+6.92/3 0.001s} 43. Rbh2 e2 {+8.02/3 0.001s}
+44. Re1 Rb8+ {+7.99/3 0.001s} 45. Ka2 Bxc4+ {+9.44/3 0s} 46. Qxc4
+Qxc4+ {+9.68/3 0s} 47. Ka1 Qc3+ {+9.96/3 0s} 48. Ka2
+Qb2# {+M1/3 0s, Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.21"]
+[Round "10"]
+[White "Stockfish"]
+[Black "Wayfinder (Transposition-Table)"]
+[Result "1/2-1/2"]
+[BlackTimeControl "60+0.6"]
+[ECO "B01"]
+[GameDuration "00:00:05"]
+[GameEndTime "2025-10-21T20:15:57.655 UTC"]
+[GameStartTime "2025-10-21T20:15:52.526 UTC"]
+[Opening "Scandinavian (centre counter) defense"]
+[PlyCount "77"]
+[WhiteTimeControl "60+0.6"]
+
+1. e4 {+0.42/3 0s} d5 2. exd5 {+0.02/3 0s} Qxd5 3. d4 {+0.43/3 0s} Nc6
+4. Nf3 {+0.92/3 0s} Nf6 5. c4 {+0.53/3 0s} Qa5+ 6. Bd2 {+1.27/3 0.001s} Qf5
+7. Nc3 {+1.46/3 0s} Ne4 {0.64s} 8. d5 {+1.96/3 0s} Ne5 9. Be2 {+1.08/3 0.001s}
+Nxd2 10. Qxd2 {+1.08/3 0s} Nxf3+ 11. gxf3 {+0.57/3 0s} e5 12. Nb5 {+1.44/3 0s}
+Kd7 13. d6 {+1.31/3 0.001s} cxd6 14. c5 {+2.08/3 0s} Qf4
+15. Qd5 {+1.31/3 0.001s} Qb4+ 16. Nc3 {+1.45/3 0s} Qxb2 17. O-O {+0.32/3 0.001s}
+Qxc3 18. cxd6 {+0.32/3 0s} Bxd6 19. Qxf7+ {+0.43/3 0.001s} Kd8
+20. Qxg7 {+1.41/3 0s} Re8 21. Rfd1 {+2.51/3 0s} Bd7 22. Rac1 {+1.69/3 0.001s}
+Qb2 23. Rc4 {+0.82/3 0s} Qxe2 24. Rxd6 {+1.37/3 0s} Re7 25. Qg8+ {+1.15/3 0s}
+Re8 26. Qg7 {+2.44/3 0s} Re7 27. Qf8+ {+1.19/3 0s} Re8 28. Rxd7+ {+1.24/3 0s}
+Kxd7 29. Qf7+ {+0.02/3 0s} Kd6 30. h3 {-1.63/3 0.001s} Re7 31. Qf6+ {-3.45/3 0s}
+Re6 32. Rd4+ {-3.47/3 0s} exd4 33. Qxd4+ {-3.76/3 0s} Kc6 34. Qc3+ {-2.31/3 0s}
+Kb5 35. Qb3+ {-4.14/3 0.001s} Ka5 36. Qc3+ {-4.12/3 0.001s} Kb5
+37. Qb3+ {-4.33/3 0s} Ka5 38. Qa3+ {-3.29/3 0s} Kb5
+39. Qb3+ {0.00/3 0s, Draw by 3-fold repetition} 1/2-1/2
+

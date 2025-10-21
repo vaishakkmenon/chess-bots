@@ -6,7 +6,7 @@ use crate::moves::types::Move;
 use crate::search::context::SearchContext;
 use crate::search::eval::static_eval;
 use crate::search::ordering::order_moves;
-
+use crate::search::tt::{NodeType, TranspositionTable};
 pub fn minimax(
     board: &mut Board,
     tables: &MagicTables,
@@ -68,11 +68,26 @@ pub fn alpha_beta(
     board: &mut Board,
     tables: &MagicTables,
     ctx: &mut SearchContext,
+    tt: &mut TranspositionTable,
     depth: i32,
     ply: usize,
     mut alpha: i32,
     beta: i32,
 ) -> (i32, Option<Move>) {
+    let hash = board.zobrist;
+
+    // Probe TT
+    if let Some(entry) = tt.probe(hash) {
+        if entry.depth >= depth as i8 {
+            match entry.node_type {
+                NodeType::Exact => return (entry.score, entry.best_move),
+                NodeType::LowerBound if entry.score >= beta => return (beta, entry.best_move),
+                NodeType::UpperBound if entry.score <= alpha => return (alpha, entry.best_move),
+                _ => {}
+            }
+        }
+    }
+
     if depth == 0 {
         return (static_eval(board), None);
     }
@@ -95,10 +110,11 @@ pub fn alpha_beta(
     }
 
     let mut best_move = None;
+    let original_alpha = alpha;
 
     for mv in moves {
         let undo = make_move_basic(board, mv);
-        let (score, _) = alpha_beta(board, tables, ctx, depth - 1, ply + 1, -beta, -alpha);
+        let (score, _) = alpha_beta(board, tables, ctx, tt, depth - 1, ply + 1, -beta, -alpha);
         let score = -score;
         undo_move_basic(board, undo);
 
@@ -116,6 +132,18 @@ pub fn alpha_beta(
         }
     }
 
+    let node_type = if alpha > original_alpha {
+        if alpha >= beta {
+            NodeType::LowerBound
+        } else {
+            NodeType::Exact
+        }
+    } else {
+        NodeType::UpperBound
+    };
+
+    tt.store(hash, depth as i8, alpha, best_move, node_type);
+
     (alpha, best_move)
 }
 
@@ -126,5 +154,15 @@ pub fn search(
     ply: usize,
 ) -> (i32, Option<Move>) {
     let mut ctx = SearchContext::new();
-    alpha_beta(board, tables, &mut ctx, depth, ply, i32::MIN + 1, i32::MAX)
+    let mut tt = TranspositionTable::new(1 << 20);
+    alpha_beta(
+        board,
+        tables,
+        &mut ctx,
+        &mut tt,
+        depth,
+        ply,
+        i32::MIN + 1,
+        i32::MAX,
+    )
 }
