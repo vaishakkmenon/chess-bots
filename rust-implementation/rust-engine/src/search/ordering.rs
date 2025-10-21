@@ -1,6 +1,10 @@
 use crate::board::Board;
 use crate::moves::types::Move;
 
+const CAPTURE_BASE: i32 = 10000;
+const KILLER1_SCORE: i32 = 9000;
+const KILLER2_SCORE: i32 = 8000;
+
 pub fn mvv_lva_score(mv: Move, board: &Board) -> i32 {
     if let Some(captured) = board.piece_at(mv.to) {
         let captured_piece = captured.1;
@@ -20,15 +24,15 @@ pub fn order_moves(
         // Priority 1: Captures (MVV-LVA)
         let capture_score = mvv_lva_score(mv, board);
         if capture_score > 0 {
-            return -(10000 + capture_score);
+            return -(CAPTURE_BASE + capture_score);
         }
 
         // Priority 2: Killer moves
         if Some(mv) == killer_moves[0] {
-            return -9000;
+            return -KILLER1_SCORE;
         }
         if Some(mv) == killer_moves[1] {
-            return -8000;
+            return -KILLER2_SCORE;
         }
 
         // Priority 3: History heuristic
