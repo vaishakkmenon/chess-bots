@@ -4,6 +4,7 @@ use crate::moves::magic::MagicTables;
 use crate::moves::square_control::in_check;
 use crate::moves::types::Move;
 use crate::search::eval::static_eval;
+use crate::search::ordering::order_moves;
 
 pub fn minimax(
     board: &mut Board,
@@ -77,11 +78,13 @@ pub fn alpha_beta(
     let mut scratch = Vec::with_capacity(128);
 
     generate_legal(board, tables, &mut moves, &mut scratch);
+    order_moves(&mut moves, board);
 
     if moves.is_empty() {
         if in_check(board, board.side_to_move, tables) {
             // Checkmate
-            return (-100000, None);
+            // Depth matters, closer to checkmate is preferred
+            return (-100000 + depth, None);
         }
 
         //Stalemate

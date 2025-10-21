@@ -463,6 +463,28 @@ impl Piece {
             _ => panic!("Invalid Piece encoding: {}", v),
         }
     }
+
+    pub fn value(&self) -> i32 {
+        match self {
+            Piece::Pawn => 100,
+            Piece::Knight => 320,
+            Piece::Bishop => 330,
+            Piece::Rook => 500,
+            Piece::Queen => 900,
+            Piece::King => 0,
+        }
+    }
+
+    pub fn attacker_value(&self) -> i32 {
+        match self {
+            Piece::Pawn => 1,
+            Piece::Knight => 2,
+            Piece::Bishop => 3,
+            Piece::Rook => 4,
+            Piece::Queen => 5,
+            Piece::King => 6,
+        }
+    }
 }
 
 /// An all-zero board (no pieces) with White to move.
