@@ -1,0 +1,266 @@
+[Event "?"]
+[Site "?"]
+[Date "2025.10.22"]
+[Round "1"]
+[White "Wayfinder (Quiescence)"]
+[Black "Stockfish"]
+[Result "1/2-1/2"]
+[ECO "A00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-22T18:39:17.992 UTC"]
+[GameStartTime "2025-10-22T18:39:17.744 UTC"]
+[Opening "Dunst (Sleipner, Heinrichsen) Opening"]
+[PlyCount "74"]
+[TimeControl "60+0.6"]
+
+1. Nc3 d5 {+0.13/3 0s} 2. d4 Nf6 {-0.02/3 0s} 3. e3 c6 {+0.10/3 0s} 4. Nf3
+Nbd7 {+0.04/3 0s} 5. Bd3 Qc7 {-0.12/3 0s} 6. e4 dxe4 {-0.08/3 0s} 7. Nxe4
+Nxe4 {-0.46/3 0s} 8. Bxe4 Nf6 {+0.04/3 0s} 9. Bd3 h6 {-0.25/3 0.001s} 10. Ne5
+a5 {-0.61/3 0s} 11. Be3 a4 {-0.53/3 0s} 12. a3 Be6 {-0.51/3 0s} 13. h3
+Bd5 {-0.20/3 0s} 14. Rg1 Rc8 {-0.11/3 0s} 15. c4 Be4 {-1.60/3 0s} 16. Bxe4
+Nxe4 {-2.34/3 0s} 17. Qxa4 g5 {-1.74/3 0s} 18. Qc2 Nd6 {-1.80/3 0.001s} 19. c5
+Nb5 {-2.56/3 0s} 20. a4 Ra8 {-2.15/3 0s} 21. O-O-O e6 {-3.01/3 0s} 22. axb5
+Bg7 {-3.60/3 0s} 23. b6 Qd8 {-3.55/3 0s} 24. Nf3 Ra2 {-3.50/3 0s} 25. Rge1
+Qa8 {-2.69/3 0s} 26. Ne5 O-O {-2.27/3 0s} 27. f4 Rd8 {-2.41/3 0s} 28. Qf2
+Qa5 {-1.37/3 0s} 29. fxg5 Ra1+ {-2.49/3 0.001s} 30. Kc2 Qa4+ {-2.26/3 0s} 31. b3
+Qa2+ {-1.67/3 0s} 32. Kc3 Qa5+ {-1.91/3 0.001s} 33. b4 Qa3+ {-0.65/3 0s} 34. Kc4
+Qa6+ {-1.12/3 0.001s} 35. Kc3 Qa3+ {-0.98/3 0s} 36. Kc4 Qa6+ {-0.47/3 0s}
+37. Kc3 Qa3+ {0.00/3 0s, Draw by 3-fold repetition} 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.22"]
+[Round "2"]
+[White "Stockfish"]
+[Black "Wayfinder (Quiescence)"]
+[Result "0-1"]
+[ECO "B00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-22T18:39:18.181 UTC"]
+[GameStartTime "2025-10-22T18:39:17.996 UTC"]
+[Opening "King's pawn"]
+[PlyCount "40"]
+[TimeControl "60+0.6"]
+[Variation "Nimzowitsch defense"]
+
+1. e4 {+0.42/3 0s} Nc6 2. d4 {+1.08/3 0s} d5 3. e5 {+0.94/3 0s} e6
+4. c3 {+1.37/3 0s} Nh6 5. Bd3 {+1.66/3 0s} Nf5 6. Nf3 {+1.58/3 0s} Nh4
+7. O-O {+1.16/3 0s} Nxf3+ 8. Qxf3 {+1.82/3 0s} Bd7 9. Nd2 {+1.56/3 0s} Qh4
+10. b4 {+1.57/3 0s} Rd8 11. a4 {+2.58/3 0s} a6 12. Nb3 {+2.60/3 0s} h6
+13. g3 {+2.42/3 0s} Qh3 14. b5 {+2.88/3 0s} axb5 15. axb5 {+2.70/3 0s} Ne7
+16. Ra7 {+3.62/3 0.001s} Rb8 17. Nc5 {+3.75/3 0s} Bc8 18. Ba3 {+3.37/3 0s} Nf5
+19. Ra1 {+2.76/3 0.001s} Nh4 20. Qe2 {+2.53/3 0s} Qg2# {Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.22"]
+[Round "3"]
+[White "Wayfinder (Quiescence)"]
+[Black "Stockfish"]
+[Result "1/2-1/2"]
+[ECO "A00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-22T18:39:18.419 UTC"]
+[GameStartTime "2025-10-22T18:39:18.183 UTC"]
+[Opening "Dunst (Sleipner, Heinrichsen) Opening"]
+[PlyCount "74"]
+[TimeControl "60+0.6"]
+
+1. Nc3 d5 {+0.13/3 0s} 2. d4 Nf6 {-0.02/3 0s} 3. e3 c6 {+0.10/3 0s} 4. Nf3
+Nbd7 {+0.04/3 0s} 5. Bd3 Qc7 {-0.12/3 0s} 6. e4 dxe4 {-0.08/3 0s} 7. Nxe4
+Nxe4 {-0.46/3 0s} 8. Bxe4 Nf6 {+0.04/3 0s} 9. Bd3 h6 {-0.25/3 0s} 10. Ne5
+a5 {-0.61/3 0s} 11. Be3 a4 {-0.53/3 0s} 12. a3 Be6 {-0.51/3 0s} 13. h3
+Bd5 {-0.20/3 0s} 14. Rg1 Rc8 {-0.11/3 0s} 15. c4 Be4 {-1.60/3 0.001s} 16. Bxe4
+Nxe4 {-2.34/3 0s} 17. Qxa4 g5 {-1.74/3 0s} 18. Qc2 Nd6 {-1.80/3 0s} 19. c5
+Nb5 {-2.56/3 0s} 20. a4 Ra8 {-2.15/3 0s} 21. O-O-O e6 {-3.01/3 0s} 22. axb5
+Bg7 {-3.60/3 0s} 23. b6 Qd8 {-3.55/3 0s} 24. Nf3 Ra2 {-3.50/3 0s} 25. Rge1
+Qa8 {-2.69/3 0s} 26. Ne5 O-O {-2.27/3 0s} 27. f4 Rd8 {-2.41/3 0s} 28. Qf2
+Qa5 {-1.37/3 0s} 29. fxg5 Ra1+ {-2.49/3 0s} 30. Kc2 Qa4+ {-2.26/3 0s} 31. b3
+Qa2+ {-1.67/3 0s} 32. Kc3 Qa5+ {-1.91/3 0.001s} 33. b4 Qa3+ {-0.65/3 0s} 34. Kc4
+Qa6+ {-1.12/3 0.001s} 35. Kc3 Qa3+ {-0.98/3 0s} 36. Kc4 Qa6+ {-0.47/3 0s}
+37. Kc3 Qa3+ {0.00/3 0s, Draw by 3-fold repetition} 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.22"]
+[Round "4"]
+[White "Stockfish"]
+[Black "Wayfinder (Quiescence)"]
+[Result "0-1"]
+[ECO "B00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-22T18:39:18.617 UTC"]
+[GameStartTime "2025-10-22T18:39:18.421 UTC"]
+[Opening "King's pawn"]
+[PlyCount "40"]
+[TimeControl "60+0.6"]
+[Variation "Nimzowitsch defense"]
+
+1. e4 {+0.42/3 0s} Nc6 2. d4 {+1.08/3 0s} d5 3. e5 {+0.94/3 0s} e6
+4. c3 {+1.37/3 0s} Nh6 5. Bd3 {+1.66/3 0s} Nf5 6. Nf3 {+1.58/3 0s} Nh4
+7. O-O {+1.16/3 0s} Nxf3+ 8. Qxf3 {+1.82/3 0s} Bd7 9. Nd2 {+1.56/3 0s} Qh4
+10. b4 {+1.57/3 0s} Rd8 11. a4 {+2.58/3 0s} a6 12. Nb3 {+2.60/3 0s} h6
+13. g3 {+2.42/3 0s} Qh3 14. b5 {+2.88/3 0.001s} axb5 15. axb5 {+2.70/3 0s} Ne7
+16. Ra7 {+3.62/3 0s} Rb8 17. Nc5 {+3.75/3 0s} Bc8 18. Ba3 {+3.37/3 0s} Nf5
+19. Ra1 {+2.76/3 0.001s} Nh4 20. Qe2 {+2.53/3 0s} Qg2# {Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.22"]
+[Round "5"]
+[White "Wayfinder (Quiescence)"]
+[Black "Stockfish"]
+[Result "1/2-1/2"]
+[ECO "A00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-22T18:39:18.860 UTC"]
+[GameStartTime "2025-10-22T18:39:18.620 UTC"]
+[Opening "Dunst (Sleipner, Heinrichsen) Opening"]
+[PlyCount "74"]
+[TimeControl "60+0.6"]
+
+1. Nc3 d5 {+0.13/3 0s} 2. d4 Nf6 {-0.02/3 0s} 3. e3 c6 {+0.10/3 0s} 4. Nf3
+Nbd7 {+0.04/3 0s} 5. Bd3 Qc7 {-0.12/3 0s} 6. e4 dxe4 {-0.08/3 0s} 7. Nxe4
+Nxe4 {-0.46/3 0s} 8. Bxe4 Nf6 {+0.04/3 0s} 9. Bd3 h6 {-0.25/3 0s} 10. Ne5
+a5 {-0.61/3 0s} 11. Be3 a4 {-0.53/3 0s} 12. a3 Be6 {-0.51/3 0s} 13. h3
+Bd5 {-0.20/3 0s} 14. Rg1 Rc8 {-0.11/3 0s} 15. c4 Be4 {-1.60/3 0.001s} 16. Bxe4
+Nxe4 {-2.34/3 0s} 17. Qxa4 g5 {-1.74/3 0s} 18. Qc2 Nd6 {-1.80/3 0.001s} 19. c5
+Nb5 {-2.56/3 0s} 20. a4 Ra8 {-2.15/3 0s} 21. O-O-O e6 {-3.01/3 0s} 22. axb5
+Bg7 {-3.60/3 0s} 23. b6 Qd8 {-3.55/3 0s} 24. Nf3 Ra2 {-3.50/3 0s} 25. Rge1
+Qa8 {-2.69/3 0s} 26. Ne5 O-O {-2.27/3 0s} 27. f4 Rd8 {-2.41/3 0s} 28. Qf2
+Qa5 {-1.37/3 0s} 29. fxg5 Ra1+ {-2.49/3 0s} 30. Kc2 Qa4+ {-2.26/3 0s} 31. b3
+Qa2+ {-1.67/3 0s} 32. Kc3 Qa5+ {-1.91/3 0.001s} 33. b4 Qa3+ {-0.65/3 0s} 34. Kc4
+Qa6+ {-1.12/3 0.001s} 35. Kc3 Qa3+ {-0.98/3 0s} 36. Kc4 Qa6+ {-0.47/3 0s}
+37. Kc3 Qa3+ {0.00/3 0s, Draw by 3-fold repetition} 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.22"]
+[Round "6"]
+[White "Stockfish"]
+[Black "Wayfinder (Quiescence)"]
+[Result "0-1"]
+[ECO "B00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-22T18:39:19.047 UTC"]
+[GameStartTime "2025-10-22T18:39:18.863 UTC"]
+[Opening "King's pawn"]
+[PlyCount "40"]
+[TimeControl "60+0.6"]
+[Variation "Nimzowitsch defense"]
+
+1. e4 {+0.42/3 0s} Nc6 2. d4 {+1.08/3 0s} d5 3. e5 {+0.94/3 0s} e6
+4. c3 {+1.37/3 0s} Nh6 5. Bd3 {+1.66/3 0s} Nf5 6. Nf3 {+1.58/3 0s} Nh4
+7. O-O {+1.16/3 0s} Nxf3+ 8. Qxf3 {+1.82/3 0s} Bd7 9. Nd2 {+1.56/3 0s} Qh4
+10. b4 {+1.57/3 0s} Rd8 11. a4 {+2.58/3 0s} a6 12. Nb3 {+2.60/3 0s} h6
+13. g3 {+2.42/3 0s} Qh3 14. b5 {+2.88/3 0s} axb5 15. axb5 {+2.70/3 0s} Ne7
+16. Ra7 {+3.62/3 0s} Rb8 17. Nc5 {+3.75/3 0s} Bc8 18. Ba3 {+3.37/3 0s} Nf5
+19. Ra1 {+2.76/3 0.001s} Nh4 20. Qe2 {+2.53/3 0s} Qg2# {Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.22"]
+[Round "7"]
+[White "Wayfinder (Quiescence)"]
+[Black "Stockfish"]
+[Result "1/2-1/2"]
+[ECO "A00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-22T18:39:19.291 UTC"]
+[GameStartTime "2025-10-22T18:39:19.049 UTC"]
+[Opening "Dunst (Sleipner, Heinrichsen) Opening"]
+[PlyCount "74"]
+[TimeControl "60+0.6"]
+
+1. Nc3 d5 {+0.13/3 0s} 2. d4 Nf6 {-0.02/3 0s} 3. e3 c6 {+0.10/3 0.001s} 4. Nf3
+Nbd7 {+0.04/3 0s} 5. Bd3 Qc7 {-0.12/3 0s} 6. e4 dxe4 {-0.08/3 0s} 7. Nxe4
+Nxe4 {-0.46/3 0s} 8. Bxe4 Nf6 {+0.04/3 0s} 9. Bd3 h6 {-0.25/3 0s} 10. Ne5
+a5 {-0.61/3 0s} 11. Be3 a4 {-0.53/3 0s} 12. a3 Be6 {-0.51/3 0s} 13. h3
+Bd5 {-0.20/3 0s} 14. Rg1 Rc8 {-0.11/3 0s} 15. c4 Be4 {-1.60/3 0s} 16. Bxe4
+Nxe4 {-2.34/3 0s} 17. Qxa4 g5 {-1.74/3 0s} 18. Qc2 Nd6 {-1.80/3 0.001s} 19. c5
+Nb5 {-2.56/3 0s} 20. a4 Ra8 {-2.15/3 0s} 21. O-O-O e6 {-3.01/3 0s} 22. axb5
+Bg7 {-3.60/3 0s} 23. b6 Qd8 {-3.55/3 0s} 24. Nf3 Ra2 {-3.50/3 0s} 25. Rge1
+Qa8 {-2.69/3 0s} 26. Ne5 O-O {-2.27/3 0s} 27. f4 Rd8 {-2.41/3 0s} 28. Qf2
+Qa5 {-1.37/3 0s} 29. fxg5 Ra1+ {-2.49/3 0s} 30. Kc2 Qa4+ {-2.26/3 0s} 31. b3
+Qa2+ {-1.67/3 0s} 32. Kc3 Qa5+ {-1.91/3 0.001s} 33. b4 Qa3+ {-0.65/3 0s} 34. Kc4
+Qa6+ {-1.12/3 0.001s} 35. Kc3 Qa3+ {-0.98/3 0s} 36. Kc4 Qa6+ {-0.47/3 0s}
+37. Kc3 Qa3+ {0.00/3 0s, Draw by 3-fold repetition} 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.22"]
+[Round "8"]
+[White "Stockfish"]
+[Black "Wayfinder (Quiescence)"]
+[Result "0-1"]
+[ECO "B00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-22T18:39:19.505 UTC"]
+[GameStartTime "2025-10-22T18:39:19.293 UTC"]
+[Opening "King's pawn"]
+[PlyCount "40"]
+[TimeControl "60+0.6"]
+[Variation "Nimzowitsch defense"]
+
+1. e4 {+0.42/3 0s} Nc6 2. d4 {+1.08/3 0s} d5 3. e5 {+0.94/3 0s} e6
+4. c3 {+1.37/3 0s} Nh6 5. Bd3 {+1.66/3 0s} Nf5 6. Nf3 {+1.58/3 0s} Nh4
+7. O-O {+1.16/3 0s} Nxf3+ 8. Qxf3 {+1.82/3 0s} Bd7 9. Nd2 {+1.56/3 0s} Qh4
+10. b4 {+1.57/3 0s} Rd8 11. a4 {+2.58/3 0s} a6 12. Nb3 {+2.60/3 0s} h6
+13. g3 {+2.42/3 0.001s} Qh3 14. b5 {+2.88/3 0.001s} axb5
+15. axb5 {+2.70/3 0.001s} Ne7 16. Ra7 {+3.62/3 0s} Rb8 17. Nc5 {+3.75/3 0s} Bc8
+18. Ba3 {+3.37/3 0s} Nf5 19. Ra1 {+2.76/3 0.001s} Nh4 20. Qe2 {+2.53/3 0s}
+Qg2# {Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.22"]
+[Round "9"]
+[White "Wayfinder (Quiescence)"]
+[Black "Stockfish"]
+[Result "1/2-1/2"]
+[ECO "A00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-22T18:39:19.747 UTC"]
+[GameStartTime "2025-10-22T18:39:19.507 UTC"]
+[Opening "Dunst (Sleipner, Heinrichsen) Opening"]
+[PlyCount "74"]
+[TimeControl "60+0.6"]
+
+1. Nc3 d5 {+0.13/3 0s} 2. d4 Nf6 {-0.02/3 0s} 3. e3 c6 {+0.10/3 0s} 4. Nf3
+Nbd7 {+0.04/3 0s} 5. Bd3 Qc7 {-0.12/3 0s} 6. e4 dxe4 {-0.08/3 0s} 7. Nxe4
+Nxe4 {-0.46/3 0s} 8. Bxe4 Nf6 {+0.04/3 0s} 9. Bd3 h6 {-0.25/3 0.001s} 10. Ne5
+a5 {-0.61/3 0s} 11. Be3 a4 {-0.53/3 0s} 12. a3 Be6 {-0.51/3 0s} 13. h3
+Bd5 {-0.20/3 0s} 14. Rg1 Rc8 {-0.11/3 0s} 15. c4 Be4 {-1.60/3 0.001s} 16. Bxe4
+Nxe4 {-2.34/3 0s} 17. Qxa4 g5 {-1.74/3 0s} 18. Qc2 Nd6 {-1.80/3 0.001s} 19. c5
+Nb5 {-2.56/3 0s} 20. a4 Ra8 {-2.15/3 0s} 21. O-O-O e6 {-3.01/3 0s} 22. axb5
+Bg7 {-3.60/3 0s} 23. b6 Qd8 {-3.55/3 0s} 24. Nf3 Ra2 {-3.50/3 0s} 25. Rge1
+Qa8 {-2.69/3 0s} 26. Ne5 O-O {-2.27/3 0s} 27. f4 Rd8 {-2.41/3 0s} 28. Qf2
+Qa5 {-1.37/3 0s} 29. fxg5 Ra1+ {-2.49/3 0s} 30. Kc2 Qa4+ {-2.26/3 0s} 31. b3
+Qa2+ {-1.67/3 0s} 32. Kc3 Qa5+ {-1.91/3 0.001s} 33. b4 Qa3+ {-0.65/3 0s} 34. Kc4
+Qa6+ {-1.12/3 0.001s} 35. Kc3 Qa3+ {-0.98/3 0s} 36. Kc4 Qa6+ {-0.47/3 0s}
+37. Kc3 Qa3+ {0.00/3 0s, Draw by 3-fold repetition} 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "2025.10.22"]
+[Round "10"]
+[White "Stockfish"]
+[Black "Wayfinder (Quiescence)"]
+[Result "0-1"]
+[ECO "B00"]
+[GameDuration "00:00:00"]
+[GameEndTime "2025-10-22T18:39:19.938 UTC"]
+[GameStartTime "2025-10-22T18:39:19.750 UTC"]
+[Opening "King's pawn"]
+[PlyCount "40"]
+[TimeControl "60+0.6"]
+[Variation "Nimzowitsch defense"]
+
+1. e4 {+0.42/3 0s} Nc6 2. d4 {+1.08/3 0s} d5 3. e5 {+0.94/3 0s} e6
+4. c3 {+1.37/3 0s} Nh6 5. Bd3 {+1.66/3 0s} Nf5 6. Nf3 {+1.58/3 0s} Nh4
+7. O-O {+1.16/3 0s} Nxf3+ 8. Qxf3 {+1.82/3 0s} Bd7 9. Nd2 {+1.56/3 0s} Qh4
+10. b4 {+1.57/3 0s} Rd8 11. a4 {+2.58/3 0s} a6 12. Nb3 {+2.60/3 0s} h6
+13. g3 {+2.42/3 0s} Qh3 14. b5 {+2.88/3 0.001s} axb5 15. axb5 {+2.70/3 0s} Ne7
+16. Ra7 {+3.62/3 0s} Rb8 17. Nc5 {+3.75/3 0s} Bc8 18. Ba3 {+3.37/3 0s} Nf5
+19. Ra1 {+2.76/3 0.001s} Nh4 20. Qe2 {+2.53/3 0s} Qg2# {Black mates} 0-1
+

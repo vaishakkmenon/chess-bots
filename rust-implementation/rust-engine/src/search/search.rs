@@ -1,12 +1,40 @@
 use crate::board::Board;
-use crate::moves::execute::{generate_legal, make_move_basic, undo_move_basic};
+use crate::moves::execute::{generate_captures, generate_legal, make_move_basic, undo_move_basic};
 use crate::moves::magic::MagicTables;
 use crate::moves::square_control::in_check;
 use crate::moves::types::Move;
 use crate::search::context::SearchContext;
 use crate::search::eval::static_eval;
-use crate::search::ordering::order_moves;
+use crate::search::ordering::{mvv_lva_score, order_moves};
 use crate::search::tt::{NodeType, TranspositionTable};
+
+const MATE_SCORE: i32 = 100000;
+const MATE_THRESHOLD: i32 = 99000; // Scores above this are mate scores
+
+/// Adjust mate score when storing to TT (convert from search ply to TT ply)
+#[inline]
+fn score_to_tt(score: i32, ply: usize) -> i32 {
+    if score > MATE_THRESHOLD {
+        score + ply as i32
+    } else if score < -MATE_THRESHOLD {
+        score - ply as i32
+    } else {
+        score
+    }
+}
+
+/// Adjust mate score when retrieving from TT (convert from TT ply to search ply)
+#[inline]
+fn score_from_tt(score: i32, ply: usize) -> i32 {
+    if score > MATE_THRESHOLD {
+        score - ply as i32
+    } else if score < -MATE_THRESHOLD {
+        score + ply as i32
+    } else {
+        score
+    }
+}
+
 pub fn minimax(
     board: &mut Board,
     tables: &MagicTables,
@@ -26,7 +54,7 @@ pub fn minimax(
     if moves.is_empty() {
         if in_check(board, board.side_to_move, tables) {
             // Checkmate
-            return (if maximizing { -100000 } else { 100000 }, None);
+            return (if maximizing { -MATE_SCORE } else { MATE_SCORE }, None);
         }
 
         // Stalemate
@@ -64,6 +92,100 @@ pub fn minimax(
     }
 }
 
+pub fn quiescence(
+    board: &mut Board,
+    tables: &MagicTables,
+    ctx: &mut SearchContext,
+    tt: &mut TranspositionTable,
+    ply: usize,
+    mut alpha: i32,
+    beta: i32,
+) -> i32 {
+    let in_check_now = in_check(board, board.side_to_move, tables);
+
+    if in_check_now {
+        // eprintln!("IN CHECK! Searching all evasions");
+        let mut moves = Vec::with_capacity(128);
+        let mut scratch = Vec::with_capacity(128);
+        generate_legal(board, tables, &mut moves, &mut scratch);
+
+        // No legal moves = checkmate
+        if moves.is_empty() {
+            return -MATE_SCORE + ply as i32;
+        }
+
+        let mut alpha = alpha;
+        for mv in moves {
+            let undo = make_move_basic(board, mv);
+            let score = -quiescence(board, tables, ctx, tt, ply + 1, -beta, -alpha);
+            undo_move_basic(board, undo);
+
+            if score >= beta {
+                return beta;
+            }
+            if score > alpha {
+                alpha = score;
+            }
+        }
+        return alpha;
+    }
+
+    // Current evaluation
+    let stand_pat = static_eval(board);
+
+    // eprintln!(
+    //     "Qsearch: stand_pat={}, alpha={}, beta={}",
+    //     stand_pat, alpha, beta
+    // );
+
+    // Beta-cutoff
+    if stand_pat >= beta {
+        // eprintln!("  -> beta cutoff");
+        return beta;
+    }
+
+    // Alpha update
+    if stand_pat >= alpha {
+        alpha = stand_pat;
+    }
+
+    // Generate only captures (and optionally checks)
+    let mut moves = Vec::with_capacity(128);
+    let mut scratch = Vec::with_capacity(128);
+    generate_captures(board, tables, &mut moves, &mut scratch);
+
+    // Order captures by MVV-LVA
+    moves.sort_by_cached_key(|&mv| -mvv_lva_score(mv, board));
+
+    for mv in moves {
+        let mut captured_value = 0;
+        // Getting just the piece and its attacker value
+        if let Some(piece) = board.piece_type_at(mv.to) {
+            captured_value = piece.value();
+        }
+
+        if stand_pat + captured_value + 200 < alpha {
+            continue;
+        }
+
+        // Make and undo a move, test with quiescence
+        let undo = make_move_basic(board, mv);
+        let score = -quiescence(board, tables, ctx, tt, ply + 1, -beta, -alpha);
+        undo_move_basic(board, undo);
+
+        // Beta cutoff
+        if score >= beta {
+            return beta;
+        }
+
+        // Alpha update
+        if score > alpha {
+            alpha = score;
+        }
+    }
+    alpha
+}
+
 pub fn alpha_beta(
     board: &mut Board,
     tables: &MagicTables,
@@ -79,17 +201,19 @@ pub fn alpha_beta(
     // Probe TT
     if let Some(entry) = tt.probe(hash) {
         if entry.depth >= depth as i8 {
+            let tt_score = score_from_tt(entry.score, ply);
             match entry.node_type {
-                NodeType::Exact => return (entry.score, entry.best_move),
-                NodeType::LowerBound if entry.score >= beta => return (beta, entry.best_move),
-                NodeType::UpperBound if entry.score <= alpha => return (alpha, entry.best_move),
+                NodeType::Exact => return (tt_score, entry.best_move),
+                NodeType::LowerBound if tt_score >= beta => return (tt_score, entry.best_move),
+                NodeType::UpperBound if tt_score <= alpha => return (tt_score, entry.best_move),
                 _ => {}
             }
         }
     }
 
     if depth == 0 {
-        return (static_eval(board), None);
+        let score = quiescence(board, tables, ctx, tt, ply, alpha, beta);
+        return (score, None);
     }
 
     let mut moves = Vec::with_capacity(128);
@@ -100,12 +224,13 @@ pub fn alpha_beta(
 
     if moves.is_empty() {
         if in_check(board, board.side_to_move, tables) {
-            // Checkmate
-            // Depth matters, closer to checkmate is preferred
-            return (-100000 + depth, None);
+            // Checkmate - we are mated
+            // Use ply (distance from root), not depth (remaining depth)
+            // Closer mate is worse, so more negative
+            return (-MATE_SCORE + ply as i32, None);
         }
 
-        //Stalemate
+        // Stalemate
         return (0, None);
     }
 
@@ -132,17 +257,17 @@ pub fn alpha_beta(
         }
     }
 
-    let node_type = if alpha > original_alpha {
-        if alpha >= beta {
-            NodeType::LowerBound
-        } else {
-            NodeType::Exact
-        }
+    let node_type = if alpha >= beta {
+        NodeType::LowerBound
+    } else if alpha > original_alpha {
+        NodeType::Exact
     } else {
         NodeType::UpperBound
     };
 
-    tt.store(hash, depth as i8, alpha, best_move, node_type);
+    // Store score adjusted for TT
+    let tt_score = score_to_tt(alpha, ply);
+    tt.store(hash, depth as i8, tt_score, best_move, node_type);
 
     (alpha, best_move)
 }

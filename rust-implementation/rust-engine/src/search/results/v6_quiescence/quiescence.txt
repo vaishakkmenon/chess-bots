@@ -1,0 +1,120 @@
+=== Chess Engine Search Benchmark Depth: 3 ===
+   === Search Type: search (alpha-beta) ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 3
+
+Searching...
+
+=== Results ===
+Time:      0.011s
+Best move: "b1c3"
+Score:     50 centipawns
+===============
+
+=== Chess Engine Search Benchmark Depth: 4 ===
+   === Search Type: search (alpha-beta) ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 4
+
+Searching...
+
+=== Results ===
+Time:      0.011s
+Best move: "b1c3"
+Score:     0 centipawns
+===============
+
+=== Chess Engine Search Benchmark Depth: 5 ===
+   === Search Type: search (alpha-beta) ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 5
+
+Searching...
+
+=== Results ===
+Time:      0.024s
+Best move: "d2d4"
+Score:     40 centipawns
+===============
+
+=== Chess Engine Search Benchmark Depth: 6 ===
+   === Search Type: search (alpha-beta) ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 6
+
+Searching...
+
+=== Results ===
+Time:      0.093s
+Best move: "d2d4"
+Score:     5 centipawns
+===============
+
+=== Chess Engine Search Benchmark Depth: 7 ===
+   === Search Type: search (alpha-beta) ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 7
+
+Searching...
+
+=== Results ===
+Time:      0.266s
+Best move: "e2e3"
+Score:     20 centipawns
+===============
+
+=== Chess Engine Search Benchmark Depth: 8 ===
+   === Search Type: search (alpha-beta) ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 8
+
+Searching...
+
+=== Results ===
+Time:      2.850s
+Best move: "d2d4"
+Score:     15 centipawns
+===============
+
+=== Chess Engine Search Benchmark Depth: 9 ===
+   === Search Type: search (alpha-beta) ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 9
+
+Searching...
+
+=== Results ===
+Time:      24.232s
+Best move: "b1c3"
+Score:     35 centipawns
+===============
+
+=== Chess Engine Search Benchmark Depth: 10 ===
+   === Search Type: search (alpha-beta) ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 10
+
+Searching...
+
+=== Results ===
+Time:      382.571s
+Best move: "d2d4"
+Score:     0 centipawns
+===============
+

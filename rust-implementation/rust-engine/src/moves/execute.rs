@@ -383,19 +383,21 @@ pub fn generate_captures(
     // Filter for captures only
     moves.clear();
     for &mv in scratch.iter() {
-        if mv.is_capture() {
-            let undo = make_move_basic(board, mv);
-            let opponent = if board.side_to_move == Color::White {
-                Color::Black
-            } else {
-                Color::White
-            };
-            let legal = !in_check(board, opponent, tables);
-            undo_move_basic(board, undo);
+        // Only consider captures or promotions first
+        if !mv.is_capture() && !mv.is_promotion() {
+            continue;
+        }
 
-            if legal {
-                moves.push(mv);
-            }
+        let mover = board.side_to_move;
+        let undo = make_move_basic(board, mv);
+        let legal = !in_check(board, mover, tables);
+        // Check if this move gives check (side_to_move has flipped after make)
+        let gives_check = in_check(board, board.side_to_move, tables);
+
+        undo_move_basic(board, undo);
+
+        if legal && (mv.is_capture() || gives_check) {
+            moves.push(mv);
         }
     }
 }
