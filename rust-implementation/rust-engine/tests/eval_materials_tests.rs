@@ -72,7 +72,7 @@ fn material_white_up_a_pawn_is_plus_100() {
         "White pawn should be approx 80-100, got {}",
         val
     );
-    
+
     // CHANGED: static_eval includes PSQT bonus
     let eval = static_eval(&b);
     assert!(
@@ -96,7 +96,7 @@ fn material_black_up_a_rook_is_minus_500() {
     // CHANGED: static_eval includes PSQT bonus (which makes it LESS negative usually)
     let eval = static_eval(&b);
     assert!(
-        eval <= -400, 
+        eval <= -400,
         "Black rook eval should be significantly negative (<= -400), got {}",
         eval
     );
@@ -110,7 +110,7 @@ fn material_promotion_delta_is_plus_800_for_white() {
     let pawn_material = eval_material(&a7_pawn);
     let queen_material = eval_material(&a7_queen);
     let delta = queen_material - pawn_material;
-    
+
     // Queen (approx 1000) - Pawn (approx 90) = approx 910
     // PeSTO Queen (1025, 968), Pawn (82, 94). Delta ~ 943(MG) to 874(EG).
     assert!(
@@ -124,7 +124,7 @@ fn material_promotion_delta_is_plus_800_for_white() {
 fn material_en_passant_capture_reduces_white_pawns_by_one() {
     let after_ep = fen("8/8/3p4/8/8/8/8/8 w - - 0 1");
     let before_ep = fen("8/8/3p4/4P3/8/8/8/8 w - - 0 1");
-    
+
     let diff = eval_material(&before_ep) - eval_material(&after_ep);
     // Should be exactly one pawn value (approx 82-94)
     assert!(
