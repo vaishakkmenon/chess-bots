@@ -1,7 +1,6 @@
 use rand::RngCore;
 use std::collections::HashMap;
 
-
 #[inline(always)]
 // Generate a sparse 64-bit number by AND-ing three random values.
 // This helps ensure a low number of set bits (sparse pattern),
