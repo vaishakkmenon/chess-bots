@@ -65,12 +65,19 @@ fn material_startpos_is_zero() {
 #[test]
 fn material_white_up_a_pawn_is_plus_100() {
     let b = fen("8/8/8/8/8/8/P7/8 w - - 0 1");
-    assert_eq!(eval_material(&b), 100);
+    let val = eval_material(&b);
+    // PeSTO Pawn is around 82(MG) to 94(EG).
+    assert!(
+        val >= 80 && val <= 100,
+        "White pawn should be approx 80-100, got {}",
+        val
+    );
+    
     // CHANGED: static_eval includes PSQT bonus
     let eval = static_eval(&b);
     assert!(
-        eval >= 100,
-        "White pawn should be at least +100 (material), got {}",
+        eval >= 80,
+        "Static eval with pawn should be positive (approx 80+), got {}",
         eval
     );
 }
@@ -78,12 +85,19 @@ fn material_white_up_a_pawn_is_plus_100() {
 #[test]
 fn material_black_up_a_rook_is_minus_500() {
     let b = fen("8/8/8/8/8/8/8/7r w - - 0 1");
-    assert_eq!(eval_material(&b), -500);
-    // CHANGED: static_eval includes PSQT bonus (which makes it LESS negative)
+    let val = eval_material(&b);
+    // PeSTO Rook is 477(MG) to 512(EG). So -477 to -512.
+    assert!(
+        val <= -470 && val >= -520,
+        "Black rook material should be approx -470 to -520, got {}",
+        val
+    );
+
+    // CHANGED: static_eval includes PSQT bonus (which makes it LESS negative usually)
     let eval = static_eval(&b);
     assert!(
-        eval >= -500,
-        "Black rook material is -500, but PSQT bonus makes it less negative, got {}",
+        eval <= -400, 
+        "Black rook eval should be significantly negative (<= -400), got {}",
         eval
     );
 }
@@ -95,14 +109,29 @@ fn material_promotion_delta_is_plus_800_for_white() {
 
     let pawn_material = eval_material(&a7_pawn);
     let queen_material = eval_material(&a7_queen);
-    assert_eq!(queen_material - pawn_material, 800); // 900 - 100
+    let delta = queen_material - pawn_material;
+    
+    // Queen (approx 1000) - Pawn (approx 90) = approx 910
+    // PeSTO Queen (1025, 968), Pawn (82, 94). Delta ~ 943(MG) to 874(EG).
+    assert!(
+        delta >= 800 && delta <= 1000,
+        "Promotion delta should be around 800-1000, got {}",
+        delta
+    );
 }
 
 #[test]
 fn material_en_passant_capture_reduces_white_pawns_by_one() {
     let after_ep = fen("8/8/3p4/8/8/8/8/8 w - - 0 1");
     let before_ep = fen("8/8/3p4/4P3/8/8/8/8 w - - 0 1");
-    assert_eq!(eval_material(&before_ep) - eval_material(&after_ep), 100);
+    
+    let diff = eval_material(&before_ep) - eval_material(&after_ep);
+    // Should be exactly one pawn value (approx 82-94)
+    assert!(
+        diff >= 80 && diff <= 100,
+        "EP capture diff should be one pawn (80-100), got {}",
+        diff
+    );
 }
 
 // -------------- PSQT-specific tests --------------
@@ -155,10 +184,10 @@ fn mirror_vert_basic_checks() {
     let h1 = Square::from_str("h1").unwrap().index();
     let h8 = Square::from_str("h8").unwrap().index();
 
-    assert_eq!(mirror_vert(a2), a7);
-    assert_eq!(mirror_vert(a7), a2);
-    assert_eq!(mirror_vert(c3), c6);
-    assert_eq!(mirror_vert(c6), c3);
-    assert_eq!(mirror_vert(h1), h8);
-    assert_eq!(mirror_vert(h8), h1);
+    assert_eq!(mirror_vert(a2), a7 as usize);
+    assert_eq!(mirror_vert(a7), a2 as usize);
+    assert_eq!(mirror_vert(c3), c6 as usize);
+    assert_eq!(mirror_vert(c6), c3 as usize);
+    assert_eq!(mirror_vert(h1), h8 as usize);
+    assert_eq!(mirror_vert(h8), h1 as usize);
 }

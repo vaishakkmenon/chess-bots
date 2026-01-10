@@ -28,7 +28,7 @@ fn calculate_phase(board: &Board) -> i32 {
 }
 
 #[inline(always)]
-fn mirror_vert(sq: u8) -> usize {
+pub fn mirror_vert(sq: u8) -> usize {
     (sq ^ 56) as usize
 }
 
