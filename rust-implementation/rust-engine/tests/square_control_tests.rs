@@ -1,8 +1,8 @@
-use std::str::FromStr;
 use rust_engine::board::{Board, Color};
+use std::str::FromStr;
 
-use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::magic::MagicTables;
+use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::square_control::{in_check, is_square_attacked};
 use rust_engine::square::Square;
 

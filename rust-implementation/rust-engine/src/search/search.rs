@@ -7,7 +7,7 @@ use crate::search::context::SearchContext;
 use crate::search::eval::static_eval;
 use crate::search::ordering::{mvv_lva_score, order_moves};
 use crate::search::tt::{NodeType, TranspositionTable};
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
 const MATE_SCORE: i32 = 100000;
 const MATE_THRESHOLD: i32 = 99000; // Scores above this are mate scores
@@ -30,7 +30,9 @@ impl TimeManager {
 
     #[inline(always)]
     pub fn check_time(&mut self) {
-        if self.stop_signal { return; }
+        if self.stop_signal {
+            return;
+        }
         if let Some(limit) = self.allotted {
             if self.start_time.elapsed() > limit {
                 self.stop_signal = true;
@@ -169,7 +171,7 @@ pub fn alpha_beta(
     if *nodes % 2048 == 0 {
         time.check_time();
     }
-    
+
     // 2. Immediate Abort if time is up
     if time.stop_signal {
         return (0, None); // Return dummy value
@@ -238,7 +240,18 @@ pub fn alpha_beta(
 
     for mv in moves {
         let undo = make_move_basic(board, mv);
-        let (score, _) = alpha_beta(board, tables, ctx, tt, depth - 1, ply + 1, -beta, -alpha, nodes, time);
+        let (score, _) = alpha_beta(
+            board,
+            tables,
+            ctx,
+            tt,
+            depth - 1,
+            ply + 1,
+            -beta,
+            -alpha,
+            nodes,
+            time,
+        );
         let score = -score;
         undo_move_basic(board, undo);
 
@@ -284,9 +297,12 @@ pub fn alpha_beta(
     (alpha, best_move)
 }
 
-
-
-pub fn search(board: &mut Board, tables: &MagicTables, max_depth: i32, time_limit: Option<Duration>) -> (i32, Option<Move>) {
+pub fn search(
+    board: &mut Board,
+    tables: &MagicTables,
+    max_depth: i32,
+    time_limit: Option<Duration>,
+) -> (i32, Option<Move>) {
     let mut best_move: Option<Move> = None;
     let mut best_score = 0;
 
@@ -302,7 +318,7 @@ pub fn search(board: &mut Board, tables: &MagicTables, max_depth: i32, time_limi
             for to in 0..64 {
                 ctx.history[from][to] /= 8;
             }
-        } 
+        }
         let (score, mv) = alpha_beta(
             board,
             tables,
@@ -313,27 +329,34 @@ pub fn search(board: &mut Board, tables: &MagicTables, max_depth: i32, time_limi
             i32::MIN + 1,
             i32::MAX,
             &mut nodes,
-            &mut time
+            &mut time,
         );
 
         // ABORT CHECK: If time ran out during this depth, DISCARD the result!
         if time.stop_signal {
             println!("info string Time up! Aborting search at depth {}", depth);
-            break; 
+            break;
         }
 
         if let Some(valid_mv) = mv {
             best_move = Some(valid_mv);
             best_score = score;
 
-            println!("info depth {} score cp {} pv {}", depth, score, valid_mv.to_uci());
+            println!(
+                "info depth {} score cp {} pv {}",
+                depth,
+                score,
+                valid_mv.to_uci()
+            );
         } else {
             break;
         }
-        
+
         // Safety check between depths
         time.check_time();
-        if time.stop_signal { break; }
+        if time.stop_signal {
+            break;
+        }
     }
 
     (best_score, best_move)
