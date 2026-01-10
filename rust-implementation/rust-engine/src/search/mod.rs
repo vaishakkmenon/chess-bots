@@ -1,3 +1,4 @@
+#![allow(clippy::module_inception)]
 pub mod context;
 pub mod eval;
 pub mod ordering;

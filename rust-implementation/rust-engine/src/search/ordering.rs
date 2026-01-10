@@ -14,7 +14,7 @@ pub fn mvv_lva_score(mv: Move, board: &Board) -> i32 {
 }
 
 pub fn order_moves(
-    moves: &mut Vec<Move>,
+    moves: &mut [Move],
     board: &Board,
     killer_moves: &[Option<Move>; 2],
     history: &[[i32; 64]; 64],

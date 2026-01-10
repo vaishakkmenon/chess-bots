@@ -33,10 +33,10 @@ impl TimeManager {
         if self.stop_signal {
             return;
         }
-        if let Some(limit) = self.allotted {
-            if self.start_time.elapsed() > limit {
-                self.stop_signal = true;
-            }
+        if let Some(limit) = self.allotted
+            && self.start_time.elapsed() > limit
+        {
+            self.stop_signal = true;
         }
     }
 }
@@ -63,6 +63,7 @@ fn score_from_tt(score: i32, ply: usize) -> i32 {
     }
 }
 
+#[allow(clippy::too_many_arguments, clippy::only_used_in_recursion)]
 pub fn quiescence(
     board: &mut Board,
     tables: &MagicTables,
@@ -154,6 +155,7 @@ pub fn quiescence(
     alpha
 }
 
+#[allow(clippy::too_many_arguments, clippy::only_used_in_recursion)]
 pub fn alpha_beta(
     board: &mut Board,
     tables: &MagicTables,
@@ -168,7 +170,7 @@ pub fn alpha_beta(
 ) -> (i32, Option<Move>) {
     // 1. Periodic Time Check (every 2048 nodes)
     *nodes += 1;
-    if *nodes % 2048 == 0 {
+    if (*nodes).is_multiple_of(2048) {
         time.check_time();
     }
 

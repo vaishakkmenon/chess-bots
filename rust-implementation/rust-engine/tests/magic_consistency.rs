@@ -1,3 +1,4 @@
+#![cfg(not(feature = "load-magic"))]
 //! tests/magic_table_consistency.rs
 //! Verify that the embedded and regenerated magic tables are identical.
 

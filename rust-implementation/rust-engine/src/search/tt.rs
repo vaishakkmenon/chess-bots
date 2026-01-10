@@ -39,10 +39,10 @@ impl TranspositionTable {
 
     pub fn probe(&self, hash: u64) -> Option<&TTEntry> {
         let index = self.index(hash);
-        if let Some(entry) = &self.table[index] {
-            if entry.hash == hash {
-                return Some(entry);
-            }
+        if let Some(entry) = &self.table[index]
+            && entry.hash == hash
+        {
+            return Some(entry);
         }
         None
     }
@@ -89,7 +89,6 @@ impl TranspositionTable {
                     depth,
                     node_type,
                 });
-                return;
             }
 
             // Rule 3: If new depth is shallower (depth < existing.depth), do nothing.

@@ -53,14 +53,14 @@ pub fn bishop_vision_mask(square: usize) -> u64 {
     }
 
     // SW
-    if let Some(mut r) = rank.checked_sub(1) {
-        if let Some(mut f) = file.checked_sub(1) {
-            while r >= 1 && f >= 1 {
-                let sq = square_index(r, f);
-                mask |= 1u64 << sq;
-                r -= 1;
-                f -= 1;
-            }
+    if let Some(mut r) = rank.checked_sub(1)
+        && let Some(mut f) = file.checked_sub(1)
+    {
+        while r >= 1 && f >= 1 {
+            let sq = square_index(r, f);
+            mask |= 1u64 << sq;
+            r -= 1;
+            f -= 1;
         }
     }
 

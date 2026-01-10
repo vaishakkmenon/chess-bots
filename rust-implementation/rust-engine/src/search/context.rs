@@ -5,6 +5,12 @@ pub struct SearchContext {
     pub history: [[i32; 64]; 64],
 }
 
+impl Default for SearchContext {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SearchContext {
     pub fn new() -> Self {
         Self {

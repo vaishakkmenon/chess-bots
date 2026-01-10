@@ -166,12 +166,12 @@ impl Board {
     fn set_piece_at(&mut self, ch: char, idx: usize) -> Result<(), String> {
         let mask = 1u64 << idx;
         // New: O(1) table lookup instead of a big match
-        if ch.is_ascii() {
-            if let Some((piece, color)) = CHAR_TO_PC[ch as usize] {
-                let old_bb = self.bb(color, piece);
-                self.set_bb(color, piece, old_bb | mask);
-                return Ok(());
-            }
+        if ch.is_ascii()
+            && let Some((piece, color)) = CHAR_TO_PC[ch as usize]
+        {
+            let old_bb = self.bb(color, piece);
+            self.set_bb(color, piece, old_bb | mask);
+            return Ok(());
         }
 
         // Preserve your old error behavior for unknown/non-ASCII glyphs

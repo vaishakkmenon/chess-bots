@@ -157,10 +157,10 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
     }
 
     // (iii) Captured a rook on its original corner → clear that side's right
-    if let Some((cap_color, cap_piece, cap_sq)) = capture {
-        if cap_piece == Piece::Rook {
-            mask_to_clear |= rights_mask_to_clear_for_rook(cap_color, cap_sq.index());
-        }
+    if let Some((cap_color, cap_piece, cap_sq)) = capture
+        && cap_piece == Piece::Rook
+    {
+        mask_to_clear |= rights_mask_to_clear_for_rook(cap_color, cap_sq.index());
     }
 
     // Apply rights change ONCE and update hash via delta

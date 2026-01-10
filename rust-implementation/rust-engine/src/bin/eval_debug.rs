@@ -13,10 +13,7 @@ fn main() {
         .expect("Invalid FEN");
 
     println!("=== Starting Position ===");
-    println!(
-        "FEN: {}",
-        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-    );
+    println!("FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     debug_eval(&start_board);
     println!();
 
@@ -25,10 +22,7 @@ fn main() {
         .expect("Invalid FEN");
 
     println!("=== After e2-e3 ===");
-    println!(
-        "FEN: {}",
-        "rnbqkbnr/pppppppp/8/8/8/4P3/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
-    );
+    println!("FEN: rnbqkbnr/pppppppp/8/8/8/4P3/PPPP1PPP/RNBQKBNR b KQkq - 0 1");
     debug_eval(&after_e3);
 
     // Test 2: After e2-e4
@@ -36,10 +30,7 @@ fn main() {
         .expect("Invalid FEN");
 
     println!("=== After e2-e4 ===");
-    println!(
-        "FEN: {}",
-        "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-    );
+    println!("FEN: rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
     debug_eval(&after_e4);
     println!();
 
@@ -48,10 +39,7 @@ fn main() {
         .expect("Invalid FEN");
 
     println!("=== After d2-d4 ===");
-    println!(
-        "FEN: {}",
-        "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1"
-    );
+    println!("FEN: rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1");
     debug_eval(&after_d4);
     println!();
 
@@ -60,10 +48,7 @@ fn main() {
         .expect("Invalid FEN");
 
     println!("=== After a2-a3 ===");
-    println!(
-        "FEN: {}",
-        "rnbqkbnr/pppppppp/8/8/8/P7/1PPPPPPP/RNBQKBNR b KQkq - 0 1"
-    );
+    println!("FEN: rnbqkbnr/pppppppp/8/8/8/P7/1PPPPPPP/RNBQKBNR b KQkq - 0 1");
     debug_eval(&after_a3);
     println!();
 
@@ -72,10 +57,7 @@ fn main() {
         .expect("Invalid FEN");
 
     println!("=== After Nf3 ===");
-    println!(
-        "FEN: {}",
-        "rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKB1R b KQkq - 1 1"
-    );
+    println!("FEN: rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKB1R b KQkq - 1 1");
     debug_eval(&after_nf3);
 }
 
@@ -125,7 +107,7 @@ fn debug_pieces(board: &Board, color: Color) {
 }
 
 fn square_name(sq: u8) -> String {
-    let file = (sq % 8) as u8;
-    let rank = (sq / 8) as u8;
+    let file = sq % 8;
+    let rank = sq / 8;
     format!("{}{}", (b'a' + file) as char, rank + 1)
 }

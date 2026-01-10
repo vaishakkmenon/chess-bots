@@ -1,3 +1,4 @@
+#[cfg(not(feature = "load-magic"))]
 use rand::{SeedableRng, rngs::StdRng};
 
 use rust_engine::moves::magic::attacks::{
@@ -7,17 +8,30 @@ use rust_engine::moves::magic::attacks::{
 use rust_engine::moves::magic::masks::{
     bishop_vision_mask, generate_bishop_blockers, generate_rook_blockers, rook_vision_mask,
 };
+// These are used unconditionally
+use rust_engine::moves::magic::precompute::{precompute_bishop_attacks, precompute_rook_attacks};
+
+// These are only used when we generate magic tables on the fly
+#[cfg(not(feature = "load-magic"))]
 use rust_engine::moves::magic::precompute::{
-    generate_bishop_magic_tables, generate_rook_magic_tables, precompute_bishop_attacks,
-    precompute_rook_attacks,
+    generate_bishop_magic_tables, generate_rook_magic_tables,
 };
 
-use rust_engine::moves::magic::search::{find_magic_number_for_square, is_magic_candidate_valid};
+// These search functions are only used in non-load-magic tests
+#[cfg(not(feature = "load-magic"))]
+use rust_engine::moves::magic::search::find_magic_number_for_square;
+
+// Used unconditionally
+use rust_engine::moves::magic::search::is_magic_candidate_valid;
+
+#[cfg(not(feature = "load-magic"))]
 use rust_engine::moves::magic::structs::MagicTables;
 
 // 0x45 == 69₁₀; keeps the literal “69” out of the source
+#[cfg(not(feature = "load-magic"))]
 const TEST_SEED: u64 = 0x45;
 
+#[cfg(not(feature = "load-magic"))]
 fn seeded_rng() -> StdRng {
     StdRng::seed_from_u64(TEST_SEED)
 }
