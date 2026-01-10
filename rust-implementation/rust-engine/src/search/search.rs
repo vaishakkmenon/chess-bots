@@ -80,8 +80,9 @@ pub fn quiescence(
         let mut scratch = Vec::with_capacity(128);
         generate_legal(board, tables, &mut moves, &mut scratch);
 
-        // No legal moves = checkmate
+        // No legal moves = checkmate or stalemate
         if moves.is_empty() {
+            // If in check and no legal moves, it's checkmate
             return -MATE_SCORE + ply as i32;
         }
 
@@ -351,6 +352,14 @@ pub fn search(
                 valid_mv.to_uci()
             );
         } else {
+            // If no move returned at root, we are mated or stalemated immediately (or time up)
+            // However, alpha_beta returns (0, None) for time up.
+            // If score is MATE/Stalemate, we should respect it.
+            if !time.stop_signal && (score.abs() > MATE_THRESHOLD || score == 0) {
+                best_score = score;
+                // If we have a previous best move from earlier depths, keep it?
+                // But if we are mated at depth 1, best_move is None.
+            }
             break;
         }
 

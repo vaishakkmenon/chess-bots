@@ -71,13 +71,13 @@ pub fn generate_knight_moves(board: &Board, move_list: &mut Vec<Move>) {
     let color = board.side_to_move;
     let knights = board.pieces(Piece::Knight, color);
     let friendly = board.occupancy(color);
-    let enemy_without_king =
-        board.opponent_occupancy(color) & !board.pieces(Piece::King, color.opposite());
+    let enemy_king = board.pieces(Piece::King, color.opposite());
+    let enemy_without_king = board.opponent_occupancy(color) & !enemy_king;
 
     let mut bb = knights;
     while bb != 0 {
         let from = pop_lsb(&mut bb);
-        let targets = KNIGHT_ATTACKS[from as usize] & !friendly;
+        let targets = KNIGHT_ATTACKS[from as usize] & !friendly & !enemy_king;
         push_piece_moves(from, targets, enemy_without_king, Piece::Knight, move_list);
     }
 }
@@ -86,15 +86,15 @@ pub fn generate_bishop_moves(board: &Board, tables: &BishopMagicTables, move_lis
     let color = board.side_to_move;
     let bishops = board.pieces(Piece::Bishop, color);
     let friendly = board.occupancy(color);
-    let enemy_without_king =
-        board.opponent_occupancy(color) & !board.pieces(Piece::King, color.opposite());
+    let enemy_king = board.pieces(Piece::King, color.opposite());
+    let enemy_without_king = board.opponent_occupancy(color) & !enemy_king;
     let blockers = board.occupied();
 
     let mut bb = bishops;
     while bb != 0 {
         let from = pop_lsb(&mut bb);
         let attacks = tables.get_attacks(from as usize, blockers);
-        let targets = attacks & !friendly;
+        let targets = attacks & !friendly & !enemy_king;
         push_piece_moves(from, targets, enemy_without_king, Piece::Bishop, move_list);
     }
 }
@@ -103,15 +103,15 @@ pub fn generate_rook_moves(board: &Board, tables: &RookMagicTables, move_list: &
     let color = board.side_to_move;
     let rooks: u64 = board.pieces(Piece::Rook, color);
     let friendly = board.occupancy(color);
-    let enemy_without_king =
-        board.opponent_occupancy(color) & !board.pieces(Piece::King, color.opposite());
+    let enemy_king = board.pieces(Piece::King, color.opposite());
+    let enemy_without_king = board.opponent_occupancy(color) & !enemy_king;
     let blockers = board.occupied();
 
     let mut bb = rooks;
     while bb != 0 {
         let from = pop_lsb(&mut bb);
         let attacks = tables.get_attacks(from as usize, blockers);
-        let targets = attacks & !friendly;
+        let targets = attacks & !friendly & !enemy_king;
         push_piece_moves(from, targets, enemy_without_king, Piece::Rook, move_list);
     }
 }
@@ -120,15 +120,15 @@ pub fn generate_queen_moves(board: &Board, tables: &MagicTables, move_list: &mut
     let color = board.side_to_move;
     let queens: u64 = board.pieces(Piece::Queen, color);
     let friendly = board.occupancy(color);
-    let enemy_without_king =
-        board.opponent_occupancy(color) & !board.pieces(Piece::King, color.opposite());
+    let enemy_king = board.pieces(Piece::King, color.opposite());
+    let enemy_without_king = board.opponent_occupancy(color) & !enemy_king;
     let blockers = board.occupied();
 
     let mut bb = queens;
     while bb != 0 {
         let from = pop_lsb(&mut bb);
         let attacks = tables.queen_attacks(from as usize, blockers);
-        let targets = attacks & !friendly;
+        let targets = attacks & !friendly & !enemy_king;
         push_piece_moves(from, targets, enemy_without_king, Piece::Queen, move_list);
     }
 }
@@ -143,9 +143,10 @@ pub fn generate_king_moves(board: &Board, tables: &MagicTables, move_list: &mut 
 
     let from = king_bb.trailing_zeros() as u8; // only one king
     let friendly = board.occupancy(color);
+    let enemy_king = board.pieces(Piece::King, color.opposite());
     let enemy = board.opponent_occupancy(color);
 
-    let targets = KING_ATTACKS[from as usize] & !friendly;
+    let targets = KING_ATTACKS[from as usize] & !friendly & !enemy_king;
     push_piece_moves(from, targets, enemy, Piece::King, move_list);
 
     let occ = board.occupied();
@@ -243,6 +244,11 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
     }
 
     // ===== 3) Normal captures (exclude promotion targets) =====
+    // Capture targets must exclude King (already handled by enemy_without_king mask)
+    // But we doubly ensure here if we used raw attacks.
+    // Actually, `enemy_without_king` is correct for capture targets.
+    // So logic below is fine as long as `enemy_without_king` is used.
+
     let mut attackers = pawns;
     while attackers != 0 {
         let from = pop_lsb(&mut attackers);

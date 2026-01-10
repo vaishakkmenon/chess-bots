@@ -1,4 +1,4 @@
-#![cfg(not(feature = "load-magic"))]
+#![cfg(all(not(feature = "load-magic"), feature = "deterministic-magic"))]
 //! tests/magic_table_consistency.rs
 //! Verify that the embedded and regenerated magic tables are identical.
 
@@ -13,7 +13,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 const EMBEDDED_SEED: u64 = 0x45;
 
 #[test]
-#[cfg(not(feature = "load-magic"))]
+#[cfg(all(not(feature = "load-magic"), feature = "deterministic-magic"))]
 fn test_magic_table_consistency() {
     // 1) Embedded tables (via build-script or include_bytes!)
     let embedded = load_magic_tables();

@@ -125,7 +125,10 @@ fn status_draw_by_fifty_move_rule() {
 
     // Bare kings, White to move, halfmove clock already at 99
     // FEN fields: <pieces> <stm> <castling> <ep> <halfmove> <fullmove>
-    b.set_fen("8/8/8/8/8/8/4k3/R3K3 w - - 99 50").unwrap();
+    // Bare kings, White to move, halfmove clock already at 99
+    // FEN fields: <pieces> <stm> <castling> <ep> <halfmove> <fullmove>
+    // Separated kings: e1 and e8
+    b.set_fen("4k3/8/8/8/8/8/8/R3K3 w - - 99 50").unwrap();
 
     // Not a draw yet at 99 half-moves
     assert_eq!(position_status(&mut b, &tables), GameStatus::InPlay);
@@ -353,7 +356,9 @@ fn not_dead_kbb_vs_k() {
     let tables = load_magic_tables();
     let mut b = Board::new();
     // Two bishops vs bare king: mating material exists
-    b.set_fen("8/8/8/8/8/2B5/2B1k3/4K3 w - - 0 1").unwrap();
+    // Two bishops vs bare king: mating material exists
+    // Separated kings: e1 and e8
+    b.set_fen("4k3/8/8/8/8/2B5/2B5/4K3 w - - 0 1").unwrap();
     assert_eq!(position_status(&mut b, &tables), GameStatus::InPlay);
 }
 
@@ -362,7 +367,9 @@ fn not_dead_kbn_vs_k() {
     let tables = load_magic_tables();
     let mut b = Board::new();
     // Bishop + Knight vs bare king: mating material exists
-    b.set_fen("8/8/8/8/8/2B5/2N1k3/4K3 w - - 0 1").unwrap();
+    // Bishop + Knight vs bare king: mating material exists
+    // Separated kings: e1 and e8
+    b.set_fen("4k3/8/8/8/8/2B5/2N5/4K3 w - - 0 1").unwrap();
     assert_eq!(position_status(&mut b, &tables), GameStatus::InPlay);
 }
 
@@ -1200,7 +1207,9 @@ fn not_dead_when_any_pawn_present() {
     let tables = load_magic_tables();
 
     // Bare kings plus a single pawn (white a2). This must never be DrawDeadPosition.
-    let mut b = Board::from_str("8/8/8/8/8/8/P3k3/4K3 w - - 0 1").expect("valid FEN");
+    // Bare kings plus a single pawn (white a2). This must never be DrawDeadPosition.
+    // Separated kings: e1 and e8
+    let mut b = Board::from_str("4k3/8/8/8/8/8/P7/4K3 w - - 0 1").expect("valid FEN");
 
     let st = position_status(&mut b, &tables);
     assert_eq!(st, GameStatus::InPlay, "any pawn present ⇒ not dead");

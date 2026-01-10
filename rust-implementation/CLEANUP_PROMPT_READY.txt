@@ -1,0 +1,100 @@
+Analyze this Rust chess engine codebase and identify dead code, unused features, and unnecessary complexity that can be safely removed.
+
+## Context
+
+This is a working chess engine with:
+- Move generation (perft-tested, working correctly)
+- Alpha-beta search with iterative deepening
+- Transposition table
+- Material + PSQT evaluation
+- Magic bitboards for sliding piece moves
+
+The engine works correctly but may have accumulated dead code during development.
+
+## What to Find
+
+1. **Dead Code**
+   - Unused functions, structs, modules
+   - Unreachable code paths
+   - Functions that are defined but never called
+   - Imported items that are never used
+
+2. **Commented-Out Code**
+   - Old implementations that are commented out
+   - Debug prints that are commented out
+   - Experimental code that was abandoned
+
+3. **Redundant Implementations**
+   - Multiple versions of the same functionality
+   - Archive directories (e.g., src/search/archive/)
+   - Superseded implementations
+
+4. **Unused Dependencies**
+   - Cargo.toml dependencies that aren't imported anywhere
+   - Features that are defined but never used
+
+5. **Incomplete Features**
+   - TODO/FIXME comments indicating abandoned work
+   - Half-implemented features that don't do anything
+   - Feature flags that are never enabled
+
+6. **Over-Engineering**
+   - Abstractions used only once
+   - Overly complex code that could be simplified
+   - Wrappers that add no value
+
+## What NOT to Flag
+
+- Test code (tests/ directory) - keep all tests even if they seem unused
+- Perft functions - critical for validation
+- PSQT tables - needed when psqt feature is enabled
+- Magic table generation code - used during development
+- UCI protocol handlers - needed for chess GUI communication
+- Benchmarking code - useful for performance testing
+
+## Analysis Format
+
+For each category, provide:
+
+### Dead Code
+- **File:** path/to/file.rs:line
+- **Item:** function/struct name
+- **Status:** Unused / Never called / Superseded
+- **Safe to remove:** Yes/No
+- **Impact:** What improves if removed
+
+### Commented-Out Code
+- **File:** path/to/file.rs:line_range
+- **Description:** What is commented out
+- **Reason:** Why it was likely commented out
+- **Safe to remove:** Yes/No
+
+### Archive/Old Implementations
+- **Directory/File:** path
+- **Status:** Superseded by X / Experimental / Backup
+- **Safe to remove:** Yes/No
+
+### Cargo Dependencies
+- **Dependency:** name (version)
+- **Status:** Unused / Only used in tests / etc.
+- **Safe to remove:** Yes/No
+
+## Prioritization
+
+**High Priority (Remove ASAP):**
+- Dead code that adds confusion
+- Large commented-out blocks
+- Archive directories
+
+**Medium Priority:**
+- Unused imports
+- Over-engineered abstractions
+- Incomplete features
+
+**Low Priority:**
+- Minor simplifications
+- Cosmetic cleanup
+
+## Deliverable
+
+Create a structured report with specific file paths and line numbers for all findings, organized by category and priority.

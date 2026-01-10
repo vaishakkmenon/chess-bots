@@ -321,7 +321,12 @@ impl Board {
     pub fn king_square(&self, color: Color) -> Square {
         let king_bb = self.pieces(Piece::King, color);
         if king_bb == 0 {
-            panic!("King missing for {:?}!", self.side_to_move);
+            panic!(
+                "King missing for {:?}! \nFEN: {}\nOcc: {:#x}",
+                color,
+                self.to_fen(),
+                self.occupied()
+            );
         }
         Square::try_from(king_bb.lsb()).expect("Invalid king bitboard")
     }

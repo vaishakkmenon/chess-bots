@@ -98,18 +98,13 @@ where
     let mut entries_vec = Vec::with_capacity(64);
 
     for square in 0..64 {
-        // println!("Generating {} magic for square {}", piece_name, square);
-
         let blockers = gen_blockers(square);
         let attacks = get_attacks(square, &blockers);
         let mask = get_mask(square);
         let shift = 64 - mask.count_ones();
 
         let magic = match find_magic_number_for_square(&blockers, &attacks, shift, rng) {
-            Ok(magic) => {
-                // println!("Magic number: {:#018x}", magic);
-                magic
-            }
+            Ok(magic) => magic,
             Err(e) => {
                 return Err(format!("Square {}: {}", square, e));
             }
