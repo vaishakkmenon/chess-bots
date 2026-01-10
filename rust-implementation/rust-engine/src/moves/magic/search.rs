@@ -1,7 +1,6 @@
 use rand::RngCore;
 use std::collections::HashMap;
-use std::fs::OpenOptions;
-use std::io::Write;
+
 
 #[inline(always)]
 // Generate a sparse 64-bit number by AND-ing three random values.
@@ -39,41 +38,19 @@ pub fn find_magic_number_for_square<R: RngCore>(
     shift: u32,
     rng: &mut R,
 ) -> Result<u64, String> {
-    let mut log_file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open("magic_search.log")
-        .expect("Unable to open log file");
-
     for attempt in 0..1_000_000 {
         if attempt % 100_000 == 0 && attempt > 0 {
-            writeln!(
-                log_file,
-                "Attempt {}... still searching for magic number",
-                attempt
-            )
-            .expect("Failed to write to log file");
+            // Uncomment for debugging if needed:
+            // println!("Attempt {}... still searching for magic number", attempt);
         }
 
         let magic = random_sparse_u64(rng);
 
         if is_magic_candidate_valid(blockers, attacks, magic, shift) {
-            writeln!(
-                log_file,
-                "Found magic number after {} attempts: {:#018x}",
-                attempt + 1,
-                magic
-            )
-            .expect("Failed to write to log file");
+            // println!("Found magic number after {} attempts: {:#018x}", attempt + 1, magic);
             return Ok(magic);
         }
     }
-
-    writeln!(
-        log_file,
-        "Failed to find a valid magic number after 1,000,000 attempts"
-    )
-    .expect("Failed to write to log file");
 
     Err("Failed to find a valid magic number after 1,000,000 attempts".to_string())
 }

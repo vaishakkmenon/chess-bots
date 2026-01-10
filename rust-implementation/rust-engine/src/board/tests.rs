@@ -238,9 +238,9 @@ fn test_split_fen_valid() {
 
 #[test]
 fn test_split_fen_invalid() {
-    // Too few fields
-    let err = Board::split_fen("only five fields ok?").unwrap_err();
-    assert!(err.contains("Expected 6 FEN fields"));
+    // Too few fields (need at least 4)
+    let err = Board::split_fen("only three fields").unwrap_err();
+    assert!(err.contains("Expected at least 4 FEN fields"));
 }
 
 #[test]
@@ -388,8 +388,8 @@ fn test_set_fen_round_trip_custom() {
 #[test]
 fn test_set_fen_invalid_field_count() {
     let mut b = Board::new_empty();
-    let err = b.set_fen("too few fields here").unwrap_err();
-    assert!(err.contains("Expected 6 FEN fields"));
+    let err = b.set_fen("only three fields").unwrap_err();
+    assert!(err.contains("Expected at least 4 FEN fields"));
 }
 
 #[test]
