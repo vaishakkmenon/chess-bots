@@ -41,13 +41,15 @@ Stockfish excels in **ALL** of these areas, while Wayfinder only has basic searc
 - ✅ Space control
 - ✅ Tempo and initiative
 
-**Wayfinder v7.2:**
+**Wayfinder v7.3 (Current):**
 - ✅ Material counting (P=100, N=320, B=330, R=500, Q=900)
-- ❌ **PSQT disabled** (piece-square tables exist but not compiled in)
-- ❌ No king safety
-- ❌ No mobility
-- ❌ No pawn structure
-- ❌ No positional concepts
+- ✅ **PSQT Enabled (PeSTO)**
+- ✅ **King Safety (PeSTO Tables)**
+- ✅ **Tapered Eval (MG/EG interpolation)**
+- ❌ No mobility terms yet
+- ❌ No pawn structure terms yet
+
+**Impact:** The gap has narrowed significantly (~100 ELO gain). Stockfish still holds a ~150-200 ELO advantage in eval due to NNUE and advanced terms (mobility/pawn structure).
 
 **Impact:** This alone accounts for 200-300 ELO difference. Stockfish sees positions as "winning" that Wayfinder sees as "equal."
 
@@ -257,31 +259,31 @@ But it still struggles with:
 
 ### Quick Wins (Low Effort, High Impact):
 
-1. **Enable PSQT** ⭐ CRITICAL
-   ```toml
-   # In rust-cli/Cargo.toml:
-   rust-engine = { path = "../rust-engine", features = ["load-magic", "psqt"] }
-   ```
-   - Expected gain: +50-100 ELO
-   - Almost no performance cost
+1. **Enable PSQT** (✅ DONE)
+   - Gain: +50-100 ELO
+   - Status: Implemented (PeSTO)
 
-2. **Implement Null Move Pruning**
+2. **Add King Safety Evaluation** (✅ DONE)
+   - Gain: +100 ELO
+   - Status: Implemented (PeSTO King Tables)
+
+3. **Implement Null Move Pruning**
    - Expected gain: +100 ELO
    - Searches twice as fast
 
-3. **Add Late Move Reductions (LMR)**
+4. **Implement Late Move Reductions (LMR)**
    - Expected gain: +150 ELO
    - Effective depth increases by 1-2 plies
 
-4. **Improve Time Management**
+5. **Improve Time Management**
    - Expected gain: +50 ELO
    - Fixes the d7 time trouble issue
 
 ### Medium Wins (Moderate Effort):
 
-5. **Add King Safety Evaluation**
+5. **Add Opening Book**
    - Expected gain: +100 ELO
-   - Prevents getting mated
+   - Better starting positions
 
 6. **Implement Aspiration Windows**
    - Expected gain: +30 ELO

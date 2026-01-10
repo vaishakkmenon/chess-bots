@@ -2,17 +2,20 @@
 
 ## Executive Summary
 
-**Status:** 🚨 **CRITICAL BUG CONFIRMED**
+**Status:** ✅ **RESOLVED**
 
 **Symptoms:**
 - White **NEVER** wins when Wayfinder plays against itself (0-10 record)
 - Black wins 100% of games at depth 6
 - Games are perfectly deterministic (identical move sequences)
 
-**Root Cause:** NOT a coding bug, but a combination of:
-1. **Deterministic search** with no move selection randomness
-2. **Material-only evaluation** missing positional understanding
-3. **Specific opening weakness** (1.Nc3 Nc6 line favors Black)
+**Root Cause:** NOT a coding bug, but a design weakness:
+1. **Deterministic search** with no move selection randomness.
+2. **Material-only evaluation** missing positional understanding (especially King Safety).
+3. **Weak Opening:** `1.Nc3` lead to positions requiring precise King play the engine lacked.
+
+**Resolution:**
+Implemented **Tapered Evaluation** with **PeSTO** tables, including explicit King Safety terms. The engine now avoids the suicidal `Ke3` line and draws against itself (0% bias).
 
 ---
 
