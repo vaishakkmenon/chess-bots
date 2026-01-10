@@ -94,7 +94,7 @@ pub fn evaluate(board: &Board) -> i32 {
         }
     }
 
-// Tapered Formula
+    // Tapered Formula
     // Score = (MG * Phase + EG * (24 - Phase)) / 24
     let score = (mg_score * phase + eg_score * (TOTAL_PHASE - phase)) / TOTAL_PHASE;
 
@@ -139,7 +139,7 @@ pub fn eval_material(board: &Board) -> i32 {
 
 // Debug helper: returns just the PSQT component (tapered)
 pub fn eval_psqt(board: &Board) -> i32 {
-     let mut mg_score = 0;
+    let mut mg_score = 0;
     let mut eg_score = 0;
     let phase = calculate_phase(board);
 
