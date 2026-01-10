@@ -6,7 +6,9 @@ use rust_engine::moves::magic::MagicTables;
 use rust_engine::moves::square_control::{in_check, is_square_attacked};
 use rust_engine::square::Square;
 
-fn tables() -> MagicTables {load_magic_tables()}
+fn tables() -> MagicTables {
+    load_magic_tables()
+}
 
 #[test]
 fn in_check_detects_simple_rook_check() {
