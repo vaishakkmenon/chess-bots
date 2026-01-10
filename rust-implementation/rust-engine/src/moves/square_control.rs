@@ -112,11 +112,11 @@ pub fn is_legal_castling(board: &Board, mv: Move, tables: &MagicTables) -> bool 
 mod tests {
     use super::*;
     use crate::board::{Color, Piece};
-    use crate::moves::magic::{MagicTableSeed, generate_magic_tables};
+    use crate::moves::magic::loader::load_magic_tables;
     use crate::moves::{king, knight, pawn};
 
     fn tables() -> MagicTables {
-        generate_magic_tables(MagicTableSeed::Fixed(42)).unwrap()
+        load_magic_tables()
     }
 
     #[test]

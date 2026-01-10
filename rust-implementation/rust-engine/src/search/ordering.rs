@@ -18,9 +18,15 @@ pub fn order_moves(
     board: &Board,
     killer_moves: &[Option<Move>; 2],
     history: &[[i32; 64]; 64],
+    hash_move: Option<Move>,
 ) {
     // stable sort so non-captures keep their generation order
     moves.sort_by_cached_key(|&mv| {
+        // Priority 0: Best move from previous iteration
+        if Some(mv) == hash_move {
+            return -100000; // Try this first!
+        }
+
         // Priority 1: Captures (MVV-LVA)
         let capture_score = mvv_lva_score(mv, board);
         if capture_score > 0 {

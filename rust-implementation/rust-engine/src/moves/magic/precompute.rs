@@ -182,7 +182,8 @@ pub fn generate_magic_tables(seed_mode: MagicTableSeed) -> Result<MagicTables, S
     Ok(MagicTables { rook, bishop })
 }
 
-#[cfg(test)]
+// These tests generate magic tables from scratch, so skip when using pre-loaded tables
+#[cfg(all(test, not(feature = "load-magic")))]
 mod tests {
     use super::*;
     use crate::moves::magic::masks::{bishop_vision_mask, rook_vision_mask};

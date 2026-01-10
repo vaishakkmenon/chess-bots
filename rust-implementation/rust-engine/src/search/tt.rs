@@ -1,6 +1,6 @@
 use crate::moves::types::Move;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum NodeType {
     Exact,      // PV node
     LowerBound, // Failed high (beta cutoff)
@@ -29,6 +29,10 @@ impl TranspositionTable {
         }
     }
 
+    pub fn size(&self) -> usize {
+        self.size
+    }
+
     fn index(&self, hash: u64) -> usize {
         (hash as usize) % self.size
     }
@@ -52,14 +56,41 @@ impl TranspositionTable {
         node_type: NodeType,
     ) {
         let index = self.index(hash);
-        if self.table[index].is_none() || self.table[index].unwrap().depth <= depth {
-            self.table[index] = Some(TTEntry {
-                hash,
-                score,
-                best_move,
-                depth,
-                node_type,
-            });
+        
+        // Check what is currently in the slot
+        if let Some(existing) = &self.table[index] {
+            // Rule 1: Always replace if we are searching deeper than the stored entry
+            if depth > existing.depth {
+                self.table[index] = Some(TTEntry { hash, score, best_move, depth, node_type });
+                return;
+            }
+            
+            // Rule 2: If depths are equal, be careful!
+            if depth == existing.depth {
+                // NEVER overwrite an EXACT node with a BOUND node at the same depth
+                if existing.node_type == NodeType::Exact && node_type != NodeType::Exact {
+                    return; 
+                }
+                
+                // Otherwise (Exact overwrites Exact, or Bound overwrites Bound), update it.
+                // We also generally want to keep the 'best_move' if the new entry doesn't have one.
+                let new_best_move = best_move.or(existing.best_move);
+                
+                self.table[index] = Some(TTEntry { 
+                    hash, 
+                    score, 
+                    best_move: new_best_move, 
+                    depth, 
+                    node_type 
+                });
+                return;
+            }
+
+            // Rule 3: If new depth is shallower (depth < existing.depth), do nothing.
+            // We want to keep the deeper search result.
+        } else {
+            // Slot is empty, just store it
+            self.table[index] = Some(TTEntry { hash, score, best_move, depth, node_type });
         }
     }
 }

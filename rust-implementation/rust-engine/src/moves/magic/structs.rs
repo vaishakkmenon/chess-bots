@@ -80,7 +80,8 @@ impl MagicTables {
     }
 }
 
-#[cfg(test)]
+// These tests generate magic tables from scratch, so skip when using pre-loaded tables
+#[cfg(all(test, not(feature = "load-magic")))]
 mod tests {
     use super::*;
     use crate::moves::magic::attacks::{bishop_attacks_per_square, rook_attacks_per_square};

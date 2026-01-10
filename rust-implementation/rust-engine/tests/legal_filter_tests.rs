@@ -3,12 +3,12 @@ use std::str::FromStr;
 use rust_engine::board::Board;
 use rust_engine::moves::execute::generate_legal;
 use rust_engine::moves::magic::loader::load_magic_tables;
-use rust_engine::moves::magic::{MagicTableSeed, generate_magic_tables};
+use rust_engine::moves::magic::MagicTables;
 use rust_engine::moves::types::Move;
 use rust_engine::square::Square;
 
-fn tables() -> rust_engine::moves::magic::MagicTables {
-    generate_magic_tables(MagicTableSeed::Fixed(42)).unwrap()
+fn tables() -> MagicTables {
+    load_magic_tables()
 }
 
 fn has_move(moves: &[Move], from: &str, to: &str) -> bool {

@@ -326,7 +326,9 @@ fn test_bishop_all_same_attack_always_valid() {
     );
 }
 
+// This test generates magic tables, skip when using pre-loaded tables
 #[test]
+#[cfg(not(feature = "load-magic"))]
 fn test_find_magic_for_rook_d4_real_search() -> Result<(), String> {
     let d4 = 3 + 3 * 8;
     let blockers = generate_rook_blockers(d4);
@@ -342,7 +344,9 @@ fn test_find_magic_for_rook_d4_real_search() -> Result<(), String> {
     Ok(())
 }
 
+// This test generates magic tables, skip when using pre-loaded tables
 #[test]
+#[cfg(not(feature = "load-magic"))]
 fn test_find_magic_for_bishop_d4_real_search() -> Result<(), String> {
     let d4 = 3 + 3 * 8;
     let blockers = generate_bishop_blockers(d4);
@@ -358,7 +362,9 @@ fn test_find_magic_for_bishop_d4_real_search() -> Result<(), String> {
     Ok(())
 }
 
+// This test generates magic tables, skip when using pre-loaded tables
 #[test]
+#[cfg(not(feature = "load-magic"))]
 fn test_magic_lookup_matches_scan_rook() {
     let square = 27; // D4
     let blockers = 0x0000_0800_0000_0000; // D6, example blocker
@@ -376,7 +382,9 @@ fn test_magic_lookup_matches_scan_rook() {
     );
 }
 
+// This test generates magic tables, skip when using pre-loaded tables
 #[test]
+#[cfg(not(feature = "load-magic"))]
 fn test_magic_lookup_matches_scan_bishop() {
     let square = 27; // D4
     let blockers = 0x0000_0010_0000_0000; // B6, example blocker
@@ -394,7 +402,9 @@ fn test_magic_lookup_matches_scan_bishop() {
     );
 }
 
+// This test generates magic tables, skip when using pre-loaded tables
 #[test]
+#[cfg(not(feature = "load-magic"))]
 fn test_magic_lookup_matches_scan_queen() {
     let square = 27; // D4
     let blockers = 0x0000_0810_0000_0000; // D6 + B6

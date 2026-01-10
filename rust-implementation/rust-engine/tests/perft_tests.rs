@@ -120,6 +120,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore] // Writes to log file, run manually with --ignored
     fn perft_debug_divide() {
         use tracing::info;
         init_logging(

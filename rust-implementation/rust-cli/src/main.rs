@@ -260,8 +260,8 @@ fn handle_go(
 
     // Perform minimax search
     // let (_score, best_move) = minimax(board, tables, depth, true);
-    let (_score, best_move) = search(board, tables, depth, 0);
-    // let (_score, best_move) = search_iterative_deepening(board, tables, depth);
+    // let (_score, best_move) = rust_engine::search::search::fixed_search(board, tables, depth, 0);
+    let (_score, best_move) = search(board, tables, depth, time_limit);
 
     // Output best move
     if let Some(m) = best_move {

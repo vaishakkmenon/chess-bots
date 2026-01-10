@@ -269,9 +269,11 @@ impl Board {
     /// Split into six fields, validate count
     pub(crate) fn split_fen(fen: &str) -> Result<(&str, &str, &str, &str, &str, &str), String> {
         let p: Vec<&str> = fen.split_whitespace().collect();
-        if p.len() != 6 {
-            return Err(format!("Expected 6 FEN fields, found {}", p.len()));
+        if p.len() < 4 {
+             return Err(format!("Expected at least 4 FEN fields, found {}", p.len()));
         }
-        Ok((p[0], p[1], p[2], p[3], p[4], p[5]))
+        let halfmove = if p.len() > 4 { p[4] } else { "0" };
+        let fullmove = if p.len() > 5 { p[5] } else { "1" };
+        Ok((p[0], p[1], p[2], p[3], halfmove, fullmove))
     }
 }

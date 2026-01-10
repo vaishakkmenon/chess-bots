@@ -1,0 +1,172 @@
+=== Chess Engine Search Benchmark Depth: 3 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 3
+
+Searching...
+
+info depth 1 score cp 50 pv b1c3
+info depth 2 score cp 0 pv b1c3
+info depth 3 score cp 50 pv b1c3
+=== Results ===
+Time:      0.012s
+Best move: "b1c3"
+Score:     50 centipawns
+===============
+
+=== Chess Engine Search Benchmark Depth: 4 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 4
+
+Searching...
+
+info depth 1 score cp 50 pv b1c3
+info depth 2 score cp 0 pv b1c3
+info depth 3 score cp 50 pv b1c3
+info depth 4 score cp 0 pv b1c3
+=== Results ===
+Time:      0.015s
+Best move: "b1c3"
+Score:     0 centipawns
+===============
+
+=== Chess Engine Search Benchmark Depth: 5 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 5
+
+Searching...
+
+info depth 1 score cp 50 pv b1c3
+info depth 2 score cp 0 pv b1c3
+info depth 3 score cp 50 pv b1c3
+info depth 4 score cp 0 pv b1c3
+info depth 5 score cp 40 pv g1f3
+=== Results ===
+Time:      0.019s
+Best move: "g1f3"
+Score:     40 centipawns
+===============
+
+=== Chess Engine Search Benchmark Depth: 6 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 6
+
+Searching...
+
+info depth 1 score cp 50 pv b1c3
+info depth 2 score cp 0 pv b1c3
+info depth 3 score cp 50 pv b1c3
+info depth 4 score cp 0 pv b1c3
+info depth 5 score cp 40 pv g1f3
+info depth 6 score cp 0 pv d2d4
+=== Results ===
+Time:      0.066s
+Best move: "d2d4"
+Score:     0 centipawns
+===============
+
+=== Chess Engine Search Benchmark Depth: 7 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 7
+
+Searching...
+
+info depth 1 score cp 50 pv b1c3
+info depth 2 score cp 0 pv b1c3
+info depth 3 score cp 50 pv b1c3
+info depth 4 score cp 0 pv b1c3
+info depth 5 score cp 40 pv g1f3
+info depth 6 score cp 0 pv d2d4
+info depth 7 score cp 30 pv e2e4
+=== Results ===
+Time:      0.290s
+Best move: "e2e4"
+Score:     30 centipawns
+===============
+
+=== Chess Engine Search Benchmark Depth: 8 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 8
+
+Searching...
+
+info depth 1 score cp 50 pv b1c3
+info depth 2 score cp 0 pv b1c3
+info depth 3 score cp 50 pv b1c3
+info depth 4 score cp 0 pv b1c3
+info depth 5 score cp 40 pv g1f3
+info depth 6 score cp 0 pv d2d4
+info depth 7 score cp 30 pv e2e4
+info depth 8 score cp 0 pv d2d4
+=== Results ===
+Time:      4.184s
+Best move: "d2d4"
+Score:     0 centipawns
+===============
+
+=== Chess Engine Search Benchmark Depth: 9 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 9
+
+Searching...
+
+info depth 1 score cp 50 pv b1c3
+info depth 2 score cp 0 pv b1c3
+info depth 3 score cp 50 pv b1c3
+info depth 4 score cp 0 pv b1c3
+info depth 5 score cp 40 pv g1f3
+info depth 6 score cp 0 pv d2d4
+info depth 7 score cp 30 pv e2e4
+info depth 8 score cp 0 pv d2d4
+info depth 9 score cp 25 pv e2e4
+=== Results ===
+Time:      34.250s
+Best move: "e2e4"
+Score:     25 centipawns
+===============
+
+=== Chess Engine Search Benchmark Depth: 10 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 10
+
+Searching...
+
+info depth 1 score cp 50 pv b1c3
+info depth 2 score cp 0 pv b1c3
+info depth 3 score cp 50 pv b1c3
+info depth 4 score cp 0 pv b1c3
+info depth 5 score cp 40 pv g1f3
+info depth 6 score cp 0 pv d2d4
+info depth 7 score cp 30 pv e2e4
+info depth 8 score cp 0 pv d2d4
+info depth 9 score cp 25 pv e2e4
+info depth 10 score cp 10 pv e2e4
+=== Results ===
+Time:      422.513s
+Best move: "e2e4"
+Score:     10 centipawns
+===============
+

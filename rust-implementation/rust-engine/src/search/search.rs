@@ -1,4 +1,4 @@
-use crate::board::Board;
+use crate::board::{Board, Color};
 use crate::moves::execute::{generate_captures, generate_legal, make_move_basic, undo_move_basic};
 use crate::moves::magic::MagicTables;
 use crate::moves::square_control::in_check;
@@ -7,11 +7,37 @@ use crate::search::context::SearchContext;
 use crate::search::eval::static_eval;
 use crate::search::ordering::{mvv_lva_score, order_moves};
 use crate::search::tt::{NodeType, TranspositionTable};
+use std::time::{Instant, Duration};
 
 const MATE_SCORE: i32 = 100000;
 const MATE_THRESHOLD: i32 = 99000; // Scores above this are mate scores
 
 /// Adjust mate score when storing to TT (convert from search ply to TT ply)
+pub struct TimeManager {
+    pub start_time: Instant,
+    pub allotted: Option<Duration>,
+    pub stop_signal: bool,
+}
+
+impl TimeManager {
+    pub fn new(limit: Option<Duration>) -> Self {
+        Self {
+            start_time: Instant::now(),
+            allotted: limit,
+            stop_signal: false,
+        }
+    }
+
+    #[inline(always)]
+    pub fn check_time(&mut self) {
+        if self.stop_signal { return; }
+        if let Some(limit) = self.allotted {
+            if self.start_time.elapsed() > limit {
+                self.stop_signal = true;
+            }
+        }
+    }
+}
 #[inline]
 fn score_to_tt(score: i32, ply: usize) -> i32 {
     if score > MATE_THRESHOLD {
@@ -35,63 +61,6 @@ fn score_from_tt(score: i32, ply: usize) -> i32 {
     }
 }
 
-pub fn minimax(
-    board: &mut Board,
-    tables: &MagicTables,
-    depth: i32,
-    maximizing: bool,
-) -> (i32, Option<Move>) {
-    if depth == 0 {
-        let score = static_eval(board);
-        return (if maximizing { score } else { -score }, None);
-    }
-
-    let mut moves = Vec::with_capacity(128);
-    let mut scratch = Vec::with_capacity(128);
-
-    generate_legal(board, tables, &mut moves, &mut scratch);
-
-    if moves.is_empty() {
-        if in_check(board, board.side_to_move, tables) {
-            // Checkmate
-            return (if maximizing { -MATE_SCORE } else { MATE_SCORE }, None);
-        }
-
-        // Stalemate
-        return (0, None);
-    }
-
-    let mut best_move = None;
-
-    if maximizing {
-        let mut max_eval = i32::MIN;
-        for mv in moves {
-            let undo = make_move_basic(board, mv);
-            let (eval, _) = minimax(board, tables, depth - 1, false);
-            undo_move_basic(board, undo);
-
-            if eval > max_eval {
-                max_eval = eval;
-                best_move = Some(mv);
-            }
-        }
-        (max_eval, best_move)
-    } else {
-        let mut min_eval = i32::MAX;
-        for mv in moves {
-            let undo = make_move_basic(board, mv);
-            let (eval, _) = minimax(board, tables, depth - 1, true);
-            undo_move_basic(board, undo);
-
-            if eval < min_eval {
-                min_eval = eval;
-                best_move = Some(mv);
-            }
-        }
-        (min_eval, best_move)
-    }
-}
-
 pub fn quiescence(
     board: &mut Board,
     tables: &MagicTables,
@@ -104,7 +73,6 @@ pub fn quiescence(
     let in_check_now = in_check(board, board.side_to_move, tables);
 
     if in_check_now {
-        // eprintln!("IN CHECK! Searching all evasions");
         let mut moves = Vec::with_capacity(128);
         let mut scratch = Vec::with_capacity(128);
         generate_legal(board, tables, &mut moves, &mut scratch);
@@ -132,15 +100,13 @@ pub fn quiescence(
 
     // Current evaluation
     let stand_pat = static_eval(board);
-
     // eprintln!(
-    //     "Qsearch: stand_pat={}, alpha={}, beta={}",
-    //     stand_pat, alpha, beta
+    //     "Qsearch ply {}: stand_pat={}, stm={:?}",
+    //     ply, stand_pat, board.side_to_move
     // );
 
     // Beta-cutoff
     if stand_pat >= beta {
-        // eprintln!("  -> beta cutoff");
         return beta;
     }
 
@@ -149,7 +115,7 @@ pub fn quiescence(
         alpha = stand_pat;
     }
 
-    // Generate only captures (and optionally checks)
+    // Generate captures and checks
     let mut moves = Vec::with_capacity(128);
     let mut scratch = Vec::with_capacity(128);
     generate_captures(board, tables, &mut moves, &mut scratch);
@@ -159,7 +125,7 @@ pub fn quiescence(
 
     for mv in moves {
         let mut captured_value = 0;
-        // Getting just the piece and its attacker value
+        // Getting just the piece and its value
         if let Some(piece) = board.piece_type_at(mv.to) {
             captured_value = piece.value();
         }
@@ -195,17 +161,44 @@ pub fn alpha_beta(
     ply: usize,
     mut alpha: i32,
     beta: i32,
+    nodes: &mut u64,
+    time: &mut TimeManager,
 ) -> (i32, Option<Move>) {
+    // 1. Periodic Time Check (every 2048 nodes)
+    *nodes += 1;
+    if *nodes % 2048 == 0 {
+        time.check_time();
+    }
+    
+    // 2. Immediate Abort if time is up
+    if time.stop_signal {
+        return (0, None); // Return dummy value
+    }
+
     let hash = board.zobrist;
+    let mut hash_move = None;
 
     // Probe TT
     if let Some(entry) = tt.probe(hash) {
+        hash_move = entry.best_move;
+
         if entry.depth >= depth as i8 {
-            let tt_score = score_from_tt(entry.score, ply);
+            let mut tt_score = score_from_tt(entry.score, ply);
+
+            if board.side_to_move == Color::Black {
+                tt_score = -tt_score;
+            }
+
             match entry.node_type {
-                NodeType::Exact => return (tt_score, entry.best_move),
-                NodeType::LowerBound if tt_score >= beta => return (tt_score, entry.best_move),
-                NodeType::UpperBound if tt_score <= alpha => return (tt_score, entry.best_move),
+                NodeType::Exact => {
+                    return (tt_score, entry.best_move);
+                }
+                NodeType::LowerBound if tt_score >= beta => {
+                    return (tt_score, entry.best_move);
+                }
+                NodeType::UpperBound if tt_score <= alpha => {
+                    return (tt_score, entry.best_move);
+                }
                 _ => {}
             }
         }
@@ -220,7 +213,13 @@ pub fn alpha_beta(
     let mut scratch = Vec::with_capacity(128);
 
     generate_legal(board, tables, &mut moves, &mut scratch);
-    order_moves(&mut moves, board, &ctx.killer_moves[ply], &ctx.history);
+    order_moves(
+        &mut moves,
+        board,
+        &ctx.killer_moves[ply],
+        &ctx.history,
+        hash_move,
+    );
 
     if moves.is_empty() {
         if in_check(board, board.side_to_move, tables) {
@@ -239,12 +238,20 @@ pub fn alpha_beta(
 
     for mv in moves {
         let undo = make_move_basic(board, mv);
-        let (score, _) = alpha_beta(board, tables, ctx, tt, depth - 1, ply + 1, -beta, -alpha);
+        let (score, _) = alpha_beta(board, tables, ctx, tt, depth - 1, ply + 1, -beta, -alpha, nodes, time);
         let score = -score;
         undo_move_basic(board, undo);
 
         if score >= beta {
-            // Beta cutoff
+            // Beta cutoff - store LowerBound entry before returning
+            let white_score = if board.side_to_move == Color::White {
+                beta
+            } else {
+                -beta
+            };
+            let tt_score = score_to_tt(white_score, ply);
+            tt.store(hash, depth as i8, tt_score, Some(mv), NodeType::LowerBound);
+
             ctx.update_killer(ply, mv);
             ctx.update_history(mv, depth);
             return (beta, Some(mv));
@@ -266,28 +273,68 @@ pub fn alpha_beta(
     };
 
     // Store score adjusted for TT
-    let tt_score = score_to_tt(alpha, ply);
+    let white_score = if board.side_to_move == Color::White {
+        alpha
+    } else {
+        -alpha
+    };
+    let tt_score = score_to_tt(white_score, ply);
     tt.store(hash, depth as i8, tt_score, best_move, node_type);
 
     (alpha, best_move)
 }
 
-pub fn search(
-    board: &mut Board,
-    tables: &MagicTables,
-    depth: i32,
-    ply: usize,
-) -> (i32, Option<Move>) {
+
+
+pub fn search(board: &mut Board, tables: &MagicTables, max_depth: i32, time_limit: Option<Duration>) -> (i32, Option<Move>) {
+    let mut best_move: Option<Move> = None;
+    let mut best_score = 0;
+
     let mut ctx = SearchContext::new();
     let mut tt = TranspositionTable::new(1 << 20);
-    alpha_beta(
-        board,
-        tables,
-        &mut ctx,
-        &mut tt,
-        depth,
-        ply,
-        i32::MIN + 1,
-        i32::MAX,
-    )
+    let mut time = TimeManager::new(time_limit);
+    let mut nodes = 0;
+
+    for depth in 1..=max_depth {
+        // FIX: History Decay
+        // Divide history scores by 8 between depths to prevent "toxic" moves from dominating
+        for from in 0..64 {
+            for to in 0..64 {
+                ctx.history[from][to] /= 8;
+            }
+        } 
+        let (score, mv) = alpha_beta(
+            board,
+            tables,
+            &mut ctx,
+            &mut tt,
+            depth,
+            0,
+            i32::MIN + 1,
+            i32::MAX,
+            &mut nodes,
+            &mut time
+        );
+
+        // ABORT CHECK: If time ran out during this depth, DISCARD the result!
+        if time.stop_signal {
+            println!("info string Time up! Aborting search at depth {}", depth);
+            break; 
+        }
+
+        if let Some(valid_mv) = mv {
+            best_move = Some(valid_mv);
+            best_score = score;
+
+            println!("info depth {} score cp {} pv {}", depth, score, valid_mv.to_uci());
+        } else {
+            break;
+        }
+        
+        // Safety check between depths
+        time.check_time();
+        if time.stop_signal { break; }
+    }
+
+    (best_score, best_move)
 }
