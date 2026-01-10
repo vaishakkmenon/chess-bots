@@ -5,7 +5,7 @@ cd /workspace/rust-implementation/rust-cli
 cargo build --release
 
 # Output directory
-OUTPUT_DIR="/workspace/rust-implementation/rust-engine/src/search/results/v7.2_time_management"
+OUTPUT_DIR="/workspace/rust-implementation/data/benchmarks/v7.2_time_management"
 mkdir -p "$OUTPUT_DIR"
 
 ENGINE_PATH="/workspace/rust-implementation/rust-cli/target/release/rust-cli"

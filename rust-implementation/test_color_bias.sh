@@ -17,7 +17,7 @@ echo ""
 echo "Building engine..."
 cargo build --release --quiet
 
-OUTPUT_DIR="/workspace/rust-implementation/rust-engine/src/search/results/color_bias_test"
+OUTPUT_DIR="/workspace/rust-implementation/data/benchmarks/color_bias_test"
 mkdir -p "$OUTPUT_DIR"
 
 ENGINE_PATH="/workspace/rust-implementation/rust-cli/target/release/rust-cli"

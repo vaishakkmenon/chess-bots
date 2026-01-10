@@ -1,192 +1,173 @@
 use crate::board::{Board, Color, Piece};
+use crate::search::pesto;
+use crate::utils::pop_lsb;
 
-const P: i32 = 100;
-const N: i32 = 320;
-const B: i32 = 330;
-const R: i32 = 500;
-const Q: i32 = 900;
+// Phase Weights
+const KNIGHT_PHASE: i32 = 1;
+const BISHOP_PHASE: i32 = 1;
+const ROOK_PHASE: i32 = 2;
+const QUEEN_PHASE: i32 = 4;
+const TOTAL_PHASE: i32 = 24;
 
-#[cfg(feature = "psqt")]
-// Helper to mirror file
+fn calculate_phase(board: &Board) -> i32 {
+    let knights = board.pieces(Piece::Knight, Color::White).count_ones()
+        + board.pieces(Piece::Knight, Color::Black).count_ones();
+    let bishops = board.pieces(Piece::Bishop, Color::White).count_ones()
+        + board.pieces(Piece::Bishop, Color::Black).count_ones();
+    let rooks = board.pieces(Piece::Rook, Color::White).count_ones()
+        + board.pieces(Piece::Rook, Color::Black).count_ones();
+    let queens = board.pieces(Piece::Queen, Color::White).count_ones()
+        + board.pieces(Piece::Queen, Color::Black).count_ones();
+
+    let current_phase_material = (knights as i32 * KNIGHT_PHASE)
+        + (bishops as i32 * BISHOP_PHASE)
+        + (rooks as i32 * ROOK_PHASE)
+        + (queens as i32 * QUEEN_PHASE);
+
+    current_phase_material.min(TOTAL_PHASE).max(0)
+}
+
 #[inline(always)]
-pub const fn mirror_vert(sq: u8) -> u8 {
-    sq ^ 56
+fn mirror_vert(sq: u8) -> usize {
+    (sq ^ 56) as usize
 }
 
-#[cfg(feature = "psqt")]
-mod psqt_tables {
-    // Pawn PST - encourages center control and advancement
-    // Rewards pushing pawns forward, especially in center
-    // Table is vertically symmetric (rank 1 = rank 8, rank 2 = rank 7, etc.)
-    pub const PAWN: [i16; 64] = [
-        0, 0, 0, 0, 0, 0, 0, 0, // Rank 1
-        5, 10, 10, -20, -20, 10, 10, 5, // Rank 2
-        5, -5, -10, 0, 0, -10, -5, 5, // Rank 3
-        0, 0, 0, 20, 20, 0, 0, 0, // Rank 4
-        0, 0, 0, 20, 20, 0, 0, 0, // Rank 5 (mirror of rank 4)
-        5, -5, -10, 0, 0, -10, -5, 5, // Rank 6 (mirror of rank 3)
-        5, 10, 10, -20, -20, 10, 10, 5, // Rank 7 (mirror of rank 2)
-        0, 0, 0, 0, 0, 0, 0, 0, // Rank 8
-    ];
-
-    // Knight PST - prefers center, heavily penalizes edges
-    // Knights on the rim are dim! (vertically symmetric)
-    pub const KNIGHT: [i16; 64] = [
-        -50, -40, -30, -30, -30, -30, -40, -50, // Rank 1
-        -40, -20, 0, 5, 5, 0, -20, -40, // Rank 2
-        -30, 5, 10, 15, 15, 10, 5, -30, // Rank 3
-        -30, 0, 15, 20, 20, 15, 0, -30, // Rank 4
-        -30, 0, 15, 20, 20, 15, 0, -30, // Rank 5
-        -30, 5, 10, 15, 15, 10, 5, -30, // Rank 6
-        -40, -20, 0, 5, 5, 0, -20, -40, // Rank 7
-        -50, -40, -30, -30, -30, -30, -40, -50, // Rank 8
-    ];
-
-    // Bishop PST - likes long diagonals and fianchetto
-    // Penalizes being blocked by own pawns (vertically symmetric)
-    pub const BISHOP: [i16; 64] = [
-        -20, -10, -10, -10, -10, -10, -10, -20, // Rank 1
-        -10, 5, 0, 0, 0, 0, 5, -10, // Rank 2
-        -10, 10, 10, 10, 10, 10, 10, -10, // Rank 3
-        -10, 0, 10, 10, 10, 10, 0, -10, // Rank 4
-        -10, 0, 10, 10, 10, 10, 0, -10, // Rank 5
-        -10, 10, 10, 10, 10, 10, 10, -10, // Rank 6
-        -10, 5, 0, 0, 0, 0, 5, -10, // Rank 7
-        -20, -10, -10, -10, -10, -10, -10, -20, // Rank 8
-    ];
-
-    // Rook PST - prefers central files and back rank
-    // Generally wants to be active (vertically symmetric)
-    pub const ROOK: [i16; 64] = [
-        0, 0, 0, 5, 5, 0, 0, 0, // Rank 1
-        -5, 0, 0, 0, 0, 0, 0, -5, // Rank 2
-        -5, 0, 0, 0, 0, 0, 0, -5, // Rank 3
-        -5, 0, 0, 0, 0, 0, 0, -5, // Rank 4
-        -5, 0, 0, 0, 0, 0, 0, -5, // Rank 5
-        -5, 0, 0, 0, 0, 0, 0, -5, // Rank 6
-        -5, 0, 0, 0, 0, 0, 0, -5, // Rank 7
-        0, 0, 0, 5, 5, 0, 0, 0, // Rank 8
-    ];
-
-    // Queen PST - discourages early development
-    // Penalizes moving queen out too soon (vertically symmetric)
-    pub const QUEEN: [i16; 64] = [
-        -20, -10, -10, -5, -5, -10, -10, -20, // Rank 1
-        -10, 0, 5, 0, 0, 0, 0, -10, // Rank 2
-        -10, 5, 5, 5, 5, 5, 0, -10, // Rank 3
-        0, 0, 5, 5, 5, 5, 0, 0, // Rank 4
-        0, 0, 5, 5, 5, 5, 0, 0, // Rank 5
-        -10, 5, 5, 5, 5, 5, 0, -10, // Rank 6
-        -10, 0, 5, 0, 0, 0, 0, -10, // Rank 7
-        -20, -10, -10, -5, -5, -10, -10, -20, // Rank 8
-    ];
+// Helper: Map piece to tables from pesto.rs
+fn get_psqt(kind: Piece) -> (&'static [i32; 64], &'static [i32; 64]) {
+    match kind {
+        Piece::Pawn => (&pesto::PAWN_TABLE.0, &pesto::PAWN_TABLE.1),
+        Piece::Knight => (&pesto::KNIGHT_TABLE.0, &pesto::KNIGHT_TABLE.1),
+        Piece::Bishop => (&pesto::BISHOP_TABLE.0, &pesto::BISHOP_TABLE.1),
+        Piece::Rook => (&pesto::ROOK_TABLE.0, &pesto::ROOK_TABLE.1),
+        Piece::Queen => (&pesto::QUEEN_TABLE.0, &pesto::QUEEN_TABLE.1),
+        Piece::King => (&pesto::KING_TABLE.0, &pesto::KING_TABLE.1),
+    }
 }
 
-/// Material-only evaluation (White perspective), side-to-move agnostic.
-/// Kings are excluded (value = 0). P=100, N=320, B=330, R=500, Q=900.
-pub fn eval_material(board: &Board) -> i32 {
-    let wp = board.pieces(Piece::Pawn, Color::White).count_ones();
-    let bp = board.pieces(Piece::Pawn, Color::Black).count_ones();
-    let wn = board.pieces(Piece::Knight, Color::White).count_ones();
-    let bn = board.pieces(Piece::Knight, Color::Black).count_ones();
-    let wb = board.pieces(Piece::Bishop, Color::White).count_ones();
-    let bb = board.pieces(Piece::Bishop, Color::Black).count_ones();
-    let wr = board.pieces(Piece::Rook, Color::White).count_ones();
-    let br = board.pieces(Piece::Rook, Color::Black).count_ones();
-    let wq = board.pieces(Piece::Queen, Color::White).count_ones();
-    let bq = board.pieces(Piece::Queen, Color::Black).count_ones();
-
-    let score: i32 = P * (wp as i32 - bp as i32)
-        + N * (wn as i32 - bn as i32)
-        + B * (wb as i32 - bb as i32)
-        + R * (wr as i32 - br as i32)
-        + Q * (wq as i32 - bq as i32);
-
-    score
+// Helper: Map piece to material values
+fn get_piece_value(kind: Piece) -> (i32, i32) {
+    match kind {
+        Piece::Pawn => pesto::PAWN_VAL,
+        Piece::Knight => pesto::KNIGHT_VAL,
+        Piece::Bishop => pesto::BISHOP_VAL,
+        Piece::Rook => pesto::ROOK_VAL,
+        Piece::Queen => pesto::QUEEN_VAL,
+        Piece::King => pesto::KING_VAL,
+    }
 }
 
-#[cfg(feature = "psqt")]
-pub fn eval_psqt(board: &Board) -> i32 {
-    use crate::utils::pop_lsb;
-    use psqt_tables::*;
-    let mut score: i32 = 0;
+pub fn evaluate(board: &Board) -> i32 {
+    let mut mg_score = 0;
+    let mut eg_score = 0;
+    let phase = calculate_phase(board);
 
-    let mut bb = board.bb(Color::White, Piece::Pawn);
-    while bb != 0 {
-        let sq = pop_lsb(&mut bb);
-        score += PAWN[sq as usize] as i32;
+    // Iterate over all piece types
+    // Note: Iterate over colors for efficiency if needed, but per piece type is fine
+    for piece_type in [
+        Piece::Pawn,
+        Piece::Knight,
+        Piece::Bishop,
+        Piece::Rook,
+        Piece::Queen,
+        Piece::King,
+    ] {
+        let (mg_val, eg_val) = get_piece_value(piece_type);
+        let (mg_table, eg_table) = get_psqt(piece_type);
+
+        // White pieces
+        let mut w_bb = board.pieces(piece_type, Color::White);
+        while w_bb != 0 {
+            let sq = pop_lsb(&mut w_bb);
+            // White is at bottom, normal index
+            mg_score += mg_val + mg_table[sq as usize];
+            eg_score += eg_val + eg_table[sq as usize];
+        }
+
+        // Black pieces
+        let mut b_bb = board.pieces(piece_type, Color::Black);
+        while b_bb != 0 {
+            let sq = pop_lsb(&mut b_bb);
+            // Black is at top, mirror index
+            let mirrored_sq = mirror_vert(sq);
+            mg_score -= mg_val + mg_table[mirrored_sq];
+            eg_score -= eg_val + eg_table[mirrored_sq];
+        }
     }
 
-    let mut bb = board.bb(Color::White, Piece::Knight);
-    while bb != 0 {
-        let sq = pop_lsb(&mut bb);
-        score += KNIGHT[sq as usize] as i32;
-    }
+// Tapered Formula
+    // Score = (MG * Phase + EG * (24 - Phase)) / 24
+    let score = (mg_score * phase + eg_score * (TOTAL_PHASE - phase)) / TOTAL_PHASE;
 
-    let mut bb = board.bb(Color::White, Piece::Bishop);
-    while bb != 0 {
-        let sq = pop_lsb(&mut bb);
-        score += BISHOP[sq as usize] as i32;
-    }
-
-    let mut bb = board.bb(Color::White, Piece::Rook);
-    while bb != 0 {
-        let sq = pop_lsb(&mut bb);
-        score += ROOK[sq as usize] as i32;
-    }
-
-    let mut bb = board.bb(Color::White, Piece::Queen);
-    while bb != 0 {
-        let sq = pop_lsb(&mut bb);
-        score += QUEEN[sq as usize] as i32;
-    }
-
-    let mut bb = board.bb(Color::Black, Piece::Pawn);
-    while bb != 0 {
-        let sq = pop_lsb(&mut bb);
-        score -= PAWN[mirror_vert(sq) as usize] as i32;
-    }
-
-    let mut bb = board.bb(Color::Black, Piece::Knight);
-    while bb != 0 {
-        let sq = pop_lsb(&mut bb);
-        score -= KNIGHT[mirror_vert(sq) as usize] as i32;
-    }
-
-    let mut bb = board.bb(Color::Black, Piece::Bishop);
-    while bb != 0 {
-        let sq = pop_lsb(&mut bb);
-        score -= BISHOP[mirror_vert(sq) as usize] as i32;
-    }
-
-    let mut bb = board.bb(Color::Black, Piece::Rook);
-    while bb != 0 {
-        let sq = pop_lsb(&mut bb);
-        score -= ROOK[mirror_vert(sq) as usize] as i32;
-    }
-
-    let mut bb = board.bb(Color::Black, Piece::Queen);
-    while bb != 0 {
-        let sq = pop_lsb(&mut bb);
-        score -= QUEEN[mirror_vert(sq) as usize] as i32;
-    }
-
-    score
-}
-
-#[cfg(not(feature = "psqt"))]
-pub fn eval_psqt(_board: &Board) -> i32 {
-    0
-}
-
-pub fn static_eval(board: &Board) -> i32 {
-    let material = eval_material(board);
-    let psqt = eval_psqt(board);
-    let white_score = material + psqt;
-
+    // Return score relative to side to move
     if board.side_to_move == Color::White {
-        white_score
+        score
     } else {
-        -white_score
+        -score
     }
+}
+
+// Compatibility wrapper if older code calls static_eval
+pub fn static_eval(board: &Board) -> i32 {
+    evaluate(board)
+}
+
+// Debug helper: returns just the material component (tapered)
+pub fn eval_material(board: &Board) -> i32 {
+    let mut mg_score = 0;
+    let mut eg_score = 0;
+    let phase = calculate_phase(board);
+
+    for piece_type in [
+        Piece::Pawn,
+        Piece::Knight,
+        Piece::Bishop,
+        Piece::Rook,
+        Piece::Queen,
+        Piece::King,
+    ] {
+        let (mg_val, eg_val) = get_piece_value(piece_type);
+
+        let w_count = board.pieces(piece_type, Color::White).count_ones() as i32;
+        let b_count = board.pieces(piece_type, Color::Black).count_ones() as i32;
+
+        mg_score += mg_val * (w_count - b_count);
+        eg_score += eg_val * (w_count - b_count);
+    }
+
+    (mg_score * phase + eg_score * (TOTAL_PHASE - phase)) / TOTAL_PHASE
+}
+
+// Debug helper: returns just the PSQT component (tapered)
+pub fn eval_psqt(board: &Board) -> i32 {
+     let mut mg_score = 0;
+    let mut eg_score = 0;
+    let phase = calculate_phase(board);
+
+    for piece_type in [
+        Piece::Pawn,
+        Piece::Knight,
+        Piece::Bishop,
+        Piece::Rook,
+        Piece::Queen,
+        Piece::King,
+    ] {
+        let (mg_table, eg_table) = get_psqt(piece_type);
+
+        let mut w_bb = board.pieces(piece_type, Color::White);
+        while w_bb != 0 {
+            let sq = pop_lsb(&mut w_bb);
+            mg_score += mg_table[sq as usize];
+            eg_score += eg_table[sq as usize];
+        }
+
+        let mut b_bb = board.pieces(piece_type, Color::Black);
+        while b_bb != 0 {
+            let sq = pop_lsb(&mut b_bb);
+            let mirrored_sq = mirror_vert(sq);
+            mg_score -= mg_table[mirrored_sq];
+            eg_score -= eg_table[mirrored_sq];
+        }
+    }
+
+    (mg_score * phase + eg_score * (TOTAL_PHASE - phase)) / TOTAL_PHASE
 }

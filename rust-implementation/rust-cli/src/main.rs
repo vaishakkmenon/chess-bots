@@ -179,6 +179,8 @@ fn handle_go(
 ) {
     let mut depth = 5;
     let mut time_limit = None;
+    let mut has_depth_arg = false;
+    let mut has_time_arg = false;
 
     let mut i = 1;
     while i < parts.len() {
@@ -186,6 +188,7 @@ fn handle_go(
             "depth" => {
                 if i + 1 < parts.len() {
                     depth = parts[i + 1].parse().unwrap_or(6);
+                    has_depth_arg = true;
                 }
                 i += 2;
             }
@@ -193,10 +196,12 @@ fn handle_go(
                 if i + 1 < parts.len() {
                     let ms: u64 = parts[i + 1].parse().unwrap_or(5000);
                     time_limit = Some(Duration::from_millis(ms));
+                    has_time_arg = true;
                 }
                 i += 2;
             }
             "wtime" => {
+                has_time_arg = true;
                 if i + 1 < parts.len() {
                     let wtime: u64 = parts[i + 1].parse().unwrap_or(60000);
                     if board.side_to_move == Color::White {
@@ -209,6 +214,7 @@ fn handle_go(
                 i += 2;
             }
             "btime" => {
+                has_time_arg = true;
                 if i + 1 < parts.len() {
                     let btime: u64 = parts[i + 1].parse().unwrap_or(60000);
                     if board.side_to_move == Color::Black {
@@ -253,6 +259,11 @@ fn handle_go(
                 i += 1;
             }
         }
+    }
+
+    // If time is limited but no depth specified, search "forever" (until time runs out)
+    if has_time_arg && !has_depth_arg {
+        depth = 100;
     }
 
     // tt.new_search();
