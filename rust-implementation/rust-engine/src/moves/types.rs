@@ -134,3 +134,10 @@ impl fmt::Display for Move {
         write!(f, "{}", s)
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NullMoveUndo {
+    pub prev_en_passant: Option<Square>,
+    pub prev_halfmove_clock: u32,
+    pub prev_side: Color,
+}

@@ -4,7 +4,7 @@ use crate::hash::zobrist::{ep_file_to_hash, xor_castling_rights_delta, zobrist_k
 use crate::moves::magic::MagicTables;
 use crate::moves::movegen::generate_pseudo_legal;
 use crate::moves::square_control::{in_check, is_legal_castling};
-use crate::moves::types::{Move, Undo};
+use crate::moves::types::{Move, NullMoveUndo, Undo};
 use crate::square::Square;
 
 /// Precomputed castling rook moves by king destination index.
@@ -343,6 +343,53 @@ pub fn undo_move_basic(board: &mut Board, undo: Undo) {
 
     #[cfg(debug_assertions)]
     board.assert_hash();
+}
+
+pub fn make_null_move(board: &mut Board) -> NullMoveUndo {
+    let undo = NullMoveUndo {
+        prev_en_passant: board.en_passant,
+        prev_halfmove_clock: board.halfmove_clock,
+        prev_side: board.side_to_move,
+    };
+
+    // If an EP file was in the hash, XOR it OUT now
+    if let Some(f) = ep_file_to_hash(board) {
+        board.zobrist ^= zobrist_keys().ep_file[f as usize];
+    }
+
+    board.en_passant = None;
+
+    // Switch side
+    let color = board.side_to_move;
+    board.side_to_move = color.opposite();
+    board.zobrist ^= zobrist_keys().side_to_move;
+
+    // Although it's a null move, we might theoretically increase halfmove clock?
+    // Stockfish does NOT increase halfmove clock for null move in search, usually,
+    // or arguably it doesn't matter for NMP reduction.
+    // But let's be safe and just increment it to reflect a "move" passed.
+    // board.halfmove_clock += 1;
+
+    // Note: We do NOT push to history_since_irreversible because null move is not a real move
+    // and we don't want to mess up 3-fold repetition detection in a way that persists?
+    // Actually, standard engines often do hash updates.
+
+    undo
+}
+
+pub fn undo_null_move(board: &mut Board, undo: NullMoveUndo) {
+    // Restore side
+    board.side_to_move = undo.prev_side;
+    board.zobrist ^= zobrist_keys().side_to_move;
+
+    // Restore EP
+    board.en_passant = undo.prev_en_passant;
+    if let Some(f) = ep_file_to_hash(board) {
+        board.zobrist ^= zobrist_keys().ep_file[f as usize];
+    }
+
+    // Restore clock
+    board.halfmove_clock = undo.prev_halfmove_clock;
 }
 
 pub fn generate_legal(

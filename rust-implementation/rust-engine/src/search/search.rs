@@ -1,5 +1,8 @@
 use crate::board::{Board, Color};
-use crate::moves::execute::{generate_captures, generate_legal, make_move_basic, undo_move_basic};
+use crate::moves::execute::{
+    generate_captures, generate_legal, make_move_basic, make_null_move, undo_move_basic,
+    undo_null_move,
+};
 use crate::moves::magic::MagicTables;
 use crate::moves::square_control::in_check;
 use crate::moves::types::Move;
@@ -214,6 +217,40 @@ pub fn alpha_beta(
         return (score, None);
     }
 
+    // Null Move Pruning
+    // Only attempt if depth is high enough, we are not in a PV node (beta-alpha == 1),
+    // and we have major pieces (to avoid Zugzwang).
+    // Also, we must not be in check (NMP acts as a "pass", valid only if no thread exists).
+    let in_check_now = in_check(board, board.side_to_move, tables);
+
+    if depth >= 3
+        && !in_check_now
+        && (beta - alpha == 1)
+        && board.has_major_pieces(board.side_to_move)
+    {
+        let r = 2;
+        let undo = make_null_move(board);
+
+        let (score, _) = alpha_beta(
+            board,
+            tables,
+            ctx,
+            tt,
+            depth - r - 1,
+            ply + 1,
+            -beta,
+            -beta + 1,
+            nodes,
+            time,
+        );
+        let score = -score;
+        undo_null_move(board, undo);
+
+        if score >= beta {
+            return (beta, None);
+        }
+    }
+
     let mut moves = Vec::with_capacity(128);
     let mut scratch = Vec::with_capacity(128);
 
@@ -241,21 +278,55 @@ pub fn alpha_beta(
     let mut best_move = None;
     let original_alpha = alpha;
 
-    for mv in moves {
+    for (i, mv) in moves.into_iter().enumerate() {
         let undo = make_move_basic(board, mv);
-        let (score, _) = alpha_beta(
-            board,
-            tables,
-            ctx,
-            tt,
-            depth - 1,
-            ply + 1,
-            -beta,
-            -alpha,
-            nodes,
-            time,
-        );
-        let score = -score;
+
+        let needs_full_search;
+        let mut score = -MATE_SCORE;
+
+        // Late Move Reduction (LMR) logic
+        // Conditions: index >= 4, depth >= 3, not capture/promo, not in check
+        // Note: We use 'i >= 4' which means the 5th move (indexes 0,1,2,3 are top 4).
+        if depth >= 3 && i >= 4 && !mv.is_capture() && !mv.is_promotion() && !in_check_now {
+            let r = 1;
+            // Reduced depth, Zero Window Search
+            let (val, _) = alpha_beta(
+                board,
+                tables,
+                ctx,
+                tt,
+                depth - 1 - r,
+                ply + 1,
+                -alpha - 1,
+                -alpha,
+                nodes,
+                time,
+            );
+            score = -val;
+
+            // If the move turns out to be better than alpha (fail high), we must re-search at full depth
+            needs_full_search = score > alpha;
+        } else {
+            // Not a candidate for reduction, so we must search fully
+            needs_full_search = true;
+        }
+
+        if needs_full_search {
+            let (val, _) = alpha_beta(
+                board,
+                tables,
+                ctx,
+                tt,
+                depth - 1,
+                ply + 1,
+                -beta,
+                -alpha,
+                nodes,
+                time,
+            );
+            score = -val;
+        }
+
         undo_move_basic(board, undo);
 
         if score >= beta {
@@ -310,7 +381,7 @@ pub fn search(
     let mut best_score = 0;
 
     let mut ctx = SearchContext::new();
-    let mut tt = TranspositionTable::new(1 << 20);
+    let mut tt = TranspositionTable::new(1 << 24);
     let mut time = TimeManager::new(time_limit);
     let mut nodes = 0;
 

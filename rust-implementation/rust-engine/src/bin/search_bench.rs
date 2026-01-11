@@ -26,7 +26,7 @@ fn main() {
 
     let depth: i32 = args[1].parse().expect("Depth must be a number");
 
-    let fen = if args.len() > 3 {
+    let fen = if args.len() > 2 {
         args[2].clone()
     } else {
         // Default: starting position

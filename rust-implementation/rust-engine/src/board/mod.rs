@@ -316,6 +316,17 @@ impl Board {
         }
     }
 
+    /// Checks if a side has any non-pawn material (N, B, R, Q).
+    /// Used for Null Move Pruning to avoid Zugzwang in pawn-only endgames.
+    #[inline(always)]
+    pub fn has_major_pieces(&self, color: Color) -> bool {
+        let knights = self.bb(color, Piece::Knight);
+        let bishops = self.bb(color, Piece::Bishop);
+        let rooks = self.bb(color, Piece::Rook);
+        let queens = self.bb(color, Piece::Queen);
+        (knights | bishops | rooks | queens) != 0
+    }
+
     /// Function to get exactly what square the king sits on
     #[inline(always)]
     pub fn king_square(&self, color: Color) -> Square {
