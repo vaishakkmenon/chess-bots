@@ -14,6 +14,7 @@ use std::time::{Duration, Instant};
 
 const MATE_SCORE: i32 = 100000;
 const MATE_THRESHOLD: i32 = 99000; // Scores above this are mate scores
+const INF: i32 = 1_000_000;
 
 /// Adjust mate score when storing to TT (convert from search ply to TT ply)
 pub struct TimeManager {
@@ -212,7 +213,7 @@ pub fn alpha_beta(
         }
     }
 
-    if depth == 0 {
+    if depth <= 0 {
         let score = quiescence(board, tables, ctx, tt, ply, alpha, beta);
         return (score, None);
     }
@@ -280,24 +281,44 @@ pub fn alpha_beta(
 
     for (i, mv) in moves.into_iter().enumerate() {
         let undo = make_move_basic(board, mv);
+        let mut score;
 
-        let needs_full_search;
-        let mut score = -MATE_SCORE;
+        // --- PVS LOGIC START ---
 
-        // Late Move Reduction (LMR) logic
-        // Conditions: index >= 4, depth >= 3, not capture/promo, not in check
-        // Note: We use 'i >= 4' which means the 5th move (indexes 0,1,2,3 are top 4).
-        if depth >= 3 && i >= 4 && !mv.is_capture() && !mv.is_promotion() && !in_check_now {
-            let mut r = 1;
+        if i == 0 {
+            // 1. PV Move: Full Window, Full Depth
+            // We trust the first move (from TT or sorting) is best.
+            let (val, _) = alpha_beta(
+                board,
+                tables,
+                ctx,
+                tt,
+                depth - 1,
+                ply + 1,
+                -beta,
+                -alpha,
+                nodes,
+                time,
+            );
+            score = -val;
+        } else {
+            // 2. Late Moves: Try to prove they are worse using Null Window
 
-            // Aggressive LMR:
-            // If we are searching deep (>6) and this move is far down the list (>10),
-            // it is very likely bad. Reduce it by 2 plies.
-            if depth >= 6 && i >= 10 {
-                r = 2;
+            // A. Calculate LMR
+            let mut r = 0;
+            // Conditions: index >= 4, depth >= 3, not capture/promo, not in check
+            // Note: We use 'i >= 4' which means the 5th move (indexes 0,1,2,3 are top 4).
+            if depth >= 3 && i >= 4 && !mv.is_capture() && !mv.is_promotion() && !in_check_now {
+                // Aggressive LMR used: R=2 if d>=6 & i>=10, else R=1
+                if depth >= 6 && i >= 10 {
+                    r = 2;
+                } else {
+                    r = 1;
+                }
             }
 
-            // Reduced depth, Zero Window Search
+            // B. Scout Search (LMR + Zero Window)
+            // We search with [-alpha-1, -alpha] to prove fail-low
             let (val, _) = alpha_beta(
                 board,
                 tables,
@@ -312,28 +333,46 @@ pub fn alpha_beta(
             );
             score = -val;
 
-            // If the move turns out to be better than alpha (fail high), we must re-search at full depth
-            needs_full_search = score > alpha;
-        } else {
-            // Not a candidate for reduction, so we must search fully
-            needs_full_search = true;
-        }
+            // C. LMR Recovery
+            // If we reduced (r > 0) but the move beat alpha, our reduction was wrong.
+            // We must re-search at full depth (but still Zero Window to save time).
+            if r > 0 && score > alpha {
+                let (val, _) = alpha_beta(
+                    board,
+                    tables,
+                    ctx,
+                    tt,
+                    depth - 1,
+                    ply + 1,
+                    -alpha - 1,
+                    -alpha,
+                    nodes,
+                    time,
+                );
+                score = -val;
+            }
 
-        if needs_full_search {
-            let (val, _) = alpha_beta(
-                board,
-                tables,
-                ctx,
-                tt,
-                depth - 1,
-                ply + 1,
-                -beta,
-                -alpha,
-                nodes,
-                time,
-            );
-            score = -val;
+            // D. PVS Re-Search (Full Window)
+            // If the move is better than alpha (and didn't cause a beta cutoff),
+            // it means it's a NEW best move. We need the exact score.
+            // Also ensure we don't re-search if score >= beta (that's a cutoff!)
+            if score > alpha && score < beta {
+                let (val, _) = alpha_beta(
+                    board,
+                    tables,
+                    ctx,
+                    tt,
+                    depth - 1,
+                    ply + 1,
+                    -beta,
+                    -alpha,
+                    nodes,
+                    time,
+                );
+                score = -val;
+            }
         }
+        // --- PVS LOGIC END ---
 
         undo_move_basic(board, undo);
 
@@ -404,8 +443,8 @@ pub fn search(
 
         // --- ASPIRATION WINDOW LOGIC START ---
         // Default: Infinite window for shallow depths
-        let mut alpha = i32::MIN + 1;
-        let mut beta = i32::MAX;
+        let mut alpha = -INF;
+        let mut beta = INF;
         let mut delta = 50; // Initial window size (50cp = 0.5 pawns)
 
         // Only use aspiration windows for deeper searches (Depth 5+)
@@ -427,7 +466,7 @@ pub fn search(
             // FAIL LOW: The score is worse than we expected (<= alpha)
             // The position is worse than we thought. We need to widen the window DOWN.
             if score <= alpha {
-                alpha = (-MATE_SCORE).max(alpha - delta);
+                alpha = (-INF).max(alpha - delta);
                 delta += delta / 2; // Widen the window aggressively (exponentially)
                 continue; // Re-search with new bounds
             }
@@ -435,7 +474,7 @@ pub fn search(
             // FAIL HIGH: The score is better than we expected (>= beta)
             // The position is better than we thought. We need to widen the window UP.
             if score >= beta {
-                beta = (MATE_SCORE).min(beta + delta);
+                beta = (INF).min(beta + delta);
                 delta += delta / 2;
                 continue; // Re-search with new bounds
             }
