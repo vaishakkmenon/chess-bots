@@ -83,7 +83,41 @@ fn get_piece_value(kind: Piece) -> (i32, i32) {
     }
 }
 
+// --- Mop-Up Helper Functions ---
+
+// 1. Center Manhattan Distance (How far is a square from the center?)
+// Ranges from 0 (e4, d4, etc.) to 6 (corners).
+// Used to drive the enemy King to the edge.
+fn cmd(sq: u8) -> i32 {
+    let row = (sq / 8) as i32;
+    let col = (sq % 8) as i32;
+    // |2r - 7| + |2c - 7| gives a nice "center-weighted" distance
+    (2 * row - 7).abs() + (2 * col - 7).abs()
+}
+
+// 2. Chebyshev Distance (Grid distance between two squares)
+// Ranges from 0 to 7.
+// Used to bring our King closer to theirs.
+fn dist(sq1: u8, sq2: u8) -> i32 {
+    let r1 = (sq1 / 8) as i32;
+    let c1 = (sq1 % 8) as i32;
+    let r2 = (sq2 / 8) as i32;
+    let c2 = (sq2 % 8) as i32;
+    (r1 - r2).abs().max((c1 - c2).abs())
+}
+
+// 3. Material Check
+// Returns true if the color has any Knights, Bishops, Rooks, or Queens.
+fn has_non_pawn_material(board: &Board, color: Color) -> bool {
+    let bb = board.pieces(Piece::Knight, color)
+        | board.pieces(Piece::Bishop, color)
+        | board.pieces(Piece::Rook, color)
+        | board.pieces(Piece::Queen, color);
+    bb != 0
+}
+
 pub fn static_eval(board: &Board, tables: &MagicTables) -> i32 {
+    // 1. Base Score (Material + PeSTO)
     let mut score = pesto_eval(board); // Your existing PeSTO
 
     // Mobility (Activity)
@@ -96,6 +130,39 @@ pub fn static_eval(board: &Board, tables: &MagicTables) -> i32 {
     // King Safety (Shielding)
     score += eval_king_safety(board, Color::White) - eval_king_safety(board, Color::Black);
 
+    // 2. MOP-UP EVALUATION
+    // Only apply if the game is decided (one side has no pieces left).
+    // AND if both kings are on the board (sanity check for partial-board tests)
+    if board.pieces(Piece::King, Color::White) != 0 && board.pieces(Piece::King, Color::Black) != 0
+    {
+        // Scenario A: White is winning, Black has no pieces (only King + Pawns)
+        // We add bonuses to 'score' (making it more positive)
+        if score > 0 && !has_non_pawn_material(board, Color::Black) {
+            let white_king = board.king_square(Color::White).index() as u8;
+            let black_king = board.king_square(Color::Black).index() as u8;
+
+            // Bonus 1: Push Black King to edge (Max value ~60)
+            score += 10 * cmd(black_king);
+
+            // Bonus 2: Bring White King closer (Max value ~56)
+            // (14 - dist) ensures closer = higher score
+            score += 4 * (14 - dist(white_king, black_king));
+        }
+        // Scenario B: Black is winning, White has no pieces
+        // We subtract bonuses from 'score' (making it more negative)
+        else if score < 0 && !has_non_pawn_material(board, Color::White) {
+            let white_king = board.king_square(Color::White).index() as u8;
+            let black_king = board.king_square(Color::Black).index() as u8;
+
+            // Bonus 1: Push White King to edge
+            score -= 10 * cmd(white_king);
+
+            // Bonus 2: Bring Black King closer
+            score -= 4 * (14 - dist(black_king, white_king));
+        }
+    }
+
+    // 3. Return Perspective Score
     if board.side_to_move == Color::Black {
         -score
     } else {
