@@ -2,11 +2,14 @@
 // Build with: cargo build --release --bin eval_debug --features "load-magic deterministic_zobrist psqt"
 // Run with: /workspace/target/release/eval_debug
 use rust_engine::board::{Board, Color, Piece};
+use rust_engine::moves::magic::MagicTables;
+use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::search::eval::{eval_material, eval_psqt, static_eval};
 use std::str::FromStr;
 
 fn main() {
     println!("=== Chess Engine Evaluation Debug ===\n");
+    let tables = load_magic_tables();
 
     // Test 1: Starting position
     let start_board = Board::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
@@ -14,7 +17,7 @@ fn main() {
 
     println!("=== Starting Position ===");
     println!("FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    debug_eval(&start_board);
+    debug_eval(&start_board, &tables);
     println!();
 
     // Add this test case to eval_debug.rs
@@ -23,7 +26,7 @@ fn main() {
 
     println!("=== After e2-e3 ===");
     println!("FEN: rnbqkbnr/pppppppp/8/8/8/4P3/PPPP1PPP/RNBQKBNR b KQkq - 0 1");
-    debug_eval(&after_e3);
+    debug_eval(&after_e3, &tables);
 
     // Test 2: After e2-e4
     let after_e4 = Board::from_str("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1")
@@ -31,7 +34,7 @@ fn main() {
 
     println!("=== After e2-e4 ===");
     println!("FEN: rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
-    debug_eval(&after_e4);
+    debug_eval(&after_e4, &tables);
     println!();
 
     // Test 3: After d2-d4
@@ -40,7 +43,7 @@ fn main() {
 
     println!("=== After d2-d4 ===");
     println!("FEN: rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1");
-    debug_eval(&after_d4);
+    debug_eval(&after_d4, &tables);
     println!();
 
     // Test 4: After a2-a3
@@ -49,7 +52,7 @@ fn main() {
 
     println!("=== After a2-a3 ===");
     println!("FEN: rnbqkbnr/pppppppp/8/8/8/P7/1PPPPPPP/RNBQKBNR b KQkq - 0 1");
-    debug_eval(&after_a3);
+    debug_eval(&after_a3, &tables);
     println!();
 
     // Test 5: After Nf3
@@ -58,13 +61,13 @@ fn main() {
 
     println!("=== After Nf3 ===");
     println!("FEN: rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKB1R b KQkq - 1 1");
-    debug_eval(&after_nf3);
+    debug_eval(&after_nf3, &tables);
 }
 
-fn debug_eval(board: &Board) {
+fn debug_eval(board: &Board, tables: &MagicTables) {
     let material = eval_material(board);
     let psqt = eval_psqt(board);
-    let total = static_eval(board);
+    let total = static_eval(board, tables);
 
     println!("Side to move: {:?}", board.side_to_move);
     println!("Material score (White perspective): {} cp", material);

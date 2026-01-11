@@ -5,7 +5,6 @@ use std::str::FromStr;
 
 #[test]
 fn startpos_material_is_zero() {
-    let _tables = load_magic_tables();
     let b = Board::new();
     assert_eq!(
         eval_material(&b),
@@ -51,10 +50,11 @@ fn fen(f: &str) -> Board {
 
 #[test]
 fn material_startpos_is_zero() {
+    let tables = load_magic_tables();
     let b = fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     assert_eq!(eval_material(&b), 0);
     // CHANGED: static_eval includes PSQT, so just check it's close to 0
-    let eval = static_eval(&b);
+    let eval = static_eval(&b, &tables);
     assert!(
         eval.abs() < 200,
         "Start position eval should be close to 0, got {}",
@@ -64,6 +64,7 @@ fn material_startpos_is_zero() {
 
 #[test]
 fn material_white_up_a_pawn_is_plus_100() {
+    let tables = load_magic_tables();
     let b = fen("8/8/8/8/8/8/P7/8 w - - 0 1");
     let val = eval_material(&b);
     // PeSTO Pawn is around 82(MG) to 94(EG).
@@ -74,7 +75,7 @@ fn material_white_up_a_pawn_is_plus_100() {
     );
 
     // CHANGED: static_eval includes PSQT bonus
-    let eval = static_eval(&b);
+    let eval = static_eval(&b, &tables);
     assert!(
         eval >= 80,
         "Static eval with pawn should be positive (approx 80+), got {}",
@@ -84,6 +85,7 @@ fn material_white_up_a_pawn_is_plus_100() {
 
 #[test]
 fn material_black_up_a_rook_is_minus_500() {
+    let tables = load_magic_tables();
     let b = fen("8/8/8/8/8/8/8/7r w - - 0 1");
     let val = eval_material(&b);
     // PeSTO Rook is 477(MG) to 512(EG). So -477 to -512.
@@ -94,7 +96,7 @@ fn material_black_up_a_rook_is_minus_500() {
     );
 
     // CHANGED: static_eval includes PSQT bonus (which makes it LESS negative usually)
-    let eval = static_eval(&b);
+    let eval = static_eval(&b, &tables);
     assert!(
         eval <= -400,
         "Black rook eval should be significantly negative (<= -400), got {}",
@@ -138,10 +140,11 @@ fn material_en_passant_capture_reduces_white_pawns_by_one() {
 
 #[test]
 fn static_eval_includes_psqt_bonus() {
+    let tables = load_magic_tables();
     // With PSQT, static_eval should differ from pure material
     let b = fen("8/8/8/8/8/8/P7/8 w - - 0 1");
     let material = eval_material(&b);
-    let full_eval = static_eval(&b);
+    let full_eval = static_eval(&b, &tables);
 
     // static_eval = material + PSQT bonuses
     // Should be at least the material value
@@ -155,12 +158,13 @@ fn static_eval_includes_psqt_bonus() {
 
 #[test]
 fn static_eval_accounts_for_side_to_move() {
+    let tables = load_magic_tables();
     // Same position, different side to move
     let white_to_move = fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     let black_to_move = fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1");
 
-    let eval_white = static_eval(&white_to_move);
-    let eval_black = static_eval(&black_to_move);
+    let eval_white = static_eval(&white_to_move, &tables);
+    let eval_black = static_eval(&black_to_move, &tables);
 
     // With tempo bonus, these should differ slightly
     // eval_white should be slightly better than eval_black (tempo bonus)

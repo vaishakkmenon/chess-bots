@@ -1,107 +1,131 @@
 use crate::moves::types::Move;
 
+// Make sure MATE_THRESHOLD matches what we define in search.rs (30000)
+pub const MATE_THRESHOLD: i32 = 30000;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum NodeType {
-    Exact,      // PV node
-    LowerBound, // Failed high (beta cutoff)
-    UpperBound, // Failed low (all moves < alpha)
+    Exact = 0,
+    LowerBound = 1, // Beta cutoff (failed high)
+    UpperBound = 2, // Alpha cutoff (failed low)
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct TTEntry {
-    pub hash: u64,
-    pub depth: i8,
-    pub score: i32,
+    pub key: u64,
     pub best_move: Option<Move>,
-    pub node_type: NodeType,
+    pub score: i16,
+    pub depth: u8,
+    pub bound: u8, // 0=Exact, 1=Lower, 2=Upper
+    pub generation: u8,
 }
 
 pub struct TranspositionTable {
-    table: Vec<Option<TTEntry>>,
-    size: usize,
+    entries: Vec<TTEntry>,
+    // size: usize, // Removed unused field
+    pub generation: u8,
 }
 
 impl TranspositionTable {
-    pub fn new(size: usize) -> Self {
+    pub fn new(size_mb: usize) -> Self {
+        // Calculate number of entries based on size_mb
+        // Entry size is 8(key) + 6(move is 5+padding?) + 2(score) + 1(depth) + 1(bound) + 1(gen) + padding
+        // std::mem::size_of::<TTEntry>() would be good to know.
+        // Assuming ~24 bytes?
+        // For simplicity, strict power of 2 size
+        let entry_size = std::mem::size_of::<TTEntry>();
+        let num_entries = (size_mb * 1024 * 1024) / entry_size;
+
+        // Round down to power of 2
+        let mut capacity = 1;
+        while capacity * 2 <= num_entries {
+            capacity *= 2;
+        }
+
         Self {
-            table: vec![None; size],
-            size,
+            entries: vec![
+                TTEntry {
+                    key: 0,
+                    best_move: None,
+                    score: 0,
+                    depth: 0,
+                    bound: 0,
+                    generation: 0,
+                };
+                capacity
+            ],
+            // size: capacity,
+            generation: 0,
         }
     }
 
-    pub fn size(&self) -> usize {
-        self.size
+    pub fn new_search(&mut self) {
+        self.generation = self.generation.wrapping_add(1);
     }
 
-    fn index(&self, hash: u64) -> usize {
-        (hash as usize) % self.size
+    pub fn clear(&mut self) {
+        for entry in self.entries.iter_mut() {
+            entry.key = 0;
+            entry.best_move = None;
+            entry.score = 0;
+            entry.depth = 0;
+            entry.bound = 0;
+            entry.generation = 0;
+        }
+        self.generation = 0;
     }
 
-    pub fn probe(&self, hash: u64) -> Option<&TTEntry> {
-        let index = self.index(hash);
-        if let Some(entry) = &self.table[index]
-            && entry.hash == hash
-        {
-            return Some(entry);
+    pub fn save(
+        &mut self,
+        key: u64,
+        mv: Option<Move>,
+        score: i32,
+        depth: u8,
+        bound: u8,
+        _ply: i32,
+    ) {
+        // Normalization: Handled in search.rs now.
+        // We just store what we are given.
+
+        // Safety clamp
+        let score_i16 = score.clamp(-32000, 32000) as i16;
+
+        let index = (key as usize) & (self.entries.len() - 1);
+        let entry = &mut self.entries[index];
+
+        // Replacement Strategy:
+        // Replace if: Empty (key=0), OR Deeper search, OR New generation (old entry)
+        if entry.key == 0 || depth >= entry.depth || entry.generation != self.generation {
+            // Preserve move if new one is None (common optimization?)
+            // But user snippet says "entry.best_move = mv.unwrap_or..." effectively overwriting.
+            // Let's stick to simple overwrite for now, or preserve if mv is None.
+            let best_move = if mv.is_some() { mv } else { entry.best_move };
+
+            entry.key = key;
+            entry.best_move = best_move;
+            entry.score = score_i16;
+            entry.depth = depth;
+            entry.bound = bound;
+            entry.generation = self.generation;
+        }
+    }
+
+    pub fn probe(
+        &self,
+        key: u64,
+        _depth: u8,
+        _alpha: i32,
+        _beta: i32,
+        _ply: i32,
+    ) -> Option<(Option<Move>, i32, u8, u8)> {
+        let index = (key as usize) & (self.entries.len() - 1);
+        let entry = &self.entries[index];
+
+        if entry.key == key {
+            let score = entry.score as i32;
+            // De-Normalization: Handled in search.rs now.
+            return Some((entry.best_move, score, entry.depth, entry.bound));
         }
         None
-    }
-
-    pub fn store(
-        &mut self,
-        hash: u64,
-        depth: i8,
-        score: i32,
-        best_move: Option<Move>,
-        node_type: NodeType,
-    ) {
-        let index = self.index(hash);
-
-        // Check what is currently in the slot
-        if let Some(existing) = &self.table[index] {
-            // Rule 1: Always replace if we are searching deeper than the stored entry
-            if depth > existing.depth {
-                self.table[index] = Some(TTEntry {
-                    hash,
-                    score,
-                    best_move,
-                    depth,
-                    node_type,
-                });
-                return;
-            }
-
-            // Rule 2: If depths are equal, be careful!
-            if depth == existing.depth {
-                // NEVER overwrite an EXACT node with a BOUND node at the same depth
-                if existing.node_type == NodeType::Exact && node_type != NodeType::Exact {
-                    return;
-                }
-
-                // Otherwise (Exact overwrites Exact, or Bound overwrites Bound), update it.
-                // We also generally want to keep the 'best_move' if the new entry doesn't have one.
-                let new_best_move = best_move.or(existing.best_move);
-
-                self.table[index] = Some(TTEntry {
-                    hash,
-                    score,
-                    best_move: new_best_move,
-                    depth,
-                    node_type,
-                });
-            }
-
-            // Rule 3: If new depth is shallower (depth < existing.depth), do nothing.
-            // We want to keep the deeper search result.
-        } else {
-            // Slot is empty, just store it
-            self.table[index] = Some(TTEntry {
-                hash,
-                score,
-                best_move,
-                depth,
-                node_type,
-            });
-        }
     }
 }

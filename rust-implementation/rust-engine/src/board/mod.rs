@@ -468,6 +468,14 @@ impl Color {
     }
 }
 
+impl std::ops::Not for Color {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        self.opposite()
+    }
+}
+
 impl Piece {
     /// Decode a 0–5 value into a Piece.
     #[inline(always)]

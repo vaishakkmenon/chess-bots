@@ -4,7 +4,7 @@ use rust_engine::search::eval::static_eval;
 use std::str::FromStr;
 
 fn main() {
-    let _tables = load_magic_tables();
+    let tables = load_magic_tables();
 
     let test_fens = vec![
         (
@@ -37,7 +37,7 @@ fn main() {
 
     for (name, fen) in test_fens {
         let board = Board::from_str(fen).expect("Invalid FEN");
-        let score = static_eval(&board);
+        let score = static_eval(&board, &tables);
 
         println!("{:12} : {:>6} centipawns", name, score);
     }

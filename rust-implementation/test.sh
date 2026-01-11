@@ -5,7 +5,7 @@ cd /workspace/rust-implementation/rust-cli
 cargo build --release
 
 # Output directory
-OUTPUT_DIR="/workspace/rust-implementation/data/benchmarks/v7.2_time_management"
+OUTPUT_DIR="/workspace/rust-implementation/data/benchmarks/v8_NMP_LMR_AW_PVS_Mobility"
 mkdir -p "$OUTPUT_DIR"
 
 ENGINE_PATH="/workspace/rust-implementation/rust-cli/target/release/rust-cli"
@@ -18,7 +18,7 @@ for depth in 3 4 5 6 7; do
 
   cutechess-cli \
     -engine name="Stockfish" cmd=stockfish proto=uci depth=3 \
-    -engine name="Wayfinder_v7.2" cmd="$ENGINE_PATH" proto=uci depth=$depth \
+    -engine name="Wayfinder_v8" cmd="$ENGINE_PATH" proto=uci depth=$depth \
     -each tc=60+0.6 \
     -rounds 10 \
     -repeat \

@@ -205,9 +205,9 @@ fn handle_go(
                 if i + 1 < parts.len() {
                     let wtime: u64 = parts[i + 1].parse().unwrap_or(60000);
                     if board.side_to_move == Color::White {
-                        // Allocate time for ~20 moves remaining
-                        let moves_to_go = 20;
-                        let time_for_move = wtime / moves_to_go;
+                        // Standard Tournament Logic:
+                        // Divide remaining time by 30 (approx moves left), minimum 500ms buffer
+                        let time_for_move = (wtime / 30).max(500);
                         time_limit = Some(Duration::from_millis(time_for_move));
                     }
                 }
@@ -218,8 +218,7 @@ fn handle_go(
                 if i + 1 < parts.len() {
                     let btime: u64 = parts[i + 1].parse().unwrap_or(60000);
                     if board.side_to_move == Color::Black {
-                        let moves_to_go = 20;
-                        let time_for_move = btime / moves_to_go;
+                        let time_for_move = (btime / 30).max(500);
                         time_limit = Some(Duration::from_millis(time_for_move));
                     }
                 }
@@ -229,8 +228,9 @@ fn handle_go(
                 if i + 1 < parts.len() {
                     let winc: u64 = parts[i + 1].parse().unwrap_or(0);
                     if board.side_to_move == Color::White {
+                        // Add 75% of the increment to our current move time
                         if let Some(limit) = time_limit {
-                            time_limit = Some(limit + Duration::from_millis(winc / 2));
+                            time_limit = Some(limit + Duration::from_millis((winc * 3) / 4));
                         }
                     }
                 }
@@ -241,13 +241,14 @@ fn handle_go(
                     let binc: u64 = parts[i + 1].parse().unwrap_or(0);
                     if board.side_to_move == Color::Black {
                         if let Some(limit) = time_limit {
-                            time_limit = Some(limit + Duration::from_millis(binc / 2));
+                            time_limit = Some(limit + Duration::from_millis((binc * 3) / 4));
                         }
                     }
                 }
                 i += 2;
             }
             "movestogo" => {
+                // Future enhancement: Adjust divisor (e.g., wtime / movestogo)
                 i += 2;
             }
             "infinite" => {
@@ -266,19 +267,14 @@ fn handle_go(
         depth = 100;
     }
 
-    // tt.new_search();
+    // tt.new_search(); // Uncomment when you integrate TT reset
     // ctx.clear_history();
 
-    // Perform minimax search
-    // let (_score, best_move) = minimax(board, tables, depth, true);
-    // let (_score, best_move) = rust_engine::search::search::fixed_search(board, tables, depth, 0);
     let (_score, best_move) = search(board, tables, depth, time_limit);
 
-    // Output best move
     if let Some(m) = best_move {
         println!("bestmove {}", m);
     } else {
-        // No legal moves
         println!("bestmove 0000");
     }
 }
