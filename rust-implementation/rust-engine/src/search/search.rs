@@ -288,7 +288,15 @@ pub fn alpha_beta(
         // Conditions: index >= 4, depth >= 3, not capture/promo, not in check
         // Note: We use 'i >= 4' which means the 5th move (indexes 0,1,2,3 are top 4).
         if depth >= 3 && i >= 4 && !mv.is_capture() && !mv.is_promotion() && !in_check_now {
-            let r = 1;
+            let mut r = 1;
+
+            // Aggressive LMR:
+            // If we are searching deep (>6) and this move is far down the list (>10),
+            // it is very likely bad. Reduce it by 2 plies.
+            if depth >= 6 && i >= 10 {
+                r = 2;
+            }
+
             // Reduced depth, Zero Window Search
             let (val, _) = alpha_beta(
                 board,
@@ -381,62 +389,74 @@ pub fn search(
     let mut best_score = 0;
 
     let mut ctx = SearchContext::new();
+    // Keep the large TT size you just added
     let mut tt = TranspositionTable::new(1 << 24);
     let mut time = TimeManager::new(time_limit);
     let mut nodes = 0;
 
     for depth in 1..=max_depth {
-        // FIX: History Decay
-        // Divide history scores by 8 between depths to prevent "toxic" moves from dominating
+        // Decay history heuristics to keep them fresh
         for from in 0..64 {
             for to in 0..64 {
                 ctx.history[from][to] /= 8;
             }
         }
-        let (score, mv) = alpha_beta(
-            board,
-            tables,
-            &mut ctx,
-            &mut tt,
-            depth,
-            0,
-            i32::MIN + 1,
-            i32::MAX,
-            &mut nodes,
-            &mut time,
-        );
 
-        // ABORT CHECK: If time ran out during this depth, DISCARD the result!
-        if time.stop_signal {
-            println!("info string Time up! Aborting search at depth {}", depth);
-            break;
+        // --- ASPIRATION WINDOW LOGIC START ---
+        // Default: Infinite window for shallow depths
+        let mut alpha = i32::MIN + 1;
+        let mut beta = i32::MAX;
+        let mut delta = 50; // Initial window size (50cp = 0.5 pawns)
+
+        // Only use aspiration windows for deeper searches (Depth 5+)
+        if depth >= 5 {
+            alpha = (-MATE_SCORE).max(best_score - delta);
+            beta = (MATE_SCORE).min(best_score + delta);
         }
 
-        if let Some(valid_mv) = mv {
-            best_move = Some(valid_mv);
-            best_score = score;
-
-            println!(
-                "info depth {} score cp {} pv {}",
-                depth,
-                score,
-                valid_mv.to_uci()
+        loop {
+            let (score, mv) = alpha_beta(
+                board, tables, &mut ctx, &mut tt, depth, 0, alpha, beta, &mut nodes, &mut time,
             );
-        } else {
-            // If no move returned at root, we are mated or stalemated immediately (or time up)
-            // However, alpha_beta returns (0, None) for time up.
-            // If score is MATE/Stalemate, we should respect it.
-            if !time.stop_signal && (score.abs() > MATE_THRESHOLD || score == 0) {
-                best_score = score;
-                // If we have a previous best move from earlier depths, keep it?
-                // But if we are mated at depth 1, best_move is None.
-            }
-            break;
-        }
 
-        // Safety check between depths
-        time.check_time();
+            // Abort if time ran out
+            if time.stop_signal {
+                break;
+            }
+
+            // FAIL LOW: The score is worse than we expected (<= alpha)
+            // The position is worse than we thought. We need to widen the window DOWN.
+            if score <= alpha {
+                alpha = (-MATE_SCORE).max(alpha - delta);
+                delta += delta / 2; // Widen the window aggressively (exponentially)
+                continue; // Re-search with new bounds
+            }
+
+            // FAIL HIGH: The score is better than we expected (>= beta)
+            // The position is better than we thought. We need to widen the window UP.
+            if score >= beta {
+                beta = (MATE_SCORE).min(beta + delta);
+                delta += delta / 2;
+                continue; // Re-search with new bounds
+            }
+
+            // EXACT MATCH: The score is inside our window. We found the truth!
+            if let Some(valid_mv) = mv {
+                best_move = Some(valid_mv);
+                best_score = score;
+                println!(
+                    "info depth {} score cp {} pv {}",
+                    depth,
+                    score,
+                    valid_mv.to_uci()
+                );
+            }
+            break; // Done with this depth
+        }
+        // --- ASPIRATION WINDOW LOGIC END ---
+
         if time.stop_signal {
+            println!("info string Time up!");
             break;
         }
     }
