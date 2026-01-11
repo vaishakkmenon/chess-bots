@@ -441,9 +441,10 @@ pub fn search(
             }
 
             // EXACT MATCH: The score is inside our window. We found the truth!
+            best_score = score; // Always update score!
+
             if let Some(valid_mv) = mv {
                 best_move = Some(valid_mv);
-                best_score = score;
                 println!(
                     "info depth {} score cp {} pv {}",
                     depth,
@@ -451,12 +452,23 @@ pub fn search(
                     valid_mv.to_uci()
                 );
             }
+
+            // If we found a mate (or were mated), stop searching deeper
+            if score.abs() > MATE_THRESHOLD {
+                break;
+            }
+
             break; // Done with this depth
         }
         // --- ASPIRATION WINDOW LOGIC END ---
 
         if time.stop_signal {
             println!("info string Time up!");
+            break;
+        }
+
+        // If found mate, break outer loop too
+        if best_score.abs() > MATE_THRESHOLD {
             break;
         }
     }
