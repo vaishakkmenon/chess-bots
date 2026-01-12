@@ -205,6 +205,24 @@ pub fn alpha_beta(
 
     let in_check_now = in_check(board, board.side_to_move, tables);
 
+    // =============================================================
+    // REVERSE FUTILITY PRUNING (RFP)
+    // =============================================================
+    // Rule: "If I do nothing and I'm still winning by a lot, stop searching."
+    // This safely prunes lines where we are crushing the opponent.
+    if depth < 9 && !in_check_now && ply > 0 {
+        let eval = static_eval(board, tables);
+
+        // Margin: 120 per depth.
+        // e.g., at Depth 1, we need to be up by 120. At Depth 5, up by 600.
+        let margin = 120 * depth;
+
+        if eval - margin >= beta {
+            return (beta, None);
+        }
+    }
+    // =============================================================
+
     // FIX 3: NULL MOVE PRUNING DEPTH
     // Increased from 3 to 4.
     // At depth 3, NMP reduces to depth 0 (Q-search). If there is a positional threat

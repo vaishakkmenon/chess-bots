@@ -5,20 +5,20 @@ cd /workspace/rust-implementation/rust-cli
 cargo build --release
 
 # Output directory
-OUTPUT_DIR="/workspace/rust-implementation/data/benchmarks/v9_Mop_Up"
+OUTPUT_DIR="/workspace/rust-implementation/data/benchmarks/v10_RFP"
 mkdir -p "$OUTPUT_DIR"
 
 ENGINE_PATH="/workspace/rust-implementation/rust-cli/target/release/rust-cli"
 
 # Run tournaments for depths 3-7
-for depth in 3 4 5 6 7; do
+for depth in 3 4 5 6 7 8 9 10 11 12; do
   echo "========================================="
   echo "Running tournament: Stockfish d3 vs Wayfinder ID d${depth}"
   echo "========================================="
 
   cutechess-cli \
     -engine name="Stockfish" cmd=stockfish proto=uci depth=3 \
-    -engine name="Wayfinder_v8" cmd="$ENGINE_PATH" proto=uci depth=$depth \
+    -engine name="Wayfinder_v10" cmd="$ENGINE_PATH" proto=uci depth=$depth \
     -each tc=60+0.6 \
     -rounds 2 \
     -repeat \
