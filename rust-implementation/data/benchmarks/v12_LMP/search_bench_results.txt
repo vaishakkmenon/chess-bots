@@ -1,0 +1,207 @@
+=========================================
+Search Benchmarks for Wayfinder v12
+Date: Mon Jan 12 02:20:07 UTC 2026
+=========================================
+=== Chess Engine Search Benchmark Depth: 9 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 9
+
+Searching...
+
+info depth 1 score cp 147 nodes 26 time 0 pv g1f3
+info depth 2 score cp 0 nodes 101 time 0 pv g1f3
+info depth 3 score cp 129 nodes 242 time 0 pv g1f3
+info depth 4 score cp 0 nodes 526 time 1 pv g1f3
+info depth 5 score cp 22 nodes 1029 time 2 pv g1f3
+info depth 6 score cp 0 nodes 2210 time 3 pv g1f3
+info depth 7 score cp 80 nodes 4539 time 6 pv g1f3
+info depth 8 score cp 37 nodes 8506 time 12 pv g1f3
+info depth 9 score cp 15 nodes 15764 time 22 pv g1f3
+=== Results ===
+Time:      0.030s
+Best move: "g1f3"
+Score:     15 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 10 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 10
+
+Searching...
+
+info depth 1 score cp 147 nodes 26 time 0 pv g1f3
+info depth 2 score cp 0 nodes 101 time 0 pv g1f3
+info depth 3 score cp 129 nodes 242 time 0 pv g1f3
+info depth 4 score cp 0 nodes 526 time 1 pv g1f3
+info depth 5 score cp 22 nodes 1029 time 1 pv g1f3
+info depth 6 score cp 0 nodes 2210 time 3 pv g1f3
+info depth 7 score cp 80 nodes 4539 time 6 pv g1f3
+info depth 8 score cp 37 nodes 8506 time 12 pv g1f3
+info depth 9 score cp 15 nodes 15764 time 23 pv g1f3
+info depth 10 score cp 48 nodes 33182 time 48 pv g1f3
+=== Results ===
+Time:      0.056s
+Best move: "g1f3"
+Score:     48 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 11 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 11
+
+Searching...
+
+info depth 1 score cp 147 nodes 26 time 0 pv g1f3
+info depth 2 score cp 0 nodes 101 time 0 pv g1f3
+info depth 3 score cp 129 nodes 242 time 0 pv g1f3
+info depth 4 score cp 0 nodes 526 time 1 pv g1f3
+info depth 5 score cp 22 nodes 1029 time 1 pv g1f3
+info depth 6 score cp 0 nodes 2210 time 3 pv g1f3
+info depth 7 score cp 80 nodes 4539 time 6 pv g1f3
+info depth 8 score cp 37 nodes 8506 time 11 pv g1f3
+info depth 9 score cp 15 nodes 15764 time 21 pv g1f3
+info depth 10 score cp 48 nodes 33182 time 46 pv g1f3
+info depth 11 score cp 34 nodes 70643 time 100 pv g1f3
+=== Results ===
+Time:      0.108s
+Best move: "g1f3"
+Score:     34 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 12 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 12
+
+Searching...
+
+info depth 1 score cp 147 nodes 26 time 0 pv g1f3
+info depth 2 score cp 0 nodes 101 time 0 pv g1f3
+info depth 3 score cp 129 nodes 242 time 0 pv g1f3
+info depth 4 score cp 0 nodes 526 time 1 pv g1f3
+info depth 5 score cp 22 nodes 1029 time 1 pv g1f3
+info depth 6 score cp 0 nodes 2210 time 3 pv g1f3
+info depth 7 score cp 80 nodes 4539 time 6 pv g1f3
+info depth 8 score cp 37 nodes 8506 time 12 pv g1f3
+info depth 9 score cp 15 nodes 15764 time 23 pv g1f3
+info depth 10 score cp 48 nodes 33182 time 51 pv g1f3
+info depth 11 score cp 34 nodes 70643 time 112 pv g1f3
+info depth 12 score cp 0 nodes 277528 time 461 pv g1f3
+=== Results ===
+Time:      0.471s
+Best move: "g1f3"
+Score:     0 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 13 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 13
+
+Searching...
+
+info depth 1 score cp 147 nodes 26 time 0 pv g1f3
+info depth 2 score cp 0 nodes 101 time 0 pv g1f3
+info depth 3 score cp 129 nodes 242 time 0 pv g1f3
+info depth 4 score cp 0 nodes 526 time 1 pv g1f3
+info depth 5 score cp 22 nodes 1029 time 1 pv g1f3
+info depth 6 score cp 0 nodes 2210 time 3 pv g1f3
+info depth 7 score cp 80 nodes 4539 time 6 pv g1f3
+info depth 8 score cp 37 nodes 8506 time 11 pv g1f3
+info depth 9 score cp 15 nodes 15764 time 21 pv g1f3
+info depth 10 score cp 48 nodes 33182 time 47 pv g1f3
+info depth 11 score cp 34 nodes 70643 time 102 pv g1f3
+info depth 12 score cp 0 nodes 277528 time 430 pv g1f3
+info depth 13 score cp 50 nodes 604122 time 956 pv g1f3
+=== Results ===
+Time:      0.964s
+Best move: "g1f3"
+Score:     50 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 14 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 14
+
+Searching...
+
+info depth 1 score cp 147 nodes 26 time 0 pv g1f3
+info depth 2 score cp 0 nodes 101 time 0 pv g1f3
+info depth 3 score cp 129 nodes 242 time 0 pv g1f3
+info depth 4 score cp 0 nodes 526 time 1 pv g1f3
+info depth 5 score cp 22 nodes 1029 time 1 pv g1f3
+info depth 6 score cp 0 nodes 2210 time 3 pv g1f3
+info depth 7 score cp 80 nodes 4539 time 6 pv g1f3
+info depth 8 score cp 37 nodes 8506 time 12 pv g1f3
+info depth 9 score cp 15 nodes 15764 time 22 pv g1f3
+info depth 10 score cp 48 nodes 33182 time 48 pv g1f3
+info depth 11 score cp 34 nodes 70643 time 103 pv g1f3
+info depth 12 score cp 0 nodes 277528 time 439 pv g1f3
+info depth 13 score cp 50 nodes 604122 time 970 pv g1f3
+info depth 14 score cp 50 nodes 918636 time 1478 pv g1f3
+=== Results ===
+Time:      1.486s
+Best move: "g1f3"
+Score:     50 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 15 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 15
+
+Searching...
+
+info depth 1 score cp 147 nodes 26 time 0 pv g1f3
+info depth 2 score cp 0 nodes 101 time 0 pv g1f3
+info depth 3 score cp 129 nodes 242 time 0 pv g1f3
+info depth 4 score cp 0 nodes 526 time 1 pv g1f3
+info depth 5 score cp 22 nodes 1029 time 1 pv g1f3
+info depth 6 score cp 0 nodes 2210 time 3 pv g1f3
+info depth 7 score cp 80 nodes 4539 time 6 pv g1f3
+info depth 8 score cp 37 nodes 8506 time 12 pv g1f3
+info depth 9 score cp 15 nodes 15764 time 22 pv g1f3
+info depth 10 score cp 48 nodes 33182 time 49 pv g1f3
+info depth 11 score cp 34 nodes 70643 time 102 pv g1f3
+info depth 12 score cp 0 nodes 277528 time 429 pv g1f3
+info depth 13 score cp 50 nodes 604122 time 954 pv g1f3
+info depth 14 score cp 50 nodes 918636 time 1453 pv g1f3
+info depth 15 score cp 24 nodes 13845658 time 33222 pv g1f3
+=== Results ===
+Time:      33.231s
+Best move: "g1f3"
+Score:     24 centipawns
+===============
+
+
+-----------------------------------------

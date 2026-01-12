@@ -295,6 +295,36 @@ pub fn alpha_beta(
             }
         }
 
+        // =========================================================
+        // LATE MOVE PRUNING (LMP)
+        // =========================================================
+        // Logic: If we have searched many quiet moves and haven't found a
+        // good one yet, it's highly unlikely the remaining (unsorted) moves
+        // will be any better. Just cut them off.
+
+        // Conditions:
+        // 1. Not in check (safety).
+        // 2. Not the PV node (alpha > original_alpha) - we need precision there.
+        // 3. We are deep enough in the search (depth < 8).
+        // 4. We have exceeded the "move count" limit.
+        if depth < 8
+            && !in_check_now
+            && !mv.is_capture()
+            && !mv.is_promotion()
+            && alpha == original_alpha
+        // Only prune if we haven't improved alpha yet
+        {
+            // Formula: The deeper we are, the more moves we allow.
+            // Depth 1: search 4 moves. Depth 2: search 6 moves.
+            let lmp_threshold = 3 + depth * depth;
+
+            // If we have searched more moves than the threshold, STOP.
+            if i > lmp_threshold as usize {
+                break; // Break the loop, stop generating moves for this node
+            }
+        }
+        // =========================================================
+
         let undo = make_move_basic(board, mv);
         let mut score;
 
