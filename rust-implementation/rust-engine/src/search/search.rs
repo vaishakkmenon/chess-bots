@@ -205,19 +205,19 @@ pub fn alpha_beta(
 
     let in_check_now = in_check(board, board.side_to_move, tables);
 
-    // =============================================================
-    // REVERSE FUTILITY PRUNING (RFP)
-    // =============================================================
-    // Rule: "If I do nothing and I'm still winning by a lot, stop searching."
-    // This safely prunes lines where we are crushing the opponent.
+    // [STEP 1] Calculate Eval Early
+    // We lift this out so both RFP and SFP can share it.
+    let static_eval_val = if !in_check_now {
+        static_eval(board, tables)
+    } else {
+        0 // Dummy value, we won't use it if in check
+    };
+
+    // [STEP 2] Update Reverse Futility Pruning (RFP) to use the variable
     if depth < 9 && !in_check_now && ply > 0 {
-        let eval = static_eval(board, tables);
-
-        // Margin: 120 per depth.
-        // e.g., at Depth 1, we need to be up by 120. At Depth 5, up by 600.
         let margin = 120 * depth;
-
-        if eval - margin >= beta {
+        // Use the pre-calculated variable
+        if static_eval_val - margin >= beta {
             return (beta, None);
         }
     }
@@ -282,6 +282,19 @@ pub fn alpha_beta(
     let original_alpha = alpha;
 
     for (i, mv) in moves.into_iter().enumerate() {
+        // [STEP 3] STANDARD FUTILITY PRUNING
+        // Logic: If the move is quiet and our position is hopelessly below Alpha, skip it.
+        if depth < 7 && !in_check_now && !mv.is_capture() && !mv.is_promotion() && i > 0
+        // Safety: Always search the first move (it might be the only legal one)
+        {
+            // Margin: We assume a quiet move can improve our position by at most 150 * depth.
+            // If eval + margin is still <= alpha, this move cannot possibly beat alpha.
+            let margin = 150 * depth;
+            if static_eval_val + margin <= alpha {
+                continue; // PRUNE: Skip to next move
+            }
+        }
+
         let undo = make_move_basic(board, mv);
         let mut score;
 
