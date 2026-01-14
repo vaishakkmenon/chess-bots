@@ -176,4 +176,6 @@ cython_debug/
 # Ignore local claude settings and Claude documents
 .claude/
 CLAUDE.md
+
+.git
 git-config-docker

@@ -345,7 +345,7 @@ pub fn alpha_beta(
         } else {
             // LMR Logic
             let mut r = 0;
-            
+
             // Only reduce if:
             // 1. We are deep enough (> 2)
             // 2. We have searched the first few moves (i > 3)
@@ -356,13 +356,19 @@ pub fn alpha_beta(
                 r = 1;
 
                 // If we are at high depth, reduce more
-                if depth > 6 { r += 1; }
-                
+                if depth > 6 {
+                    r += 1;
+                }
+
                 // If this is a very late move, reduce even more
-                if i > 8 { r += 1; }
-                
+                if i > 8 {
+                    r += 1;
+                }
+
                 // Super late moves at high depth get crushed
-                if i > 20 && depth > 10 { r += 1; }
+                if i > 20 && depth > 10 {
+                    r += 1;
+                }
             }
 
             let (val, _) = alpha_beta(
@@ -439,7 +445,7 @@ pub fn alpha_beta(
 
                 if !mv.is_capture() {
                     ctx.update_killer(ply, mv);
-                    
+
                     let bonus = depth * depth;
                     ctx.update_history(mv, bonus);
                 }
