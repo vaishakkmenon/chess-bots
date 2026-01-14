@@ -4,6 +4,8 @@ services:
     container_name: chess-dev-session
     volumes:
       - .:/workspace
+      - ./git-config-docker:/root/.gitconfig
+
     working_dir: /workspace
     stdin_open: true
     tty: true

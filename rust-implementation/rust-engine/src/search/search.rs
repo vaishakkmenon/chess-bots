@@ -307,7 +307,7 @@ pub fn alpha_beta(
         // 2. Not the PV node (alpha > original_alpha) - we need precision there.
         // 3. We are deep enough in the search (depth < 8).
         // 4. We have exceeded the "move count" limit.
-        if depth < 8
+        if depth < 14
             && !in_check_now
             && !mv.is_capture()
             && !mv.is_promotion()
@@ -316,7 +316,7 @@ pub fn alpha_beta(
         {
             // Formula: The deeper we are, the more moves we allow.
             // Depth 1: search 4 moves. Depth 2: search 6 moves.
-            let lmp_threshold = 3 + depth * depth;
+            let lmp_threshold = 3 + 4 * depth;
 
             // If we have searched more moves than the threshold, STOP.
             if i > lmp_threshold as usize {
@@ -345,16 +345,24 @@ pub fn alpha_beta(
         } else {
             // LMR Logic
             let mut r = 0;
-            // Condition 1: Base LMR (Reduce by 1)
-            // Kept depth > 3 check for LMR (only reduces at depth 4+)
-            if depth > 3 && i >= 4 && !mv.is_capture() && !mv.is_promotion() && !in_check_now {
+            
+            // Only reduce if:
+            // 1. We are deep enough (> 2)
+            // 2. We have searched the first few moves (i > 3)
+            // 3. It's a quiet move (not a capture/promotion)
+            // 4. We are not in check (tactical danger)
+            if depth > 2 && i > 3 && !mv.is_capture() && !mv.is_promotion() && !in_check_now {
+                // Base reduction
                 r = 1;
 
-                // Condition 2: Aggressive LMR (Reduce by 2)
-                // Pushing this to 8 ensures we don't blind ourselves too early.
-                if depth >= 8 && i >= 10 {
-                    r = 2;
-                }
+                // If we are at high depth, reduce more
+                if depth > 6 { r += 1; }
+                
+                // If this is a very late move, reduce even more
+                if i > 8 { r += 1; }
+                
+                // Super late moves at high depth get crushed
+                if i > 20 && depth > 10 { r += 1; }
             }
 
             let (val, _) = alpha_beta(
@@ -415,7 +423,7 @@ pub fn alpha_beta(
             if score > alpha {
                 alpha = score;
                 best_move = Some(mv);
-                ctx.update_history(mv, depth);
+                // ctx.update_history(mv, depth);
             }
             if score >= beta {
                 // FIX 4: TT SAVE WITH MATE SCORE ADJUSTMENT (LowerBound/Beta Cutoff)
@@ -429,7 +437,13 @@ pub fn alpha_beta(
                     ply as i32,
                 );
 
-                ctx.update_killer(ply, mv);
+                if !mv.is_capture() {
+                    ctx.update_killer(ply, mv);
+                    
+                    let bonus = depth * depth;
+                    ctx.update_history(mv, bonus);
+                }
+
                 return (beta, Some(mv));
             }
         }
