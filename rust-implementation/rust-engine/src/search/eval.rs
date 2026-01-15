@@ -4,14 +4,26 @@ use crate::search::pesto;
 use crate::utils::pop_lsb;
 
 // --- Evaluation Weights (Centipawns) ---
-// --- Evaluation Weights (Centipawns) ---
+// Reduced to stabilize start position.
 const MOBILITY_WEIGHT: i32 = 5;
-// Huge bonus for advancing pawns - this incentivizes WINNING endgames
-const PASSED_PAWN_BONUS: [i32; 8] = [0, 10, 20, 35, 50, 80, 120, 0];
+// Incentivize advancing pawns.
+// --- TUNING CONSTANTS ---
+// Values are in Centipawns.
+// Doubled is -20 per pawn (so -40 for the pair).
 const ISOLATED_PAWN_PENALTY: i32 = -15;
-const DOUBLED_PAWN_PENALTY: i32 = -15;
+const DOUBLED_PAWN_PENALTY: i32 = -10;
 const KING_SHIELD_BONUS: i32 = 10;
 const KING_EXPOSED_PENALTY: i32 = -30;
+
+// Conservative margin to prevent tactical blindness.
+// Represents the max possible swing from expensive evaluation terms.
+const LAZY_EVAL_MARGIN: i32 = 200;
+
+// Bonuses by Rank (0..7).
+// Rank 0,1 are 0. Rank 7 is 0 (promotion).
+// We heavily reward pushing the pawn to Rank 6 (7th rank).
+#[allow(dead_code)]
+const PASSED_PAWN_BONUS: [i32; 8] = [0, 0, 10, 20, 40, 70, 120, 0];
 
 // Phase Weights
 const KNIGHT_PHASE: i32 = 1;
@@ -84,89 +96,65 @@ fn get_piece_value(kind: Piece) -> (i32, i32) {
 }
 
 // --- Mop-Up Helper Functions ---
+// (Removed as part of optimized static_eval)
 
-// 1. Center Manhattan Distance (How far is a square from the center?)
-// Ranges from 0 (e4, d4, etc.) to 6 (corners).
-// Used to drive the enemy King to the edge.
-fn cmd(sq: u8) -> i32 {
-    let row = (sq / 8) as i32;
-    let col = (sq % 8) as i32;
-    // |2r - 7| + |2c - 7| gives a nice "center-weighted" distance
-    (2 * row - 7).abs() + (2 * col - 7).abs()
-}
+pub fn static_eval(board: &Board, tables: &MagicTables, alpha: i32, beta: i32) -> i32 {
+    // 1. CHEAP SCORE (Absolute / White Perspective)
+    // Positive = White winning, Negative = Black winning
+    let cheap_score_abs = pesto_eval(board);
 
-// 2. Chebyshev Distance (Grid distance between two squares)
-// Ranges from 0 to 7.
-// Used to bring our King closer to theirs.
-fn dist(sq1: u8, sq2: u8) -> i32 {
-    let r1 = (sq1 / 8) as i32;
-    let c1 = (sq1 % 8) as i32;
-    let r2 = (sq2 / 8) as i32;
-    let c2 = (sq2 % 8) as i32;
-    (r1 - r2).abs().max((c1 - c2).abs())
-}
+    // 2. CONVERT NEGAMAX BOUNDS TO ABSOLUTE PERSPECTIVE
+    // We need absolute bounds to compare with our absolute score.
+    // If White to move: alpha is alpha, beta is beta.
+    // If Black to move: alpha is -beta, beta is -alpha (Standard NegaMax inversion).
+    let (alpha_abs, beta_abs) = if board.side_to_move == Color::White {
+        (alpha, beta)
+    } else {
+        (-beta, -alpha)
+    };
 
-// 3. Material Check
-// Returns true if the color has any Knights, Bishops, Rooks, or Queens.
-fn has_non_pawn_material(board: &Board, color: Color) -> bool {
-    let bb = board.pieces(Piece::Knight, color)
-        | board.pieces(Piece::Bishop, color)
-        | board.pieces(Piece::Rook, color)
-        | board.pieces(Piece::Queen, color);
-    bb != 0
-}
-
-pub fn static_eval(board: &Board, tables: &MagicTables) -> i32 {
-    // 1. Base Score (Material + PeSTO)
-    let mut score = pesto_eval(board); // Your existing PeSTO
-
-    // Mobility (Activity)
-    score +=
-        eval_mobility(board, tables, Color::White) - eval_mobility(board, tables, Color::Black);
-
-    // Pawn Structure (Structure + Passed Pawns)
-    score += eval_pawns(board, Color::White) - eval_pawns(board, Color::Black);
-
-    // King Safety (Shielding)
-    score += eval_king_safety(board, Color::White) - eval_king_safety(board, Color::Black);
-
-    // 2. MOP-UP EVALUATION
-    // Only apply if the game is decided (one side has no pieces left).
-    // AND if both kings are on the board (sanity check for partial-board tests)
-    if board.pieces(Piece::King, Color::White) != 0 && board.pieces(Piece::King, Color::Black) != 0
-    {
-        // Scenario A: White is winning, Black has no pieces (only King + Pawns)
-        // We add bonuses to 'score' (making it more positive)
-        if score > 0 && !has_non_pawn_material(board, Color::Black) {
-            let white_king = board.king_square(Color::White).index() as u8;
-            let black_king = board.king_square(Color::Black).index() as u8;
-
-            // Bonus 1: Push Black King to edge (Max value ~60)
-            score += 10 * cmd(black_king);
-
-            // Bonus 2: Bring White King closer (Max value ~56)
-            // (14 - dist) ensures closer = higher score
-            score += 4 * (14 - dist(white_king, black_king));
-        }
-        // Scenario B: Black is winning, White has no pieces
-        // We subtract bonuses from 'score' (making it more negative)
-        else if score < 0 && !has_non_pawn_material(board, Color::White) {
-            let white_king = board.king_square(Color::White).index() as u8;
-            let black_king = board.king_square(Color::Black).index() as u8;
-
-            // Bonus 1: Push White King to edge
-            score -= 10 * cmd(white_king);
-
-            // Bonus 2: Bring Black King closer
-            score -= 4 * (14 - dist(black_king, white_king));
-        }
+    // 3. LAZY BETA CUTOFF
+    // "We are winning by so much that even the max penalty won't drop us below beta."
+    if cheap_score_abs - LAZY_EVAL_MARGIN > beta_abs {
+        // Return converted to side-to-move perspective
+        return if board.side_to_move == Color::White {
+            cheap_score_abs
+        } else {
+            -cheap_score_abs
+        };
     }
 
-    // 3. Return Perspective Score
-    if board.side_to_move == Color::Black {
-        -score
+    // 4. LAZY ALPHA CUTOFF (Optional but recommended)
+    // "We are losing by so much that even the max bonus won't raise us above alpha."
+    if cheap_score_abs + LAZY_EVAL_MARGIN < alpha_abs {
+        // Return converted to side-to-move perspective
+        return if board.side_to_move == Color::White {
+            cheap_score_abs
+        } else {
+            -cheap_score_abs
+        };
+    }
+
+    // 5. FULL EVALUATION (The position is "close")
+    // Start with cheap score, add expensive terms.
+    // KEEP EVERYTHING IN ABSOLUTE COORDINATES (White - Black).
+    let mut score_abs = cheap_score_abs;
+
+    // Mobility
+    score_abs +=
+        eval_mobility(board, tables, Color::White) - eval_mobility(board, tables, Color::Black);
+
+    // Pawn Structure (Assuming this function returns White relative score)
+    score_abs += evaluate_pawn_structure(board);
+
+    // King Safety
+    score_abs += eval_king_safety(board, Color::White) - eval_king_safety(board, Color::Black);
+
+    // 6. FINAL RETURN (Convert to side-to-move perspective)
+    if board.side_to_move == Color::White {
+        score_abs
     } else {
-        score
+        -score_abs
     }
 }
 
@@ -186,78 +174,73 @@ fn eval_mobility(board: &Board, tables: &MagicTables, color: Color) -> i32 {
     // Rooks
     for sq in BitIter(board.piece_bb[idx][Piece::Rook as usize]) {
         let attacks = tables.rook.get_attacks(sq, occupied);
-        // Using *3 as per user request (User code had *3)
-        // Previous code had (MOBILITY_WEIGHT - 2) which is 3. So consistent.
         score += (attacks & !us_bb).count_ones() as i32 * 3;
     }
-
-    // User didn't include Queens in their snippet, but I should probably keep them if I want to match "Mobility" concept?
-    // User's snippet:
-    // "    // Bishops ...
-    //      // Rooks ...
-    //      score"
-    // It DOES NOT include Queens.
-    // However, existing code DID include Queens.
-    // User instruction: "Please copy the code block below... This provides the 'Aggression' needed"
-    // If I omit Queens, I might weaken the engine or make it closer to what they tested.
-    // BUT, the snippet starts with "fn eval_mobility..." inside the block.
-    // I will STRICTLY follow the user's snippet for `eval_mobility` to match the "Aggression" profile they want (maybe they found Queen mobility unstable?).
-    // WAIT, checking user snippet again.
-    // It has Bishops and Rooks. No Queens.
-    // Okay, I will remove Queen mobility to match exact snippet.
 
     score
 }
 
-fn eval_pawns(board: &Board, color: Color) -> i32 {
-    let mut score = 0;
-    let pawns = board.piece_bb[color as usize][Piece::Pawn as usize];
-    let enemy_pawns = board.piece_bb[(!color) as usize][Piece::Pawn as usize];
+// --- BITWISE HELPERS ---
+const FILE_A: u64 = 0x0101010101010101;
+const FILE_H: u64 = 0x8080808080808080;
 
-    for file in 0..8 {
-        let file_mask = 0x0101010101010101u64 << file;
-        let my_pawns_on_file = pawns & file_mask;
+/// Helper: Smear pawns up and down to fill their entire file.
+/// Used to detect if a file has *any* pawns efficiently.
+#[inline(always)]
+fn file_fill(mut pawns: u64) -> u64 {
+    pawns |= pawns >> 8;
+    pawns |= pawns >> 16;
+    pawns |= pawns >> 32;
+    pawns |= pawns << 8;
+    pawns |= pawns << 16;
+    pawns |= pawns << 32;
+    pawns
+}
 
-        if my_pawns_on_file == 0 {
-            continue;
-        }
+pub fn evaluate_pawn_structure(board: &Board) -> i32 {
+    let wp = board.pieces(Piece::Pawn, Color::White);
+    let bp = board.pieces(Piece::Pawn, Color::Black);
 
-        // 1. Structure Penalties
-        let count = my_pawns_on_file.count_ones();
-        if count > 1 {
-            score += DOUBLED_PAWN_PENALTY * (count as i32 - 1);
-        }
+    let mut white_score = 0;
+    let mut black_score = 0;
 
-        let left = if file > 0 { file_mask >> 1 } else { 0 };
-        let right = if file < 7 { file_mask << 1 } else { 0 };
-        let neighbors = (left | right) & pawns;
-        if neighbors == 0 {
-            score += ISOLATED_PAWN_PENALTY;
-        }
+    // --- 1. Doubled Pawns (Bitwise) ---
+    // A pawn is doubled if there is another pawn of the same color behind it.
+    let w_doubled_mask = wp & (wp >> 8);
+    let b_doubled_mask = bp & (bp << 8);
 
-        // 2. Passed Pawns (The Win Condition)
-        for sq in BitIter(my_pawns_on_file) {
-            let rank = sq / 8;
-            let forward_mask = if color == Color::White {
-                !0u64 << (8 * (rank + 1))
-            } else {
-                !0u64 >> (8 * (8 - rank))
-            };
+    white_score += (w_doubled_mask.count_ones() as i32) * DOUBLED_PAWN_PENALTY;
+    black_score += (b_doubled_mask.count_ones() as i32) * DOUBLED_PAWN_PENALTY;
 
-            let span_mask = (file_mask | left | right) & forward_mask;
+    // --- 2. Isolated Pawns (Bitwise Parallel) ---
+    // Step A: "Smear" the pawns to create a mask of files that contain at least one white pawn.
+    let w_file_mask = file_fill(wp);
+    let b_file_mask = file_fill(bp);
 
-            if (span_mask & enemy_pawns) == 0 {
-                // IT IS PASSED! HUGE BONUS!
-                let relative_rank = if color == Color::White {
-                    rank
-                } else {
-                    7 - rank
-                };
-                score += PASSED_PAWN_BONUS[relative_rank as usize];
-            }
-        }
-    }
-    score
+    // Step B: Calculate which files have NO neighbors.
+    // Shift file mask Left and Right to find neighbor files.
+    // Note: Use masks to prevent wrapping A-file to H-file.
+    // Left (<< 1) moves A->B, so neighbors are to the East.
+    // Right (>> 1) moves B->A, so neighbors are to the West.
+    let w_neighbor_files = ((w_file_mask & !FILE_H) << 1) | ((w_file_mask & !FILE_A) >> 1);
+    let b_neighbor_files = ((b_file_mask & !FILE_H) << 1) | ((b_file_mask & !FILE_A) >> 1);
+
+    // Step C: Identify files that have pawns but NO neighbor files with pawns.
+    let w_isolated_files = w_file_mask & !w_neighbor_files;
+    let b_isolated_files = b_file_mask & !b_neighbor_files;
+
+    // Step D: Intersect with actual pawns to count them.
+    let w_isolated_pawns = wp & w_isolated_files;
+    let b_isolated_pawns = bp & b_isolated_files;
+
+    white_score += (w_isolated_pawns.count_ones() as i32) * ISOLATED_PAWN_PENALTY;
+    black_score += (b_isolated_pawns.count_ones() as i32) * ISOLATED_PAWN_PENALTY;
+
+    // --- 3. Passed Pawns (Simplified for now) ---
+    // Keeping existing passed pawn constants but skipping logic as discussed to focus on bitwise first.
+    // You can re-enable specialized passed logic later.
+
+    white_score - black_score
 }
 
 fn eval_king_safety(board: &Board, color: Color) -> i32 {
@@ -315,19 +298,19 @@ pub fn pesto_eval(board: &Board) -> i32 {
         let mut w_bb = board.pieces(piece_type, Color::White);
         while w_bb != 0 {
             let sq = pop_lsb(&mut w_bb);
-            // White is at bottom, normal index
-            mg_score += mg_val + mg_table[sq as usize];
-            eg_score += eg_val + eg_table[sq as usize];
+            // FIX: Mirror White to match Table Layout (Rank 8 at index 0)
+            let table_sq = mirror_vert(sq);
+            mg_score += mg_val + mg_table[table_sq];
+            eg_score += eg_val + eg_table[table_sq];
         }
 
         // Black pieces
         let mut b_bb = board.pieces(piece_type, Color::Black);
         while b_bb != 0 {
             let sq = pop_lsb(&mut b_bb);
-            // Black is at top, mirror index
-            let mirrored_sq = mirror_vert(sq);
-            mg_score -= mg_val + mg_table[mirrored_sq];
-            eg_score -= eg_val + eg_table[mirrored_sq];
+            // FIX: Black is already at the "top", read directly
+            mg_score -= mg_val + mg_table[sq as usize];
+            eg_score -= eg_val + eg_table[sq as usize];
         }
     }
 
@@ -381,18 +364,75 @@ pub fn eval_psqt(board: &Board) -> i32 {
         let mut w_bb = board.pieces(piece_type, Color::White);
         while w_bb != 0 {
             let sq = pop_lsb(&mut w_bb);
-            mg_score += mg_table[sq as usize];
-            eg_score += eg_table[sq as usize];
+            let table_sq = mirror_vert(sq);
+            mg_score += mg_table[table_sq];
+            eg_score += eg_table[table_sq];
         }
 
         let mut b_bb = board.pieces(piece_type, Color::Black);
         while b_bb != 0 {
             let sq = pop_lsb(&mut b_bb);
-            let mirrored_sq = mirror_vert(sq);
-            mg_score -= mg_table[mirrored_sq];
-            eg_score -= eg_table[mirrored_sq];
+            mg_score -= mg_table[sq as usize];
+            eg_score -= eg_table[sq as usize];
         }
     }
 
     (mg_score * phase + eg_score * (TOTAL_PHASE - phase)) / TOTAL_PHASE
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::moves::magic::loader::load_magic_tables;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_lazy_eval_matches_full_eval_in_close_positions() {
+        // Standard starting position
+        let board = Board::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+            .expect("Invalid FEN");
+        let tables = load_magic_tables();
+
+        // Use bounds that force full evaluation (-1000, 1000 covers the 0 score)
+        let lazy = static_eval(&board, &tables, -1000, 1000);
+
+        // Use infinite bounds to simulate "old" static eval behavior
+        let full = static_eval(&board, &tables, -i32::MAX, i32::MAX);
+
+        assert_eq!(
+            lazy, full,
+            "Lazy eval should equal full eval when no cutoff occurs"
+        );
+    }
+
+    #[test]
+    fn test_lazy_beta_cutoff() {
+        // White has massive material advantage. Score ~900cp.
+        let board = Board::from_str("4k3/8/8/8/8/8/QQQQQQQQ/4K3 w - - 0 1").expect("Invalid FEN");
+        let tables = load_magic_tables();
+
+        // 900 - 400 (Margin) > 100 (Beta) -> Cutoff triggers.
+        let beta = 100;
+        let score = static_eval(&board, &tables, -i32::MAX, beta);
+
+        assert!(
+            score > beta,
+            "Should trigger cutoff and return a winning score"
+        );
+    }
+
+    #[test]
+    fn test_perspective_flip() {
+        let board = Board::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+            .expect("Invalid FEN");
+        let tables = load_magic_tables();
+
+        let white_eval = static_eval(&board, &tables, -i32::MAX, i32::MAX);
+
+        let mut black_board = board.clone();
+        black_board.side_to_move = Color::Black;
+        let black_eval = static_eval(&black_board, &tables, -i32::MAX, i32::MAX);
+
+        assert_eq!(white_eval, -black_eval, "Eval should be symmetric");
+    }
 }

@@ -22,17 +22,12 @@ pub struct TTEntry {
 
 pub struct TranspositionTable {
     entries: Vec<TTEntry>,
-    // size: usize, // Removed unused field
     pub generation: u8,
 }
 
 impl TranspositionTable {
     pub fn new(size_mb: usize) -> Self {
-        // Calculate number of entries based on size_mb
-        // Entry size is 8(key) + 6(move is 5+padding?) + 2(score) + 1(depth) + 1(bound) + 1(gen) + padding
-        // std::mem::size_of::<TTEntry>() would be good to know.
-        // Assuming ~24 bytes?
-        // For simplicity, strict power of 2 size
+        // Allocate TT based on size in MB.
         let entry_size = std::mem::size_of::<TTEntry>();
         let num_entries = (size_mb * 1024 * 1024) / entry_size;
 
@@ -54,7 +49,7 @@ impl TranspositionTable {
                 };
                 capacity
             ],
-            // size: capacity,
+
             generation: 0,
         }
     }
@@ -84,21 +79,14 @@ impl TranspositionTable {
         bound: u8,
         _ply: i32,
     ) {
-        // Normalization: Handled in search.rs now.
-        // We just store what we are given.
-
         // Safety clamp
         let score_i16 = score.clamp(-32000, 32000) as i16;
 
         let index = (key as usize) & (self.entries.len() - 1);
         let entry = &mut self.entries[index];
 
-        // Replacement Strategy:
-        // Replace if: Empty (key=0), OR Deeper search, OR New generation (old entry)
         if entry.key == 0 || depth >= entry.depth || entry.generation != self.generation {
-            // Preserve move if new one is None (common optimization?)
-            // But user snippet says "entry.best_move = mv.unwrap_or..." effectively overwriting.
-            // Let's stick to simple overwrite for now, or preserve if mv is None.
+            // Preserve existing best_move if the new entry doesn't provide one.
             let best_move = if mv.is_some() { mv } else { entry.best_move };
 
             entry.key = key;
@@ -123,7 +111,6 @@ impl TranspositionTable {
 
         if entry.key == key {
             let score = entry.score as i32;
-            // De-Normalization: Handled in search.rs now.
             return Some((entry.best_move, score, entry.depth, entry.bound));
         }
         None

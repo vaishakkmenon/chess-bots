@@ -15,9 +15,9 @@ use std::time::{Duration, Instant};
 const MATE_SCORE: i32 = 31000;
 const MATE_THRESHOLD: i32 = 30000;
 const INF: i32 = 32000;
+const MAX_Q_SEARCH_DEPTH: usize = 100;
 
 // --- TT Score Adjustment Helpers ---
-// Converts a score relative to the current ply (search) to a score independent of ply (TT)
 fn score_to_tt(score: i32, ply: i32) -> i32 {
     if score >= MATE_THRESHOLD {
         score + ply
@@ -28,7 +28,6 @@ fn score_to_tt(score: i32, ply: i32) -> i32 {
     }
 }
 
-// Converts a score from the TT (independent) back to relative to current ply (search)
 fn score_from_tt(score: i32, ply: i32) -> i32 {
     if score >= MATE_THRESHOLD {
         score - ply
@@ -78,34 +77,14 @@ pub fn quiescence(
     mut alpha: i32,
     beta: i32,
 ) -> i32 {
-    let in_check_now = in_check(board, board.side_to_move, tables);
-
-    if in_check_now {
-        let mut moves = Vec::with_capacity(128);
-        let mut scratch = Vec::with_capacity(128);
-        generate_legal(board, tables, &mut moves, &mut scratch);
-
-        if moves.is_empty() {
-            return -MATE_SCORE + ply as i32;
-        }
-
-        let mut alpha = alpha;
-        for mv in moves {
-            let undo = make_move_basic(board, mv);
-            let score = -quiescence(board, tables, ctx, tt, ply + 1, -beta, -alpha);
-            undo_move_basic(board, undo);
-
-            if score >= beta {
-                return beta;
-            }
-            if score > alpha {
-                alpha = score;
-            }
-        }
-        return alpha;
+    // SAFETY BRAKE: Prevent Q-search explosions
+    if ply > MAX_Q_SEARCH_DEPTH {
+        return static_eval(board, tables, alpha, beta);
     }
 
-    let stand_pat = static_eval(board, tables);
+    // let in_check_now = in_check(board, board.side_to_move, tables);
+
+    let stand_pat = static_eval(board, tables, alpha, beta);
 
     if stand_pat >= beta {
         return beta;
@@ -125,7 +104,7 @@ pub fn quiescence(
             captured_value = piece.value();
         }
 
-        // FIX 1: DELTA PRUNING SAFETY
+        // DELTA PRUNING SAFETY
         // Don't prune if it's a promotion (potentially huge value)
         // Don't prune if it's En Passant (captured_value is 0, but it captures a pawn)
         let is_prom = mv.is_promotion();
@@ -175,7 +154,7 @@ pub fn alpha_beta(
     let hash = board.zobrist;
     let mut hash_move = None;
 
-    // FIX 2: TT PROBE WITH MATE SCORE ADJUSTMENT
+    // TT PROBE WITH MATE SCORE ADJUSTMENT
     if let Some((tt_move, raw_score, tt_depth, tt_bound)) =
         tt.probe(hash, depth as u8, alpha, beta, ply as i32)
     {
@@ -196,6 +175,7 @@ pub fn alpha_beta(
                 }
             }
         }
+    } else {
     }
 
     if depth <= 0 {
@@ -208,7 +188,7 @@ pub fn alpha_beta(
     // [STEP 1] Calculate Eval Early
     // We lift this out so both RFP and SFP can share it.
     let static_eval_val = if !in_check_now {
-        static_eval(board, tables)
+        static_eval(board, tables, alpha, beta)
     } else {
         0 // Dummy value, we won't use it if in check
     };
@@ -223,11 +203,7 @@ pub fn alpha_beta(
     }
     // =============================================================
 
-    // FIX 3: NULL MOVE PRUNING DEPTH
-    // Increased from 3 to 4.
-    // At depth 3, NMP reduces to depth 0 (Q-search). If there is a positional threat
-    // that Q-search doesn't see (non-capture), the engine loses.
-    // Depth 4 ensures we search at least depth 1 recursively, finding one layer of quiet moves.
+    // NULL MOVE PRUNING DEPTH
     if depth >= 4
         && !in_check_now
         && (beta - alpha == 1)
@@ -364,11 +340,6 @@ pub fn alpha_beta(
                 if i > 8 {
                     r += 1;
                 }
-
-                // Super late moves at high depth get crushed
-                if i > 20 && depth > 10 {
-                    r += 1;
-                }
             }
 
             let (val, _) = alpha_beta(
@@ -429,10 +400,9 @@ pub fn alpha_beta(
             if score > alpha {
                 alpha = score;
                 best_move = Some(mv);
-                // ctx.update_history(mv, depth);
             }
             if score >= beta {
-                // FIX 4: TT SAVE WITH MATE SCORE ADJUSTMENT (LowerBound/Beta Cutoff)
+                // TT SAVE WITH MATE SCORE ADJUSTMENT (LowerBound/Beta Cutoff)
                 let tt_score = score_to_tt(beta, ply as i32);
                 tt.save(
                     hash,
@@ -467,7 +437,7 @@ pub fn alpha_beta(
         NodeType::UpperBound
     };
 
-    // FIX 5: TT SAVE WITH MATE SCORE ADJUSTMENT (Best Score)
+    // TT SAVE WITH MATE SCORE ADJUSTMENT (Best Score)
     // We save 'best_score' (which is alpha if exact, or the best failed low score if UpperBound)
     let tt_score = score_to_tt(best_score, ply as i32);
     tt.save(
@@ -491,7 +461,7 @@ pub fn search(
     let mut best_move = None;
     let mut best_score = 0;
     let mut nodes = 0;
-    let mut tt = TranspositionTable::new(64);
+    let mut tt = TranspositionTable::new(512);
     let mut ctx = SearchContext::new();
     let mut time = TimeManager::new(time_limit);
 
@@ -537,7 +507,6 @@ pub fn search(
             );
         }
 
-        // Now MATE_THRESHOLD is actually functional for stopping search early
         if score.abs() >= MATE_THRESHOLD {
             break;
         }

@@ -1,0 +1,207 @@
+=========================================
+Search Benchmarks for Wayfinder v13
+Date: Thu Jan 15 22:08:21 UTC 2026
+=========================================
+=== Chess Engine Search Benchmark Depth: 9 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 9
+
+Searching...
+
+info depth 1 score cp 60 nodes 25 time 0 pv d2d4
+info depth 2 score cp 0 nodes 122 time 0 pv d2d4
+info depth 3 score cp 46 nodes 304 time 0 pv d2d4
+info depth 4 score cp 12 nodes 1046 time 2 pv e2e4
+info depth 5 score cp 39 nodes 2840 time 5 pv d2d4
+info depth 6 score cp 18 nodes 6724 time 11 pv e2e4
+info depth 7 score cp 39 nodes 10214 time 17 pv e2e4
+info depth 8 score cp 34 nodes 23694 time 44 pv e2e4
+info depth 9 score cp 42 nodes 47059 time 90 pv e2e4
+=== Results ===
+Time:      0.241s
+Best move: "e2e4"
+Score:     42 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 10 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 10
+
+Searching...
+
+info depth 1 score cp 60 nodes 25 time 0 pv d2d4
+info depth 2 score cp 0 nodes 122 time 0 pv d2d4
+info depth 3 score cp 46 nodes 304 time 0 pv d2d4
+info depth 4 score cp 12 nodes 1046 time 1 pv e2e4
+info depth 5 score cp 39 nodes 2840 time 4 pv d2d4
+info depth 6 score cp 18 nodes 6724 time 9 pv e2e4
+info depth 7 score cp 39 nodes 10214 time 17 pv e2e4
+info depth 8 score cp 34 nodes 23694 time 42 pv e2e4
+info depth 9 score cp 42 nodes 47059 time 93 pv e2e4
+info depth 10 score cp 15 nodes 106666 time 197 pv d2d4
+=== Results ===
+Time:      0.272s
+Best move: "d2d4"
+Score:     15 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 11 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 11
+
+Searching...
+
+info depth 1 score cp 60 nodes 25 time 0 pv d2d4
+info depth 2 score cp 0 nodes 122 time 0 pv d2d4
+info depth 3 score cp 46 nodes 304 time 1 pv d2d4
+info depth 4 score cp 12 nodes 1046 time 2 pv e2e4
+info depth 5 score cp 39 nodes 2840 time 4 pv d2d4
+info depth 6 score cp 18 nodes 6724 time 10 pv e2e4
+info depth 7 score cp 39 nodes 10214 time 16 pv e2e4
+info depth 8 score cp 34 nodes 23694 time 39 pv e2e4
+info depth 9 score cp 42 nodes 47059 time 74 pv e2e4
+info depth 10 score cp 15 nodes 106666 time 168 pv d2d4
+info depth 11 score cp 23 nodes 381240 time 655 pv d2d4
+=== Results ===
+Time:      0.722s
+Best move: "d2d4"
+Score:     23 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 12 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 12
+
+Searching...
+
+info depth 1 score cp 60 nodes 25 time 0 pv d2d4
+info depth 2 score cp 0 nodes 122 time 0 pv d2d4
+info depth 3 score cp 46 nodes 304 time 1 pv d2d4
+info depth 4 score cp 12 nodes 1046 time 2 pv e2e4
+info depth 5 score cp 39 nodes 2840 time 5 pv d2d4
+info depth 6 score cp 18 nodes 6724 time 10 pv e2e4
+info depth 7 score cp 39 nodes 10214 time 16 pv e2e4
+info depth 8 score cp 34 nodes 23694 time 37 pv e2e4
+info depth 9 score cp 42 nodes 47059 time 73 pv e2e4
+info depth 10 score cp 15 nodes 106666 time 164 pv d2d4
+info depth 11 score cp 23 nodes 381240 time 636 pv d2d4
+info depth 12 score cp 17 nodes 659127 time 1140 pv d2d4
+=== Results ===
+Time:      1.202s
+Best move: "d2d4"
+Score:     17 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 13 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 13
+
+Searching...
+
+info depth 1 score cp 60 nodes 25 time 0 pv d2d4
+info depth 2 score cp 0 nodes 122 time 0 pv d2d4
+info depth 3 score cp 46 nodes 304 time 1 pv d2d4
+info depth 4 score cp 12 nodes 1046 time 2 pv e2e4
+info depth 5 score cp 39 nodes 2840 time 5 pv d2d4
+info depth 6 score cp 18 nodes 6724 time 11 pv e2e4
+info depth 7 score cp 39 nodes 10214 time 16 pv e2e4
+info depth 8 score cp 34 nodes 23694 time 39 pv e2e4
+info depth 9 score cp 42 nodes 47059 time 75 pv e2e4
+info depth 10 score cp 15 nodes 106666 time 167 pv d2d4
+info depth 11 score cp 23 nodes 381240 time 640 pv d2d4
+info depth 12 score cp 17 nodes 659127 time 1142 pv d2d4
+info depth 13 score cp 28 nodes 1667660 time 3281 pv d2d4
+=== Results ===
+Time:      3.339s
+Best move: "d2d4"
+Score:     28 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 14 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 14
+
+Searching...
+
+info depth 1 score cp 60 nodes 25 time 0 pv d2d4
+info depth 2 score cp 0 nodes 122 time 0 pv d2d4
+info depth 3 score cp 46 nodes 304 time 1 pv d2d4
+info depth 4 score cp 12 nodes 1046 time 2 pv e2e4
+info depth 5 score cp 39 nodes 2840 time 6 pv d2d4
+info depth 6 score cp 18 nodes 6724 time 12 pv e2e4
+info depth 7 score cp 39 nodes 10214 time 19 pv e2e4
+info depth 8 score cp 34 nodes 23694 time 42 pv e2e4
+info depth 9 score cp 42 nodes 47059 time 83 pv e2e4
+info depth 10 score cp 15 nodes 106666 time 181 pv d2d4
+info depth 11 score cp 23 nodes 381240 time 756 pv d2d4
+info depth 12 score cp 17 nodes 659127 time 1278 pv d2d4
+info depth 13 score cp 28 nodes 1667660 time 3310 pv d2d4
+info depth 14 score cp 27 nodes 8901499 time 23461 pv e2e4
+=== Results ===
+Time:      23.535s
+Best move: "e2e4"
+Score:     27 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 15 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 15
+
+Searching...
+
+info depth 1 score cp 60 nodes 25 time 0 pv d2d4
+info depth 2 score cp 0 nodes 122 time 0 pv d2d4
+info depth 3 score cp 46 nodes 304 time 1 pv d2d4
+info depth 4 score cp 12 nodes 1046 time 2 pv e2e4
+info depth 5 score cp 39 nodes 2840 time 5 pv d2d4
+info depth 6 score cp 18 nodes 6724 time 11 pv e2e4
+info depth 7 score cp 39 nodes 10214 time 16 pv e2e4
+info depth 8 score cp 34 nodes 23694 time 39 pv e2e4
+info depth 9 score cp 42 nodes 47059 time 75 pv e2e4
+info depth 10 score cp 15 nodes 106666 time 165 pv d2d4
+info depth 11 score cp 23 nodes 381240 time 637 pv d2d4
+info depth 12 score cp 17 nodes 659127 time 1139 pv d2d4
+info depth 13 score cp 28 nodes 1667660 time 3269 pv d2d4
+info depth 14 score cp 27 nodes 8901499 time 23200 pv e2e4
+info depth 15 score cp 34 nodes 17061399 time 47184 pv e2e4
+=== Results ===
+Time:      47.250s
+Best move: "e2e4"
+Score:     34 centipawns
+===============
+
+
+-----------------------------------------

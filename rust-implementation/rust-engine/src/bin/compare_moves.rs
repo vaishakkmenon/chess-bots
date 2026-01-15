@@ -37,7 +37,7 @@ fn main() {
 
     for (name, fen) in test_fens {
         let board = Board::from_str(fen).expect("Invalid FEN");
-        let score = static_eval(&board, &tables);
+        let score = static_eval(&board, &tables, -i32::MAX, i32::MAX);
 
         println!("{:12} : {:>6} centipawns", name, score);
     }

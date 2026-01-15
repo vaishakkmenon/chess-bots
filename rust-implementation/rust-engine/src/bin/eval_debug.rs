@@ -67,7 +67,7 @@ fn main() {
 fn debug_eval(board: &Board, tables: &MagicTables) {
     let material = eval_material(board);
     let psqt = eval_psqt(board);
-    let total = static_eval(board, tables);
+    let total = static_eval(board, tables, -i32::MAX, i32::MAX);
 
     println!("Side to move: {:?}", board.side_to_move);
     println!("Material score (White perspective): {} cp", material);

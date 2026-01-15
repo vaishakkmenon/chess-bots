@@ -34,14 +34,14 @@ pub fn order_moves(
 ) {
     // stable sort so non-captures keep their generation order
     moves.sort_by_cached_key(|&mv| {
-        // Priority 0: Best move from previous iteration
-        if Some(mv) == hash_move {
-            return -100000; // Try this first!
+        // Priority 0: Best move from previous iteration (Hash Move)
+        if let Some(hm) = hash_move {
+            if mv.from == hm.from && mv.to == hm.to && mv.promotion == hm.promotion {
+                return -2_000_000_000; // Found it! Search first.
+            }
         }
 
         // Priority 1: Promotions
-        // User Request: "Ensure that the is_promotion() check happens before or overrides the is_capture() check."
-        // We score Queen promotions significantly higher than underpromotions.
         if let Some(p) = mv.promotion {
             return -(PROMOTION_BASE + p.value());
         }
@@ -53,11 +53,15 @@ pub fn order_moves(
         }
 
         // Priority 3: Killer moves
-        if Some(mv) == killer_moves[0] {
-            return -KILLER1_SCORE;
+        if let Some(k1) = killer_moves[0] {
+            if mv.from == k1.from && mv.to == k1.to && mv.promotion == k1.promotion {
+                return -KILLER1_SCORE;
+            }
         }
-        if Some(mv) == killer_moves[1] {
-            return -KILLER2_SCORE;
+        if let Some(k2) = killer_moves[1] {
+            if mv.from == k2.from && mv.to == k2.to && mv.promotion == k2.promotion {
+                return -KILLER2_SCORE;
+            }
         }
 
         // Priority 4: History heuristic

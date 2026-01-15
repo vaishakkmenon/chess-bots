@@ -54,7 +54,7 @@ fn material_startpos_is_zero() {
     let b = fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     assert_eq!(eval_material(&b), 0);
     // CHANGED: static_eval includes PSQT, so just check it's close to 0
-    let eval = static_eval(&b, &tables);
+    let eval = static_eval(&b, &tables, -32000, 32000);
     assert!(
         eval.abs() < 200,
         "Start position eval should be close to 0, got {}",
@@ -75,7 +75,7 @@ fn material_white_up_a_pawn_is_plus_100() {
     );
 
     // CHANGED: static_eval includes PSQT bonus
-    let eval = static_eval(&b, &tables);
+    let eval = static_eval(&b, &tables, -32000, 32000);
     assert!(
         eval >= 80,
         "Static eval with pawn should be positive (approx 80+), got {}",
@@ -96,7 +96,7 @@ fn material_black_up_a_rook_is_minus_500() {
     );
 
     // CHANGED: static_eval includes PSQT bonus (which makes it LESS negative usually)
-    let eval = static_eval(&b, &tables);
+    let eval = static_eval(&b, &tables, -32000, 32000);
     assert!(
         eval <= -400,
         "Black rook eval should be significantly negative (<= -400), got {}",
@@ -144,13 +144,14 @@ fn static_eval_includes_psqt_bonus() {
     // With PSQT, static_eval should differ from pure material
     let b = fen("8/8/8/8/8/8/P7/8 w - - 0 1");
     let material = eval_material(&b);
-    let full_eval = static_eval(&b, &tables);
+    let full_eval = static_eval(&b, &tables, -32000, 32000);
 
-    // static_eval = material + PSQT bonuses
-    // Should be at least the material value
+    // static_eval = material + PSQT bonuses + Structure + Mobility + KingSafety
+    // Since we now have structure penalties (e.g. isolated pawn), static_eval can be LOWER than material.
+    // We just want to ensure it's calculated differently (includes other terms).
     assert!(
-        full_eval >= material,
-        "static_eval ({}) should be >= material ({})",
+        full_eval != material,
+        "static_eval ({}) should differ from material ({}) due to PSQT/Structure",
         full_eval,
         material
     );
@@ -163,8 +164,8 @@ fn static_eval_accounts_for_side_to_move() {
     let white_to_move = fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     let black_to_move = fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1");
 
-    let eval_white = static_eval(&white_to_move, &tables);
-    let eval_black = static_eval(&black_to_move, &tables);
+    let eval_white = static_eval(&white_to_move, &tables, -32000, 32000);
+    let eval_black = static_eval(&black_to_move, &tables, -32000, 32000);
 
     // With tempo bonus, these should differ slightly
     // eval_white should be slightly better than eval_black (tempo bonus)
