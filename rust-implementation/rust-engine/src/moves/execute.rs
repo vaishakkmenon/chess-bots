@@ -45,6 +45,7 @@ fn place_piece(board: &mut Board, color: Color, piece: Piece, idx: usize) {
 }
 
 pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
+    let start_zobrist = board.zobrist; // captured for history
     let color = board.side_to_move;
     let piece = mv.piece;
     let from_idx = mv.from.index() as usize;
@@ -210,23 +211,23 @@ pub fn make_move_basic(board: &mut Board, mv: Move) -> Undo {
     #[cfg(debug_assertions)]
     debug_assert_valid_ep(board);
 
-    // ---- Zobrist history (push post-move; truncate on irreversible) ----
+    // ---- Zobrist history (push PRE-move; truncate on irreversible) ----
     let irreversible = capture.is_some() || piece == Piece::Pawn || mv.promotion.is_some();
 
     // If irreversible, save the pre-move history so undo can restore it.
     let saved = if irreversible {
-        Some(board.history_since_irreversible.clone())
+        Some(board.history.clone())
     } else {
         None
     };
 
-    // If irreversible, we logically "reset since last irreversible"
+    // If irreversible, we logically "reset" the history.
     if irreversible {
-        board.history_since_irreversible.clear();
+        board.history.clear();
     }
 
-    // Always push the POST-MOVE key
-    board.history_since_irreversible.push(board.zobrist);
+    // Always push the PRE-MOVE (start_zobrist) key into history
+    board.history.push(start_zobrist);
 
     // Stash in undo so undo_move_basic can restore on irreversible
     undo.prev_history = saved;
@@ -332,13 +333,13 @@ pub fn undo_move_basic(board: &mut Board, undo: Undo) {
     #[cfg(debug_assertions)]
     debug_assert_valid_ep(board);
 
-    // ---- Zobrist history (pop post-move; restore pre-move slice if irreversible) ----
-    // Remove the post-move key we had pushed at make()
-    let _ = board.history_since_irreversible.pop();
+    // ---- Zobrist history (pop pre-move; restore pre-move slice if irreversible) ----
+    // Remove the pre-move key we pushed at make()
+    let _ = board.history.pop();
 
     // If the forward move was irreversible, restore the entire pre-move history snapshot
     if let Some(prev) = undo.prev_history {
-        board.history_since_irreversible = prev;
+        board.history = prev;
     }
 
     #[cfg(debug_assertions)]
@@ -346,6 +347,8 @@ pub fn undo_move_basic(board: &mut Board, undo: Undo) {
 }
 
 pub fn make_null_move(board: &mut Board) -> NullMoveUndo {
+    // Push current hash before null move
+    board.history.push(board.zobrist);
     let undo = NullMoveUndo {
         prev_en_passant: board.en_passant,
         prev_halfmove_clock: board.halfmove_clock,
@@ -390,6 +393,9 @@ pub fn undo_null_move(board: &mut Board, undo: NullMoveUndo) {
 
     // Restore clock
     board.halfmove_clock = undo.prev_halfmove_clock;
+
+    // Pop the hash we pushed
+    board.history.pop();
 }
 
 pub fn generate_legal(

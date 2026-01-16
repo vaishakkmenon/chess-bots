@@ -9,6 +9,7 @@ use crate::moves::types::Move;
 use crate::search::context::SearchContext;
 use crate::search::eval::static_eval;
 use crate::search::ordering::{mvv_lva_score, order_moves};
+use crate::search::see::SeeExt;
 use crate::search::tt::{NodeType, TranspositionTable};
 use std::time::{Duration, Instant};
 
@@ -115,6 +116,11 @@ pub fn quiescence(
             continue;
         }
 
+        // SEE Pruning: Skip captures that lose material
+        if !is_prom && !board.static_exchange_eval(mv, 0, tables) {
+            continue;
+        }
+
         let undo = make_move_basic(board, mv);
         let score = -quiescence(board, tables, ctx, tt, ply + 1, -beta, -alpha);
         undo_move_basic(board, undo);
@@ -146,6 +152,11 @@ pub fn alpha_beta(
         time.check_time();
     }
     *nodes += 1;
+
+    // Repetition Detection
+    if ply > 0 && board.is_repetition() {
+        return (0, None);
+    }
 
     if time.stop_signal {
         return (0, None);
@@ -249,6 +260,7 @@ pub fn alpha_beta(
         &ctx.killer_moves[ply],
         &ctx.history,
         hash_move,
+        tables,
     );
 
     if moves.is_empty() {

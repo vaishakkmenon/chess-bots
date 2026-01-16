@@ -261,8 +261,8 @@ impl Board {
         self.parse_en_passant(ep)?;
         self.parse_clocks(hm, fm)?;
         self.zobrist = self.compute_zobrist_full();
-        self.history_since_irreversible.clear();
-        self.history_since_irreversible.push(self.zobrist);
+        self.zobrist = self.compute_zobrist_full();
+        self.history.clear();
         Ok(())
     }
 

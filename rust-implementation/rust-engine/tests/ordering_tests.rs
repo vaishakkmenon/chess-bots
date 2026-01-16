@@ -1,4 +1,5 @@
 use rust_engine::board::{Board, Piece};
+use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::types::{CAPTURE, KINGSIDE_CASTLE, Move, PROMOTION_CAPTURE, QUIET_MOVE};
 use rust_engine::search::ordering::order_moves;
 use rust_engine::square::Square;
@@ -56,7 +57,9 @@ fn test_ordering_priorities() {
     let history = [[0; 64]; 64]; // default 0
     let hash_move = None;
 
-    order_moves(&mut moves, &b, &killers, &history, hash_move);
+    let tables = load_magic_tables();
+
+    order_moves(&mut moves, &b, &killers, &history, hash_move, &tables);
 
     // EXPECTED ORDER:
     // 1. Promo Queen (Score ~20900)
@@ -84,12 +87,14 @@ fn test_pv_override() {
 
     // Set Quiet move as Hash Move (PV)
     // Normally Capture > Quiet, but PV should override EVERYTHING.
+    let tables = load_magic_tables();
     order_moves(
         &mut moves,
         &b,
         &[None, None],
         &[[0; 64]; 64],
         Some(mv_quiet),
+        &tables,
     );
 
     assert_eq!(moves[0], mv_quiet, "PV Move should always be first");
@@ -134,8 +139,9 @@ fn test_edge_cases_ordering() {
 
     let killers = [Some(mv_killer), None];
     let history = [[0; 64]; 64];
+    let tables = load_magic_tables();
 
-    order_moves(&mut moves, &b_complex, &killers, &history, None);
+    order_moves(&mut moves, &b_complex, &killers, &history, None, &tables);
 
     // Expected:
     // 1. Promo N (20320)
@@ -167,8 +173,9 @@ fn test_complex_capture_ordering() {
     // Let's assume we had QxQ. Val 9000 - 5 = 8995.
 
     let mut moves = vec![mv_nxq, mv_pxq];
+    let tables = load_magic_tables();
 
-    order_moves(&mut moves, &b, &[None, None], &[[0; 64]; 64], None);
+    order_moves(&mut moves, &b, &[None, None], &[[0; 64]; 64], None, &tables);
 
     // PxQ should be > NxQ (Least Valuable Attacker for same victim)
     assert_eq!(
@@ -193,8 +200,9 @@ fn test_mvv_victim_priority() {
     let mv_pxr = make_move("h2", "g3", CAPTURE, None, Piece::Pawn);
 
     let mut moves = vec![mv_pxr, mv_pxq];
+    let tables = load_magic_tables();
 
-    order_moves(&mut moves, &b, &[None, None], &[[0; 64]; 64], None);
+    order_moves(&mut moves, &b, &[None, None], &[[0; 64]; 64], None, &tables);
 
     assert_eq!(moves[0], mv_pxq, "PxQ should be ranked higher than PxR");
     assert_eq!(moves[1], mv_pxr);
@@ -220,7 +228,11 @@ fn test_history_sorting() {
     let to_a = Square::from_str("a3").unwrap().index() as usize;
     history[from_a][to_a] = 100;
 
-    order_moves(&mut moves, &b, &[None, None], &history, None);
+    history[from_a][to_a] = 100;
+
+    let tables = load_magic_tables();
+
+    order_moves(&mut moves, &b, &[None, None], &history, None, &tables);
 
     // Expect mv_h (500) > mv_a (100)
     assert_eq!(
@@ -248,8 +260,17 @@ fn test_hash_vs_promo() {
 
     let mut moves = vec![mv_promo, mv_hash];
 
+    let tables = load_magic_tables();
+
     // Hash Move should ALWAYS override everything, even promotions
-    order_moves(&mut moves, &b, &[None, None], &[[0; 64]; 64], Some(mv_hash));
+    order_moves(
+        &mut moves,
+        &b,
+        &[None, None],
+        &[[0; 64]; 64],
+        Some(mv_hash),
+        &tables,
+    );
 
     assert_eq!(moves[0], mv_hash, "PV/Hash move must override Promotions");
 }

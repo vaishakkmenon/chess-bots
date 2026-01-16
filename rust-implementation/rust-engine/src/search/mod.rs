@@ -4,4 +4,5 @@ pub mod eval;
 pub mod ordering;
 pub mod pesto;
 pub mod search;
+pub mod see;
 pub mod tt;

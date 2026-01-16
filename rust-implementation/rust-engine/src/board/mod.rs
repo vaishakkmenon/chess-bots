@@ -87,7 +87,7 @@ pub struct Board {
     // Zobrist hash for each board.
     pub zobrist: u64,
     // History for zobrist hashing
-    pub history_since_irreversible: Vec<u64>,
+    pub history: Vec<u64>,
 }
 
 impl Board {
@@ -174,7 +174,7 @@ impl Board {
             halfmove_clock: 0,
             fullmove_number: 1,
             zobrist: 0,
-            history_since_irreversible: Vec::new(),
+            history: Vec::new(),
         };
         b.refresh_zobrist();
         b
@@ -205,8 +205,32 @@ impl Board {
         b.halfmove_clock = 0;
         b.fullmove_number = 1;
         b.refresh_zobrist();
-        b.history_since_irreversible.clear();
-        b.history_since_irreversible.push(b.zobrist);
+        b.history.clear();
+        // With the new logic we don't necessarily push the initial state here if we consider make_move pushes PRE-move.
+        // BUT for consistency with fen.rs and standard practice:
+        // If we treat history as "previous positions", initially there are none.
+        // However, if we want `is_repetition` to work for positions reached via transposition,
+        // we usually just scan the history stack.
+        // The user request says: "Before you update... push the current board.zobrist".
+        // So `new()` should probably start empty or consistent with fen.
+        // Let's leave it empty here? Or push it?
+        // Wait, standard `new()` is the start of the game.
+        // If we make a move from here, we push THIS position.
+        // So initially `history` should be empty or contain previous game states (none).
+        // BUT `fen.rs` pushes it.
+        // Let's see what I did in `fen.rs` planning... I said "initialize correctly".
+        // If make_move pushes the *current* (pre-move) hash, then after 1 move, history has 1 entry (start pos).
+        // If we revert to start pos, we pop. History empty.
+        // So `new()` should imply empty history or unrelated to current pos.
+        // BUT wait, `repetition_count` uses it.
+        // Let's stick to: history contains *previous* positions since last irreversible.
+        // So `new()` starts effectively empty or with just itself if we consider it "visited".
+        // Actually, if we are at root, and we haven't made moves, history is empty.
+        // If we reach this position again via search, we compare against history.
+        // The User said: "In search, finding the current position *once* in the history means we have reached a cycle".
+        // So `history` should contain the ancestors.
+        // If `new()` creates a board, it has no ancestors (unless FEN says so).
+        // So `b.history.clear()` is correct. remove the push.
         b
     }
 
@@ -418,17 +442,38 @@ impl Board {
         board_hash
     }
 
-    /// Counts occurrences of the *current* Zobrist in the history window
-    /// (which, by invariant, ends with `self.zobrist`). Always >= 1.
+    /// Counts occurrences of the *current* Zobrist in the history window.
     pub fn repetition_count(&self) -> u8 {
         let mut count: u8 = 0;
-        for &k in &self.history_since_irreversible {
-            if k == self.zobrist {
-                // (Optional) avoid u8 overflow in pathological cases
+        let current = self.zobrist;
+        // Check history
+        for &k in &self.history {
+            if k == current {
                 count = count.saturating_add(1);
             }
         }
+        // *Also* count the current position itself?
+        // If history contains *ancestors*, they are prior occurrences.
+        // If we are at the same position as an ancestor, that is a repetition.
+        // So count is at least 1 (the current one, implicitly) plus any history matches?
+        // Or does history include current? Logic says "push current before move".
+        // So history contains: S0 -> S1 -> S2.
+        // If we are at S3. current=S3. history=[S0, S1, S2].
+        // If S3 == S1, then we have seen it before.
+        // The *total* count of S3 is 1 (current) + 1 (S1) = 2.
+        // So we should start count at 1.
+        count = count.saturating_add(1);
         count
+    }
+
+    pub fn is_repetition(&self) -> bool {
+        let current_hash = self.zobrist;
+        for &past_hash in self.history.iter().rev() {
+            if past_hash == current_hash {
+                return true;
+            }
+        }
+        false
     }
 
     /// True iff `repetition_count() >= 3`

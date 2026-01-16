@@ -1,10 +1,13 @@
 use crate::board::Board;
+use crate::moves::magic::MagicTables;
 use crate::moves::types::Move;
+use crate::search::see::SeeExt;
 
 const PROMOTION_BASE: i32 = 20000;
 const CAPTURE_BASE: i32 = 10000;
 const KILLER1_SCORE: i32 = 9000;
 const KILLER2_SCORE: i32 = 8000;
+const BAD_CAPTURE_PENALTY: i32 = 20000;
 
 pub fn mvv_lva_score(mv: Move, board: &Board) -> i32 {
     if !mv.is_capture() {
@@ -31,6 +34,7 @@ pub fn order_moves(
     killer_moves: &[Option<Move>; 2],
     history: &[[i32; 64]; 64],
     hash_move: Option<Move>,
+    tables: &MagicTables,
 ) {
     // stable sort so non-captures keep their generation order
     moves.sort_by_cached_key(|&mv| {
@@ -49,7 +53,12 @@ pub fn order_moves(
         // Priority 2: Captures (MVV-LVA)
         let capture_score = mvv_lva_score(mv, board);
         if capture_score > 0 {
-            return -(CAPTURE_BASE + capture_score);
+            if board.static_exchange_eval(mv, 0, tables) {
+                return -(CAPTURE_BASE + capture_score);
+            } else {
+                // Bad capture (SEE < 0): Very low priority (search after quiets)
+                return BAD_CAPTURE_PENALTY + capture_score;
+            }
         }
 
         // Priority 3: Killer moves

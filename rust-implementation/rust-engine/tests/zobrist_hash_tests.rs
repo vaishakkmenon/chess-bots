@@ -1397,7 +1397,7 @@ fn repetition_resets_after_pawn_push() {
     // irreversible: d2 (11) -> d3 (19)
     let _ = make_move_basic(&mut b, mv_pawn(11, 19));
     assert_eq!(
-        b.history_since_irreversible.len(),
+        b.history.len(),
         1,
         "history should truncate on irreversible"
     );
@@ -1435,19 +1435,15 @@ fn repetition_ep_relaxed_policy_affects_equality() {
 fn repetition_promotion_truncates_and_restores_on_undo() {
     let mut b = Board::new();
     b.set_fen("8/P7/8/8/8/8/8/4k2K w - - 0 1").unwrap();
-    let before_len = b.history_since_irreversible.len();
+    let before_len = b.history.len();
 
     let u = make_move_basic(&mut b, mv_promo(48, 56, Piece::Queen)); // a7->a8=Q
-    assert_eq!(
-        b.history_since_irreversible.len(),
-        1,
-        "promotion should truncate history"
-    );
+    assert_eq!(b.history.len(), 1, "promotion should truncate history");
     assert_eq!(b.repetition_count(), 1);
 
     undo_move_basic(&mut b, u);
     assert_eq!(
-        b.history_since_irreversible.len(),
+        b.history.len(),
         before_len,
         "undo should restore prior history"
     );
@@ -1457,11 +1453,11 @@ fn repetition_promotion_truncates_and_restores_on_undo() {
 fn repetition_capture_truncates_and_restores_on_undo() {
     let mut b = Board::new();
     b.set_fen("k6r/6P1/8/8/8/8/8/4K3 w - - 0 1").unwrap();
-    let before_len = b.history_since_irreversible.len();
+    let before_len = b.history.len();
 
     let u = make_move_basic(&mut b, mv_promo_capture(54, 63, Piece::Queen)); // g7xh8=Q
     assert_eq!(
-        b.history_since_irreversible.len(),
+        b.history.len(),
         1,
         "capture+promotion should truncate history"
     );
@@ -1469,7 +1465,7 @@ fn repetition_capture_truncates_and_restores_on_undo() {
 
     undo_move_basic(&mut b, u);
     assert_eq!(
-        b.history_since_irreversible.len(),
+        b.history.len(),
         before_len,
         "undo should restore prior history"
     );
