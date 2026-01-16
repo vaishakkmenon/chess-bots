@@ -62,6 +62,22 @@ for depth in 3 4 5 6 7 8 9 10 11 12; do
   echo ""
 done
 
+# Compile all games into one file
+COMPILED_PGN="${OUTPUT_DIR}/all_games.pgn"
+echo "Compiling games into $COMPILED_PGN..."
+
+for depth in 3 4 5 6 7 8 9 10 11 12; do
+  PGN_FILE="${OUTPUT_DIR}/stockfish_d3_vs_wayfinder_id_d${depth}.pgn"
+  if [ -f "$PGN_FILE" ]; then
+    echo "=========================================" >> "$COMPILED_PGN"
+    echo "Match: Stockfish d3 vs Wayfinder v${VERSION} ID d${depth}" >> "$COMPILED_PGN"
+    echo "=========================================" >> "$COMPILED_PGN"
+    cat "$PGN_FILE" >> "$COMPILED_PGN"
+    echo "" >> "$COMPILED_PGN"
+    echo "" >> "$COMPILED_PGN"
+  fi
+done
+
 echo "========================================="
 echo "All tournaments and benchmarks completed!"
 echo "Results saved to: $OUTPUT_DIR"

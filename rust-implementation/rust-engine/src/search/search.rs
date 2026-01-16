@@ -472,9 +472,54 @@ pub fn search(
             }
         }
 
-        let (score, mv) = alpha_beta(
-            board, tables, &mut ctx, &mut tt, depth, 0, -INF, INF, &mut nodes, &mut time,
-        );
+        // --- Aspiration Window Logic ---
+        let mut alpha = -INF;
+        let mut beta = INF;
+        let window = 50; // Window size (50cp)
+
+        // Only apply aspiration windows at depth > 4 for stability
+        if depth > 4 {
+            alpha = best_score - window;
+            beta = best_score + window;
+        }
+
+        let mut score;
+        let mut mv;
+
+        loop {
+            // Perform the search with the current window
+            let result = alpha_beta(
+                board, tables, &mut ctx, &mut tt, depth, 0, alpha, beta, &mut nodes, &mut time,
+            );
+
+            score = result.0;
+            mv = result.1;
+
+            // If we ran out of time during the search, stop immediately
+            if time.stop_signal {
+                break;
+            }
+
+            // 1. Fail Low (Score <= Alpha): Position is worse than expected.
+            // Widen window downwards to -INF (Fail-Soft approach).
+            if score <= alpha {
+                beta = (alpha + beta) / 2;
+                alpha = -INF;
+                continue;
+            }
+
+            // 2. Fail High (Score >= Beta): Position is better than expected.
+            // Widen window upwards to INF (Fail-Soft approach).
+            if score >= beta {
+                alpha = (alpha + beta) / 2;
+                beta = INF;
+                continue;
+            }
+
+            // 3. Success: Score is within the window.
+            break;
+        }
+        // -------------------------------
 
         if time.stop_signal {
             println!("info string Time up! Aborting search at depth {}", depth);
