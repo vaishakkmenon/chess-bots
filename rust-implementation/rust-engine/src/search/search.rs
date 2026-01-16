@@ -185,6 +185,11 @@ pub fn alpha_beta(
 
     let in_check_now = in_check(board, board.side_to_move, tables);
 
+    // FIX 6: CHECK EXTENSION
+    // If we are in check, extend the search by 1 ply.
+    // This resolves forced mates and prevents the horizon effect.
+    let extension = if in_check_now { 1 } else { 0 };
+
     // [STEP 1] Calculate Eval Early
     // We lift this out so both RFP and SFP can share it.
     let static_eval_val = if !in_check_now {
@@ -310,7 +315,7 @@ pub fn alpha_beta(
                 tables,
                 ctx,
                 tt,
-                depth - 1,
+                depth - 1 + extension,
                 ply + 1,
                 -beta,
                 -alpha,
@@ -378,7 +383,7 @@ pub fn alpha_beta(
                     tables,
                     ctx,
                     tt,
-                    depth - 1,
+                    depth - 1 + extension,
                     ply + 1,
                     -beta,
                     -alpha,
