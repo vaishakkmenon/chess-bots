@@ -60,10 +60,14 @@ impl TimeManager {
         if self.stop_signal {
             return;
         }
-        if let Some(limit) = self.allotted
-            && self.start_time.elapsed() > limit
-        {
-            self.stop_signal = true;
+
+        if let Some(limit) = self.allotted {
+            let elapsed = self.start_time.elapsed();
+
+            // Hard Stop: Abort immediately if we hit the limit
+            if elapsed >= limit {
+                self.stop_signal = true;
+            }
         }
     }
 }
@@ -77,6 +81,8 @@ pub fn quiescence(
     ply: usize,
     mut alpha: i32,
     beta: i32,
+    nodes: &mut u64,
+    time: &mut TimeManager,
 ) -> i32 {
     // SAFETY BRAKE: Prevent Q-search explosions
     if ply > MAX_Q_SEARCH_DEPTH {
@@ -100,6 +106,14 @@ pub fn quiescence(
     moves.sort_by_cached_key(|&mv| -mvv_lva_score(mv, board));
 
     for mv in moves {
+        *nodes += 1;
+        if *nodes & 1023 == 0 {
+            time.check_time();
+        }
+        if time.stop_signal {
+            return stand_pat;
+        }
+
         let mut captured_value = 0;
         if let Some(piece) = board.piece_type_at(mv.to) {
             captured_value = piece.value();
@@ -122,7 +136,17 @@ pub fn quiescence(
         }
 
         let undo = make_move_basic(board, mv);
-        let score = -quiescence(board, tables, ctx, tt, ply + 1, -beta, -alpha);
+        let score = -quiescence(
+            board,
+            tables,
+            ctx,
+            tt,
+            ply + 1,
+            -beta,
+            -alpha,
+            nodes,
+            time,
+        );
         undo_move_basic(board, undo);
 
         if score >= beta {
@@ -148,8 +172,13 @@ pub fn alpha_beta(
     nodes: &mut u64,
     time: &mut TimeManager,
 ) -> (i32, Option<Move>) {
-    if *nodes & 2047 == 0 {
+    // Check every 1024 nodes instead of 2047 for tighter control
+    if *nodes & 1023 == 0 {
         time.check_time();
+    }
+
+    if time.stop_signal {
+        return (0, None);
     }
     *nodes += 1;
 
@@ -190,7 +219,7 @@ pub fn alpha_beta(
     }
 
     if depth <= 0 {
-        let score = quiescence(board, tables, ctx, tt, ply, alpha, beta);
+        let score = quiescence(board, tables, ctx, tt, ply, alpha, beta, nodes, time);
         return (score, None);
     }
 
@@ -475,8 +504,8 @@ pub fn search(
     max_depth: i32,
     time_limit: Option<Duration>,
 ) -> (i32, Option<Move>) {
-    let mut best_move = None;
-    let mut best_score = 0;
+    let mut last_completed_best_move = None;
+    let mut last_completed_best_score = 0;
     let mut nodes = 0;
     let mut tt = TranspositionTable::new(512);
     let mut ctx = SearchContext::new();
@@ -496,8 +525,8 @@ pub fn search(
 
         // Only apply aspiration windows at depth > 4 for stability
         if depth > 4 {
-            alpha = best_score - window;
-            beta = best_score + window;
+            alpha = last_completed_best_score - window;
+            beta = last_completed_best_score + window;
         }
 
         let mut score;
@@ -538,25 +567,27 @@ pub fn search(
         }
         // -------------------------------
 
+        // CRITICAL FIX: If the stop signal was triggered, DO NOT update the best move.
+        // The search at this depth is incomplete and likely contains blunders.
         if time.stop_signal {
-            println!("info string Time up! Aborting search at depth {}", depth);
             break;
         }
 
-        best_score = score;
-        if let Some(valid_mv) = mv {
-            best_move = Some(valid_mv);
+        // Only update if the depth actually finished
+        last_completed_best_score = score;
+        last_completed_best_move = mv;
 
-            // Output logic for GUI
-            let score_str = if score.abs() >= MATE_THRESHOLD {
-                let moves = (MATE_SCORE - score.abs() + 1) / 2;
-                if score > 0 {
+        // Output info for GUI (standard UCI)
+        if let Some(valid_mv) = last_completed_best_move {
+            let score_str = if last_completed_best_score.abs() >= MATE_THRESHOLD {
+                let moves = (MATE_SCORE - last_completed_best_score.abs() + 1) / 2;
+                if last_completed_best_score > 0 {
                     format!("mate {}", moves)
                 } else {
                     format!("mate -{}", moves)
                 }
             } else {
-                format!("cp {}", score)
+                format!("cp {}", last_completed_best_score)
             };
 
             println!(
@@ -569,10 +600,11 @@ pub fn search(
             );
         }
 
+        // Optimization: If we found a mate, stop searching deeper
         if score.abs() >= MATE_THRESHOLD {
             break;
         }
     }
 
-    (best_score, best_move)
+    (last_completed_best_score, last_completed_best_move)
 }

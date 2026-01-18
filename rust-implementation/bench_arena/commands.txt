@@ -1,0 +1,1 @@
+cutechess-cli -engine name=Wayfinder cmd=../rust-cli/target/release/rust-cli proto=uci -engine name=TSCP cmd=./tscp proto=xboard -each tc=10+0.1 -rounds 25 -games 2 -repeat -openings file=2moves_v2.pgn format=pgn order=random -pgnout results_1_17_25-oldv-4.pgn
