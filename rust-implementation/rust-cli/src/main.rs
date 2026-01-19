@@ -259,6 +259,14 @@ fn handle_go(parts: &[&str], board: &mut Board, tables: &MagicTables) {
                 alloc = 5;
             }
 
+            // --- NEW FIX: SLICE SUBTRACTION ---
+            // Subtract 50ms from EVERY move to account for GUI lag/overhead.
+            // This ensures we return "bestmove" before the GUI thinks we timed out.
+            if alloc > 50 {
+                alloc -= 50;
+            }
+            // ----------------------------------
+
             time_limit = Some(Duration::from_millis(alloc));
         }
     }

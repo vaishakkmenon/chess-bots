@@ -1,0 +1,242 @@
+=========================================
+Search Benchmarks for Wayfinder v20
+Date: Mon Jan 19 17:34:39 UTC 2026
+=========================================
+=== Chess Engine Search Benchmark Depth: 14 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 14
+
+Searching...
+
+info depth 1 score cp 60 nodes 23 time 0 pv d2d4
+info depth 2 score cp 0 nodes 117 time 0 pv d2d4
+info depth 3 score cp 51 nodes 423 time 1 pv d2d4
+info depth 4 score cp -3 nodes 1798 time 3 pv e2e4
+info depth 5 score cp 29 nodes 3536 time 4 pv e2e4
+info depth 6 score cp 7 nodes 11221 time 9 pv e2e4
+info depth 7 score cp 39 nodes 22396 time 17 pv e2e4
+info depth 8 score cp 21 nodes 52409 time 37 pv e2e4
+info depth 9 score cp 46 nodes 96235 time 69 pv e2e4
+info depth 10 score cp 4 nodes 314667 time 228 pv d2d4
+info depth 11 score cp 31 nodes 533622 time 411 pv d2d4
+info depth 12 score cp 16 nodes 933272 time 629 pv d2d4
+info depth 13 score cp 38 nodes 2797044 time 1533 pv e2e4
+info depth 14 score cp 16 nodes 4535264 time 2722 pv e2e4
+=== Results ===
+Time:      2.852s
+Best move: "e2e4"
+Score:     16 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 15 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 15
+
+Searching...
+
+info depth 1 score cp 60 nodes 23 time 0 pv d2d4
+info depth 2 score cp 0 nodes 117 time 0 pv d2d4
+info depth 3 score cp 51 nodes 423 time 1 pv d2d4
+info depth 4 score cp -3 nodes 1798 time 1 pv e2e4
+info depth 5 score cp 29 nodes 3536 time 3 pv e2e4
+info depth 6 score cp 7 nodes 11221 time 7 pv e2e4
+info depth 7 score cp 39 nodes 22396 time 14 pv e2e4
+info depth 8 score cp 21 nodes 52409 time 37 pv e2e4
+info depth 9 score cp 46 nodes 96235 time 69 pv e2e4
+info depth 10 score cp 4 nodes 314667 time 216 pv d2d4
+info depth 11 score cp 31 nodes 533622 time 352 pv d2d4
+info depth 12 score cp 16 nodes 933272 time 580 pv d2d4
+info depth 13 score cp 38 nodes 2797044 time 1481 pv e2e4
+info depth 14 score cp 16 nodes 4535264 time 2340 pv e2e4
+info depth 15 score cp 28 nodes 7876946 time 4077 pv e2e4
+=== Results ===
+Time:      4.183s
+Best move: "e2e4"
+Score:     28 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 16 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 16
+
+Searching...
+
+info depth 1 score cp 60 nodes 23 time 0 pv d2d4
+info depth 2 score cp 0 nodes 117 time 0 pv d2d4
+info depth 3 score cp 51 nodes 423 time 1 pv d2d4
+info depth 4 score cp -3 nodes 1798 time 2 pv e2e4
+info depth 5 score cp 29 nodes 3536 time 3 pv e2e4
+info depth 6 score cp 7 nodes 11221 time 7 pv e2e4
+info depth 7 score cp 39 nodes 22396 time 13 pv e2e4
+info depth 8 score cp 21 nodes 52409 time 27 pv e2e4
+info depth 9 score cp 46 nodes 96235 time 47 pv e2e4
+info depth 10 score cp 4 nodes 314667 time 149 pv d2d4
+info depth 11 score cp 31 nodes 533622 time 249 pv d2d4
+info depth 12 score cp 16 nodes 933272 time 475 pv d2d4
+info depth 13 score cp 38 nodes 2797044 time 1445 pv e2e4
+info depth 14 score cp 16 nodes 4535264 time 2335 pv e2e4
+info depth 15 score cp 28 nodes 7876946 time 4185 pv e2e4
+info depth 16 score cp 16 nodes 14102664 time 7698 pv e2e4
+=== Results ===
+Time:      7.757s
+Best move: "e2e4"
+Score:     16 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 17 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 17
+
+Searching...
+
+info depth 1 score cp 60 nodes 23 time 0 pv d2d4
+info depth 2 score cp 0 nodes 117 time 0 pv d2d4
+info depth 3 score cp 51 nodes 423 time 1 pv d2d4
+info depth 4 score cp -3 nodes 1798 time 2 pv e2e4
+info depth 5 score cp 29 nodes 3536 time 3 pv e2e4
+info depth 6 score cp 7 nodes 11221 time 7 pv e2e4
+info depth 7 score cp 39 nodes 22396 time 16 pv e2e4
+info depth 8 score cp 21 nodes 52409 time 36 pv e2e4
+info depth 9 score cp 46 nodes 96235 time 61 pv e2e4
+info depth 10 score cp 4 nodes 314667 time 171 pv d2d4
+info depth 11 score cp 31 nodes 533622 time 287 pv d2d4
+info depth 12 score cp 16 nodes 933272 time 498 pv d2d4
+info depth 13 score cp 38 nodes 2797044 time 1501 pv e2e4
+info depth 14 score cp 16 nodes 4535264 time 2472 pv e2e4
+info depth 15 score cp 28 nodes 7876946 time 4558 pv e2e4
+info depth 16 score cp 16 nodes 14102664 time 7644 pv e2e4
+info depth 17 score cp 50 nodes 28841950 time 15419 pv e2e4
+=== Results ===
+Time:      15.482s
+Best move: "e2e4"
+Score:     50 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 18 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 18
+
+Searching...
+
+info depth 1 score cp 60 nodes 23 time 0 pv d2d4
+info depth 2 score cp 0 nodes 117 time 0 pv d2d4
+info depth 3 score cp 51 nodes 423 time 1 pv d2d4
+info depth 4 score cp -3 nodes 1798 time 2 pv e2e4
+info depth 5 score cp 29 nodes 3536 time 3 pv e2e4
+info depth 6 score cp 7 nodes 11221 time 8 pv e2e4
+info depth 7 score cp 39 nodes 22396 time 14 pv e2e4
+info depth 8 score cp 21 nodes 52409 time 28 pv e2e4
+info depth 9 score cp 46 nodes 96235 time 50 pv e2e4
+info depth 10 score cp 4 nodes 314667 time 150 pv d2d4
+info depth 11 score cp 31 nodes 533622 time 255 pv d2d4
+info depth 12 score cp 16 nodes 933272 time 452 pv d2d4
+info depth 13 score cp 38 nodes 2797044 time 1365 pv e2e4
+info depth 14 score cp 16 nodes 4535264 time 2273 pv e2e4
+info depth 15 score cp 28 nodes 7876946 time 3973 pv e2e4
+info depth 16 score cp 16 nodes 14102664 time 7144 pv e2e4
+info depth 17 score cp 50 nodes 28841950 time 14645 pv e2e4
+info depth 18 score cp 49 nodes 55903973 time 34579 pv e2e4
+=== Results ===
+Time:      34.655s
+Best move: "e2e4"
+Score:     49 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 19 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 19
+
+Searching...
+
+info depth 1 score cp 60 nodes 23 time 0 pv d2d4
+info depth 2 score cp 0 nodes 117 time 0 pv d2d4
+info depth 3 score cp 51 nodes 423 time 0 pv d2d4
+info depth 4 score cp -3 nodes 1798 time 1 pv e2e4
+info depth 5 score cp 29 nodes 3536 time 2 pv e2e4
+info depth 6 score cp 7 nodes 11221 time 7 pv e2e4
+info depth 7 score cp 39 nodes 22396 time 14 pv e2e4
+info depth 8 score cp 21 nodes 52409 time 34 pv e2e4
+info depth 9 score cp 46 nodes 96235 time 62 pv e2e4
+info depth 10 score cp 4 nodes 314667 time 215 pv d2d4
+info depth 11 score cp 31 nodes 533622 time 408 pv d2d4
+info depth 12 score cp 16 nodes 933272 time 738 pv d2d4
+info depth 13 score cp 38 nodes 2797044 time 1903 pv e2e4
+info depth 14 score cp 16 nodes 4535264 time 3021 pv e2e4
+info depth 15 score cp 28 nodes 7876946 time 5503 pv e2e4
+info depth 16 score cp 16 nodes 14102664 time 10352 pv e2e4
+info depth 17 score cp 50 nodes 28841950 time 20692 pv e2e4
+info depth 18 score cp 49 nodes 55903973 time 34921 pv e2e4
+info depth 19 score cp 48 nodes 104749572 time 62272 pv e2e4
+=== Results ===
+Time:      62.355s
+Best move: "e2e4"
+Score:     48 centipawns
+===============
+
+
+-----------------------------------------
+=== Chess Engine Search Benchmark Depth: 20 ===
+   === Search Type: alpha-beta ===
+
+Loading magic tables...
+Position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+Depth: 20
+
+Searching...
+
+info depth 1 score cp 60 nodes 23 time 0 pv d2d4
+info depth 2 score cp 0 nodes 117 time 0 pv d2d4
+info depth 3 score cp 51 nodes 423 time 0 pv d2d4
+info depth 4 score cp -3 nodes 1798 time 1 pv e2e4
+info depth 5 score cp 29 nodes 3536 time 3 pv e2e4
+info depth 6 score cp 7 nodes 11221 time 7 pv e2e4
+info depth 7 score cp 39 nodes 22396 time 13 pv e2e4
+info depth 8 score cp 21 nodes 52409 time 30 pv e2e4
+info depth 9 score cp 46 nodes 96235 time 54 pv e2e4
+info depth 10 score cp 4 nodes 314667 time 161 pv d2d4
+info depth 11 score cp 31 nodes 533622 time 267 pv d2d4
+info depth 12 score cp 16 nodes 933272 time 460 pv d2d4
+info depth 13 score cp 38 nodes 2797044 time 1452 pv e2e4
+info depth 14 score cp 16 nodes 4535264 time 2412 pv e2e4
+info depth 15 score cp 28 nodes 7876946 time 4099 pv e2e4
+info depth 16 score cp 16 nodes 14102664 time 7202 pv e2e4
+info depth 17 score cp 50 nodes 28841950 time 15750 pv e2e4
+info depth 18 score cp 49 nodes 55903973 time 30664 pv e2e4
+info depth 19 score cp 48 nodes 104749572 time 57187 pv e2e4
+info depth 20 score cp 38 nodes 168820923 time 90337 pv e2e4
+=== Results ===
+Time:      90.402s
+Best move: "e2e4"
+Score:     38 centipawns
+===============
+
+
+-----------------------------------------

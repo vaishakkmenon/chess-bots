@@ -323,31 +323,29 @@ pub fn alpha_beta(
             );
             score = -val;
         } else {
-            // AGGRESSIVE LMR LOGIC
+            // LOGARITHMIC LMR (Precision Logic)
             let mut r = 0;
 
             // Only reduce if:
             // 1. Depth > 2 (Don't reduce near leaves)
             // 2. Late move (moves_count > 4)
-            // 3. Not a tactical move (Capture/Promotion/Check)
-            if depth > 2
-                && move_count > 4
-                && !mv.is_capture()
-                && !mv.is_promotion()
-                && !in_check_now
-            {
-                // Formula: Reduction scales with Depth AND Move Count
-                // "depth / 3" allows high depths (17+) to reduce by 5-6 plies.
-                // "moves_count / 10" punishes moves that appear very late in the list.
-                r = 1 + (depth / 3) + (move_count as i32 / 10);
+            // 3. Not a tactical move (Capture/Promotion)
+            if depth > 2 && move_count > 4 && !mv.is_capture() && !mv.is_promotion() {
+                // Formula: r = 0.75 + ln(depth) * ln(move_pos) / 2.5
+                // This creates a smooth curve that is safe at high depths.
+                let lmr = 0.75 + (depth as f64).ln() * (move_count as f64).ln() / 2.5;
+                r = lmr as i32;
 
-                // Cap the reduction
+                // Safety Cap: Never reduce below 0 or deeper than the search itself
+                if r < 0 {
+                    r = 0;
+                }
                 if r > depth - 1 {
                     r = depth - 1;
                 }
 
-                // PV Node protection: If we are in a PV node (beta - alpha > 1),
-                // reduce less to be safe.
+                // PV Node Protection:
+                // If we are in a PV Node (window is open), reduce less to be safe.
                 if beta - alpha > 1 {
                     r = (r * 2) / 3;
                 }
