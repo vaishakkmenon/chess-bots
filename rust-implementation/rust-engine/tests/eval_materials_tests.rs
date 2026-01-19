@@ -65,7 +65,8 @@ fn material_startpos_is_zero() {
 #[test]
 fn material_white_up_a_pawn_is_plus_100() {
     let tables = load_magic_tables();
-    let b = fen("8/8/8/8/8/8/P7/8 w - - 0 1");
+    // Added kings (Kh1, kh8) to satisfy board validation
+    let b = fen("7k/8/8/8/8/8/P7/7K w - - 0 1");
     let val = eval_material(&b);
     // PeSTO Pawn is around 82(MG) to 94(EG).
     assert!(
@@ -86,7 +87,8 @@ fn material_white_up_a_pawn_is_plus_100() {
 #[test]
 fn material_black_up_a_rook_is_minus_500() {
     let tables = load_magic_tables();
-    let b = fen("8/8/8/8/8/8/8/7r w - - 0 1");
+    // Added kings (Ka1, ka8) to satisfy board validation
+    let b = fen("k7/8/8/8/8/8/8/K6r w - - 0 1");
     let val = eval_material(&b);
     // PeSTO Rook is 477(MG) to 512(EG). So -477 to -512.
     assert!(
@@ -106,8 +108,9 @@ fn material_black_up_a_rook_is_minus_500() {
 
 #[test]
 fn material_promotion_delta_is_plus_800_for_white() {
-    let a7_pawn = fen("8/P7/8/8/8/8/8/8 w - - 0 1");
-    let a7_queen = fen("8/Q7/8/8/8/8/8/8 w - - 0 1");
+    // Added kings (Kh1, kh8) to satisfy board validation
+    let a7_pawn = fen("7k/P7/8/8/8/8/8/7K w - - 0 1");
+    let a7_queen = fen("7k/Q7/8/8/8/8/8/7K w - - 0 1");
 
     let pawn_material = eval_material(&a7_pawn);
     let queen_material = eval_material(&a7_queen);
@@ -124,8 +127,9 @@ fn material_promotion_delta_is_plus_800_for_white() {
 
 #[test]
 fn material_en_passant_capture_reduces_white_pawns_by_one() {
-    let after_ep = fen("8/8/3p4/8/8/8/8/8 w - - 0 1");
-    let before_ep = fen("8/8/3p4/4P3/8/8/8/8 w - - 0 1");
+    // Added kings (Kh1, kh8) to satisfy board validation
+    let after_ep = fen("7k/8/3p4/8/8/8/8/7K w - - 0 1");
+    let before_ep = fen("7k/8/3p4/4P3/8/8/8/7K w - - 0 1");
 
     let diff = eval_material(&before_ep) - eval_material(&after_ep);
     // Should be exactly one pawn value (approx 82-94)
@@ -142,7 +146,8 @@ fn material_en_passant_capture_reduces_white_pawns_by_one() {
 fn static_eval_includes_psqt_bonus() {
     let tables = load_magic_tables();
     // With PSQT, static_eval should differ from pure material
-    let b = fen("8/8/8/8/8/8/P7/8 w - - 0 1");
+    // Added kings (Kh1, kh8) to satisfy board validation
+    let b = fen("7k/8/8/8/8/8/P7/7K w - - 0 1");
     let material = eval_material(&b);
     let full_eval = static_eval(&b, &tables, -32000, 32000);
 

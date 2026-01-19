@@ -519,17 +519,15 @@ pub fn search(
             }
 
             // 1. Fail Low (Score <= Alpha): Position is worse than expected.
-            // Widen window downwards to -INF (Fail-Soft approach).
+            // Only widen alpha downwards. Keep beta unchanged for stability.
             if score <= alpha {
-                beta = (alpha + beta) / 2;
                 alpha = -INF;
                 continue;
             }
 
             // 2. Fail High (Score >= Beta): Position is better than expected.
-            // Widen window upwards to INF (Fail-Soft approach).
+            // Only widen beta upwards. Keep alpha unchanged for stability.
             if score >= beta {
-                alpha = (alpha + beta) / 2;
                 beta = INF;
                 continue;
             }

@@ -158,17 +158,18 @@ fn test_tt_move_ordering_same_results() {
             .unwrap();
     let mut board2 = board1.clone();
     let tables = load_magic_tables();
-    let mut ctx = SearchContext::new();
 
-    // Search with TT
+    // Search with TT (fresh context)
+    let mut ctx1 = SearchContext::new();
     let mut tt = TranspositionTable::new(64);
     let (score_with_tt, move_with_tt) =
-        search_fixed_depth(&mut board1, &tables, 4, &mut tt, &mut ctx, -INF, INF);
+        search_fixed_depth(&mut board1, &tables, 4, &mut tt, &mut ctx1, -INF, INF);
 
-    // Search again (fresh TT)
+    // Search again (fresh TT and fresh context for true independence)
+    let mut ctx2 = SearchContext::new();
     let mut tt_fresh = TranspositionTable::new(64);
     let (score_fresh, move_fresh) =
-        search_fixed_depth(&mut board2, &tables, 4, &mut tt_fresh, &mut ctx, -INF, INF);
+        search_fixed_depth(&mut board2, &tables, 4, &mut tt_fresh, &mut ctx2, -INF, INF);
 
     println!(
         "First search:  score={}, move={:?}",
@@ -179,7 +180,7 @@ fn test_tt_move_ordering_same_results() {
         score_fresh, move_fresh
     );
 
-    // Scores should be identical (deterministic search)
+    // Scores should be identical (deterministic search with fresh contexts)
     assert_eq!(score_with_tt, score_fresh, "Scores should match");
 
     // Moves might differ in equal positions, but both should be found

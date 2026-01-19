@@ -135,13 +135,39 @@ impl MovePicker {
         }
     }
 
-    /// Generate quiet moves and score them with history heuristic.
+    /// Generate quiet moves and score them with history heuristic and pawn advancement bonus.
     fn generate_quiets(&mut self, board: &Board, tables: &MagicTables, history: &[[i32; 64]; 64]) {
+        use crate::board::{Color, Piece};
+
         generate_pseudo_legal_quiets(board, tables, &mut self.quiets);
 
-        // Score each quiet move with history
+        // Score each quiet move with history + pawn advancement bonus
         for mv in &self.quiets {
-            let score = history[mv.from.index() as usize][mv.to.index() as usize];
+            let mut score = history[mv.from.index() as usize][mv.to.index() as usize];
+
+            // Pawn advancement bonus: encourage pushing pawns toward promotion
+            if mv.piece == Piece::Pawn {
+                let to_rank = mv.to.index() / 8;
+                let from_rank = mv.from.index() / 8;
+
+                // Check if pawn is advancing (direction depends on color)
+                let is_advancing = match board.side_to_move {
+                    Color::White => to_rank > from_rank,
+                    Color::Black => to_rank < from_rank,
+                };
+
+                if is_advancing {
+                    // Bonus for reaching ranks 4/5 (0-indexed: 3, 4)
+                    if to_rank == 3 || to_rank == 4 {
+                        score += 1000;
+                    }
+                    // Higher bonus for reaching ranks 6/7 (0-indexed: 5, 6)
+                    if to_rank == 5 || to_rank == 6 {
+                        score += 2000;
+                    }
+                }
+            }
+
             self.quiet_scores.push(score);
         }
     }
