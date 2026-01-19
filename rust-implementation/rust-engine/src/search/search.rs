@@ -323,34 +323,37 @@ pub fn alpha_beta(
             );
             score = -val;
         } else {
-            // LMR Logic
+            // AGGRESSIVE LMR LOGIC
             let mut r = 0;
 
             // Only reduce if:
-            // 1. We are deep enough (> 2)
-            // 2. We have searched the first few moves (move_count > 3)
-            // 3. It's a quiet move (not a capture/promotion)
-            // 4. We are not in check (tactical danger)
+            // 1. Depth > 2 (Don't reduce near leaves)
+            // 2. Late move (moves_count > 4)
+            // 3. Not a tactical move (Capture/Promotion/Check)
             if depth > 2
-                && move_count > 3
+                && move_count > 4
                 && !mv.is_capture()
                 && !mv.is_promotion()
                 && !in_check_now
             {
-                // Base reduction
-                r = 1;
+                // Formula: Reduction scales with Depth AND Move Count
+                // "depth / 3" allows high depths (17+) to reduce by 5-6 plies.
+                // "moves_count / 10" punishes moves that appear very late in the list.
+                r = 1 + (depth / 3) + (move_count as i32 / 10);
 
-                // If we are at high depth, reduce more
-                if depth > 6 {
-                    r += 1;
+                // Cap the reduction
+                if r > depth - 1 {
+                    r = depth - 1;
                 }
 
-                // If this is a very late move, reduce even more
-                if move_count > 8 {
-                    r += 1;
+                // PV Node protection: If we are in a PV node (beta - alpha > 1),
+                // reduce less to be safe.
+                if beta - alpha > 1 {
+                    r = (r * 2) / 3;
                 }
             }
 
+            // Perform the Reduced Search (Zero Window)
             let (val, _) = alpha_beta(
                 board,
                 tables,
@@ -365,7 +368,8 @@ pub fn alpha_beta(
             );
             score = -val;
 
-            if r > 0 && score > alpha {
+            // Re-search if the reduced search found a surprisingly good move
+            if score > alpha && r > 0 {
                 let (val, _) = alpha_beta(
                     board,
                     tables,
