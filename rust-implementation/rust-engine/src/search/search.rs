@@ -1,17 +1,13 @@
 use crate::board::Board;
-use crate::moves::execute::{
-    generate_captures, generate_legal, make_move_basic, make_null_move, undo_move_basic,
-    undo_null_move,
-};
+use crate::moves::execute::{make_move_basic, make_null_move, undo_move_basic, undo_null_move};
 use crate::moves::magic::MagicTables;
 use crate::moves::square_control::in_check;
 use crate::moves::types::Move;
 use crate::search::context::SearchContext;
 use crate::search::eval::static_eval;
-use crate::search::ordering::{mvv_lva_score, order_moves};
+use crate::search::picker::MovePicker;
 use crate::search::see::SeeExt;
 use crate::search::tt::{NodeType, TranspositionTable};
-use arrayvec::ArrayVec;
 use std::time::{Duration, Instant};
 
 const MATE_SCORE: i32 = 31000;
@@ -90,8 +86,6 @@ pub fn quiescence(
         return static_eval(board, tables, alpha, beta);
     }
 
-    // let in_check_now = in_check(board, board.side_to_move, tables);
-
     let stand_pat = static_eval(board, tables, alpha, beta);
 
     if stand_pat >= beta {
@@ -101,12 +95,12 @@ pub fn quiescence(
         alpha = stand_pat;
     }
 
-    let mut moves: ArrayVec<Move, 256> = ArrayVec::new();
-    let mut scratch: ArrayVec<Move, 256> = ArrayVec::new();
-    generate_captures(board, tables, &mut moves, &mut scratch);
-    moves.sort_by_cached_key(|&mv| -mvv_lva_score(mv, board));
+    // Use MovePicker in captures-only mode for quiescence
+    let empty_killers = [None, None];
+    let empty_history = [[0i32; 64]; 64];
+    let mut picker = MovePicker::new(None, empty_killers, true);
 
-    for mv in moves {
+    while let Some(mv) = picker.next(board, tables, &empty_history) {
         *nodes += 1;
         if *nodes & 1023 == 0 {
             time.check_time();
@@ -124,7 +118,7 @@ pub fn quiescence(
         // Don't prune if it's a promotion (potentially huge value)
         // Don't prune if it's En Passant (captured_value is 0, but it captures a pawn)
         let is_prom = mv.is_promotion();
-        let is_ep = mv.is_en_passant(); // Ensure your Move struct has this, or check move flags
+        let is_ep = mv.is_en_passant();
 
         // "Blindness" Fix: Only prune standard captures.
         if !is_prom && !is_ep && stand_pat + captured_value + 200 < alpha {
@@ -132,7 +126,9 @@ pub fn quiescence(
         }
 
         // SEE Pruning: Skip captures that lose material
-        if !is_prom && !board.static_exchange_eval(mv, 0, tables) {
+        // Note: MovePicker already filters bad captures for us, but we keep this
+        // for promotions and en passant which bypass SEE classification
+        if !is_prom && !is_ep && !board.static_exchange_eval(mv, 0, tables) {
             continue;
         }
 
@@ -270,36 +266,18 @@ pub fn alpha_beta(
         }
     }
 
-    let mut moves: ArrayVec<Move, 256> = ArrayVec::new();
-    let mut scratch: ArrayVec<Move, 256> = ArrayVec::new();
-
-    generate_legal(board, tables, &mut moves, &mut scratch);
-    order_moves(
-        &mut moves,
-        board,
-        &ctx.killer_moves[ply],
-        &ctx.history,
-        hash_move,
-        tables,
-    );
-
-    if moves.is_empty() {
-        if in_check_now {
-            return (-MATE_SCORE + ply as i32, None);
-        }
-        return (0, None);
-    }
+    // Use MovePicker for staged move generation
+    let mut picker = MovePicker::new(hash_move, ctx.killer_moves[ply], false);
 
     let mut best_move = None;
     let mut best_score = -INF;
     let original_alpha = alpha;
+    let mut move_count = 0;
 
-    for (i, mv) in moves.into_iter().enumerate() {
+    while let Some(mv) = picker.next(board, tables, &ctx.history) {
         // [STEP 3] STANDARD FUTILITY PRUNING
         // Logic: If the move is quiet and our position is hopelessly below Alpha, skip it.
-        if depth < 7 && !in_check_now && !mv.is_capture() && !mv.is_promotion() && i > 0
-        // Safety: Always search the first move (it might be the only legal one)
-        {
+        if depth < 7 && !in_check_now && !mv.is_capture() && !mv.is_promotion() && move_count > 0 {
             // Margin: We assume a quiet move can improve our position by at most 150 * depth.
             // If eval + margin is still <= alpha, this move cannot possibly beat alpha.
             let margin = 150 * depth;
@@ -314,26 +292,15 @@ pub fn alpha_beta(
         // Logic: If we have searched many quiet moves and haven't found a
         // good one yet, it's highly unlikely the remaining (unsorted) moves
         // will be any better. Just cut them off.
-
-        // Conditions:
-        // 1. Not in check (safety).
-        // 2. Not the PV node (alpha > original_alpha) - we need precision there.
-        // 3. We are deep enough in the search (depth < 8).
-        // 4. We have exceeded the "move count" limit.
         if depth < 14
             && !in_check_now
             && !mv.is_capture()
             && !mv.is_promotion()
             && alpha == original_alpha
-        // Only prune if we haven't improved alpha yet
         {
-            // Formula: The deeper we are, the more moves we allow.
-            // Depth 1: search 4 moves. Depth 2: search 6 moves.
             let lmp_threshold = 3 + 4 * depth;
-
-            // If we have searched more moves than the threshold, STOP.
-            if i > lmp_threshold as usize {
-                break; // Break the loop, stop generating moves for this node
+            if move_count > lmp_threshold as usize {
+                break;
             }
         }
         // =========================================================
@@ -341,7 +308,7 @@ pub fn alpha_beta(
         let undo = make_move_basic(board, mv);
         let mut score;
 
-        if i == 0 {
+        if move_count == 0 {
             let (val, _) = alpha_beta(
                 board,
                 tables,
@@ -361,10 +328,15 @@ pub fn alpha_beta(
 
             // Only reduce if:
             // 1. We are deep enough (> 2)
-            // 2. We have searched the first few moves (i > 3)
+            // 2. We have searched the first few moves (move_count > 3)
             // 3. It's a quiet move (not a capture/promotion)
             // 4. We are not in check (tactical danger)
-            if depth > 2 && i > 3 && !mv.is_capture() && !mv.is_promotion() && !in_check_now {
+            if depth > 2
+                && move_count > 3
+                && !mv.is_capture()
+                && !mv.is_promotion()
+                && !in_check_now
+            {
                 // Base reduction
                 r = 1;
 
@@ -374,7 +346,7 @@ pub fn alpha_beta(
                 }
 
                 // If this is a very late move, reduce even more
-                if i > 8 {
+                if move_count > 8 {
                     r += 1;
                 }
             }
@@ -427,6 +399,7 @@ pub fn alpha_beta(
         }
 
         undo_move_basic(board, undo);
+        move_count += 1;
 
         if time.stop_signal {
             return (0, None);
@@ -460,6 +433,14 @@ pub fn alpha_beta(
                 return (beta, Some(mv));
             }
         }
+    }
+
+    // No legal moves found - checkmate or stalemate
+    if move_count == 0 {
+        if in_check_now {
+            return (-MATE_SCORE + ply as i32, None);
+        }
+        return (0, None);
     }
 
     if time.stop_signal {

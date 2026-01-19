@@ -35,7 +35,7 @@ echo "Search Benchmarks for Wayfinder v${VERSION}" >> "$SEARCH_BENCH_OUTPUT"
 echo "Date: $(date)" >> "$SEARCH_BENCH_OUTPUT"
 echo "=========================================" >> "$SEARCH_BENCH_OUTPUT"
 
-for depth in 9 10 11 12 13 14 15; do
+for depth in 9 10 11 12 13 14 15 16 17; do
   echo "Running search_bench depth $depth..."
   "$SEARCH_BENCH_PATH" $depth >> "$SEARCH_BENCH_OUTPUT" 2>&1
   echo "" >> "$SEARCH_BENCH_OUTPUT"

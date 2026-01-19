@@ -422,6 +422,20 @@ pub fn generate_legal(
     }
 }
 
+/// Check if a pseudo-legal move is legal (doesn't leave own king in check).
+/// For castling moves, this also checks that the king doesn't pass through check.
+#[inline]
+pub fn is_legal_move(board: &mut Board, mv: Move, tables: &MagicTables) -> bool {
+    if mv.is_castling() {
+        return is_legal_castling(board, mv, tables);
+    }
+    let mover = board.side_to_move;
+    let undo = make_move_basic(board, mv);
+    let illegal = in_check(board, mover, tables);
+    undo_move_basic(board, undo);
+    !illegal
+}
+
 /// Generate only legal capture moves
 pub fn generate_captures(
     board: &mut Board,

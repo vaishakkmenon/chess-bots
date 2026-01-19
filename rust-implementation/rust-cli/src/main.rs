@@ -1,7 +1,7 @@
 use rust_engine::board::{Board, Color, Piece};
 use rust_engine::moves::execute::{generate_legal, make_move_basic};
-use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::magic::MagicTables;
+use rust_engine::moves::magic::loader::load_magic_tables;
 use rust_engine::moves::types::Move;
 use rust_engine::search::search::search;
 use std::fs::File;
@@ -35,25 +35,25 @@ fn main() {
             "isready" => println!("readyok"),
             "ucinewgame" => {
                 board = Board::new();
-            },
+            }
             "position" => {
                 if let Some(new_board) = handle_position(&parts, &magic_tables) {
                     board = new_board;
                 }
-            },
+            }
             "go" => {
                 handle_go(&parts, &mut board, &magic_tables);
-            },
+            }
             "fen" => {
                 println!("{}", board.to_fen());
-            },
+            }
             "quit" => break,
             "d" | "display" => {
                 println!("{}", board);
-            },
+            }
             "test" | "bench" => {
                 run_epd_tests("../bench_arena/bk.epd", &magic_tables);
-            },
+            }
             _ => {}
         }
     }
@@ -150,14 +150,10 @@ fn parse_uci_move(board: &Board, move_str: &str, tables: &MagicTables) -> Option
     None
 }
 
-fn handle_go(
-    parts: &[&str],
-    board: &mut Board,
-    tables: &MagicTables,
-) {
-    let mut depth = 64; 
+fn handle_go(parts: &[&str], board: &mut Board, tables: &MagicTables) {
+    let mut depth = 64;
     let mut time_limit = None;
-    
+
     // Time Control Variables
     let mut wtime: Option<u64> = None;
     let mut btime: Option<u64> = None;
@@ -224,9 +220,7 @@ fn handle_go(
 
     if let Some(ms) = movetime {
         time_limit = Some(Duration::from_millis(ms));
-        depth = 64; 
-    } 
-    else {
+    } else {
         let (my_time, my_inc) = if board.side_to_move == Color::White {
             (wtime, winc)
         } else {
@@ -234,7 +228,7 @@ fn handle_go(
         };
 
         if let Some(t) = my_time {
-            let mut alloc: u64; 
+            let mut alloc: u64;
 
             if let Some(mtg) = movestogo {
                 let moves_to_plan = mtg.max(2);
@@ -261,10 +255,11 @@ fn handle_go(
                 alloc = 5;
             }
 
-            if alloc == 0 && t > 10 { alloc = 5; }
+            if alloc == 0 && t > 10 {
+                alloc = 5;
+            }
 
             time_limit = Some(Duration::from_millis(alloc));
-            depth = 64;
         }
     }
 
@@ -284,15 +279,13 @@ fn handle_go(
 fn run_epd_tests(path: &str, tables: &MagicTables) {
     let file = match File::open(path) {
         Ok(f) => f,
-        Err(_) => {
-            match File::open(format!("bench_arena/{}", path.split('/').last().unwrap())) {
-                Ok(f) => f,
-                Err(_) => {
-                    println!("Error: Could not find EPD file at '{}' or local.", path);
-                    return;
-                }
+        Err(_) => match File::open(format!("bench_arena/{}", path.split('/').last().unwrap())) {
+            Ok(f) => f,
+            Err(_) => {
+                println!("Error: Could not find EPD file at '{}' or local.", path);
+                return;
             }
-        }
+        },
     };
 
     println!("Running Tactical Tests from {} (1s per position)...", path);
@@ -304,7 +297,9 @@ fn run_epd_tests(path: &str, tables: &MagicTables) {
 
     for (line_idx, line_res) in reader.lines().enumerate() {
         let line = line_res.unwrap_or_default();
-        if line.trim().is_empty() { continue; }
+        if line.trim().is_empty() {
+            continue;
+        }
 
         if let Some(bm_idx) = line.find(" bm ") {
             let fen = &line[..bm_idx].trim();
@@ -321,30 +316,36 @@ fn run_epd_tests(path: &str, tables: &MagicTables) {
             };
 
             let expected_uci = san_to_uci(&mut board, san_move, tables);
-            
+
             // Fixed 1.0s search for testing
             let time_limit = Some(Duration::from_millis(1000));
-            let depth = 64; 
-            
+            let depth = 64;
+
             let (_score, best_move) = search(&mut board, tables, depth, time_limit);
 
             let result_str = match best_move {
                 Some(m) => m.to_uci(),
-                None => "none".to_string()
+                None => "none".to_string(),
             };
 
             let passed = if let Some(ref exp) = expected_uci {
                 *exp == result_str
             } else {
-                false 
+                false
             };
 
-            if passed { solved += 1; }
+            if passed {
+                solved += 1;
+            }
             total += 1;
 
             println!("Test #{}: {}", total, if passed { "PASS" } else { "FAIL" });
             if !passed {
-                println!("   Expected: {} | Got: {}", expected_uci.unwrap_or(san_move.to_string()), result_str);
+                println!(
+                    "   Expected: {} | Got: {}",
+                    expected_uci.unwrap_or(san_move.to_string()),
+                    result_str
+                );
             }
         }
     }
@@ -360,29 +361,39 @@ fn san_to_uci(board: &mut Board, san: &str, tables: &MagicTables) -> Option<Stri
     generate_legal(board, tables, &mut moves, &mut scratch);
 
     let clean_san = san.replace("+", "").replace("#", "").replace("x", "");
-    
+
     // Handle Castling
     if clean_san == "O-O" {
-        return moves.iter().find(|m| {
-            let from = m.from.index() as i8;
-            let to = m.to.index() as i8;
-            (to - from).abs() == 2 && to > from
-        }).map(|m| m.to_uci());
+        return moves
+            .iter()
+            .find(|m| {
+                let from = m.from.index() as i8;
+                let to = m.to.index() as i8;
+                (to - from).abs() == 2 && to > from
+            })
+            .map(|m| m.to_uci());
     }
     if clean_san == "O-O-O" {
-        return moves.iter().find(|m| {
-            let from = m.from.index() as i8;
-            let to = m.to.index() as i8;
-            (to - from).abs() == 2 && to < from
-        }).map(|m| m.to_uci());
+        return moves
+            .iter()
+            .find(|m| {
+                let from = m.from.index() as i8;
+                let to = m.to.index() as i8;
+                (to - from).abs() == 2 && to < from
+            })
+            .map(|m| m.to_uci());
     }
 
-    if clean_san.len() < 2 { return None; }
-    let target_str = &clean_san[clean_san.len()-2..];
-    
+    if clean_san.len() < 2 {
+        return None;
+    }
+    let target_str = &clean_san[clean_san.len() - 2..];
+
     let file = (target_str.chars().nth(0)? as u8).wrapping_sub(b'a');
     let rank = (target_str.chars().nth(1)? as u8).wrapping_sub(b'1');
-    if file > 7 || rank > 7 { return None; }
+    if file > 7 || rank > 7 {
+        return None;
+    }
     let target_sq = (rank * 8 + file) as usize;
 
     let first_char = clean_san.chars().next()?;
@@ -392,7 +403,7 @@ fn san_to_uci(board: &mut Board, san: &str, tables: &MagicTables) -> Option<Stri
         'R' => Piece::Rook,
         'Q' => Piece::Queen,
         'K' => Piece::King,
-        _ => Piece::Pawn, 
+        _ => Piece::Pawn,
     };
 
     let disambig_char = if piece_type == Piece::Pawn {
@@ -402,7 +413,7 @@ fn san_to_uci(board: &mut Board, san: &str, tables: &MagicTables) -> Option<Stri
             None
         }
     } else {
-        let content = &clean_san[1..clean_san.len()-2];
+        let content = &clean_san[1..clean_san.len() - 2];
         if !content.is_empty() {
             content.chars().next()
         } else {
@@ -410,29 +421,40 @@ fn san_to_uci(board: &mut Board, san: &str, tables: &MagicTables) -> Option<Stri
         }
     };
 
-    let candidates: Vec<&Move> = moves.iter().filter(|m| {
-        // FIXED: Cast index() to usize
-        if (m.to.index() as usize) != target_sq { return false; }
-        
-        if let Some((_, p)) = board.piece_at(m.from) {
-            if p != piece_type { return false; }
-        } else {
-            return false;
-        }
-
-        if let Some(d) = disambig_char {
-            let from_sq = m.from.index();
-            let from_file = from_sq % 8;
-            let from_rank = from_sq / 8;
-            
-            if d >= 'a' && d <= 'h' {
-                if from_file != (d as u8 - b'a') { return false; }
-            } else if d >= '1' && d <= '8' {
-                if from_rank != (d as u8 - b'1') { return false; }
+    let candidates: Vec<&Move> = moves
+        .iter()
+        .filter(|m| {
+            // FIXED: Cast index() to usize
+            if (m.to.index() as usize) != target_sq {
+                return false;
             }
-        }
-        true
-    }).collect();
+
+            if let Some((_, p)) = board.piece_at(m.from) {
+                if p != piece_type {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+
+            if let Some(d) = disambig_char {
+                let from_sq = m.from.index();
+                let from_file = from_sq % 8;
+                let from_rank = from_sq / 8;
+
+                if d >= 'a' && d <= 'h' {
+                    if from_file != (d as u8 - b'a') {
+                        return false;
+                    }
+                } else if d >= '1' && d <= '8' {
+                    if from_rank != (d as u8 - b'1') {
+                        return false;
+                    }
+                }
+            }
+            true
+        })
+        .collect();
 
     if !candidates.is_empty() {
         Some(candidates[0].to_uci())
