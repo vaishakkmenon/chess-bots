@@ -6,8 +6,8 @@ use crate::moves::magic::structs::{BishopMagicTables, RookMagicTables};
 use crate::moves::pawn::{BLACK_PAWN_ATTACKS, WHITE_PAWN_ATTACKS};
 use crate::moves::square_control::is_legal_castling;
 use crate::moves::types::{
-    CAPTURE, DOUBLE_PAWN_PUSH, EN_PASSANT, KINGSIDE_CASTLE, Move, MoveBuffer, PROMOTION, PROMOTION_CAPTURE,
-    QUEENSIDE_CASTLE, QUIET_MOVE,
+    CAPTURE, DOUBLE_PAWN_PUSH, EN_PASSANT, KINGSIDE_CASTLE, Move, MoveBuffer, PROMOTION,
+    PROMOTION_CAPTURE, QUEENSIDE_CASTLE, QUIET_MOVE,
 };
 use crate::square::Square;
 use crate::utils::pop_lsb;
@@ -82,7 +82,11 @@ pub fn generate_knight_moves(board: &Board, move_list: &mut impl MoveBuffer) {
     }
 }
 
-pub fn generate_bishop_moves(board: &Board, tables: &BishopMagicTables, move_list: &mut impl MoveBuffer) {
+pub fn generate_bishop_moves(
+    board: &Board,
+    tables: &BishopMagicTables,
+    move_list: &mut impl MoveBuffer,
+) {
     let color = board.side_to_move;
     let bishops = board.pieces(Piece::Bishop, color);
     let friendly = board.occupancy(color);
@@ -99,7 +103,11 @@ pub fn generate_bishop_moves(board: &Board, tables: &BishopMagicTables, move_lis
     }
 }
 
-pub fn generate_rook_moves(board: &Board, tables: &RookMagicTables, move_list: &mut impl MoveBuffer) {
+pub fn generate_rook_moves(
+    board: &Board,
+    tables: &RookMagicTables,
+    move_list: &mut impl MoveBuffer,
+) {
     let color = board.side_to_move;
     let rooks: u64 = board.pieces(Piece::Rook, color);
     let friendly = board.occupancy(color);

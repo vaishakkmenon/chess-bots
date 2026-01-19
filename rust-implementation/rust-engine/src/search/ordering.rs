@@ -76,7 +76,11 @@ pub fn order_moves(
         if mv.piece == Piece::Pawn && !mv.is_capture() {
             let to_rank = mv.to.index() / 8;
             let from_rank = mv.from.index() / 8;
-            let is_advancing = if board.side_to_move == Color::White { to_rank > from_rank } else { to_rank < from_rank };
+            let is_advancing = if board.side_to_move == Color::White {
+                to_rank > from_rank
+            } else {
+                to_rank < from_rank
+            };
 
             if is_advancing && to_rank >= 3 && to_rank <= 5 {
                 return -(5000 + (to_rank as i32 * 100)); // Prioritize progress over shuffles

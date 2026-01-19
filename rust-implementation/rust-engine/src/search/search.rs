@@ -1,5 +1,4 @@
 use crate::board::Board;
-use arrayvec::ArrayVec;
 use crate::moves::execute::{
     generate_captures, generate_legal, make_move_basic, make_null_move, undo_move_basic,
     undo_null_move,
@@ -12,6 +11,7 @@ use crate::search::eval::static_eval;
 use crate::search::ordering::{mvv_lva_score, order_moves};
 use crate::search::see::SeeExt;
 use crate::search::tt::{NodeType, TranspositionTable};
+use arrayvec::ArrayVec;
 use std::time::{Duration, Instant};
 
 const MATE_SCORE: i32 = 31000;
@@ -137,17 +137,7 @@ pub fn quiescence(
         }
 
         let undo = make_move_basic(board, mv);
-        let score = -quiescence(
-            board,
-            tables,
-            ctx,
-            tt,
-            ply + 1,
-            -beta,
-            -alpha,
-            nodes,
-            time,
-        );
+        let score = -quiescence(board, tables, ctx, tt, ply + 1, -beta, -alpha, nodes, time);
         undo_move_basic(board, undo);
 
         if score >= beta {

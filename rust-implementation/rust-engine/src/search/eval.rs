@@ -1,7 +1,7 @@
 use crate::board::{Board, Color, Piece};
-use crate::square::Square;
 use crate::moves::magic::MagicTables;
 use crate::search::pesto;
+use crate::square::Square;
 use crate::utils::pop_lsb;
 
 const MOBILITY_WEIGHT: i32 = 5;
@@ -86,24 +86,29 @@ fn get_piece_value(kind: Piece) -> (i32, i32) {
 pub fn static_eval(board: &Board, tables: &MagicTables, alpha: i32, beta: i32) -> i32 {
     let side = board.side_to_move;
     let enemy = side.opposite();
-    
+
     // 1. Perspective Base Score
     let color_multiplier = if side == Color::White { 1 } else { -1 };
     let mut score = pesto_eval(board) * color_multiplier;
 
     // 2. Lazy Cutoffs
-    if score - LAZY_EVAL_MARGIN >= beta { return score; }
-    if score + LAZY_EVAL_MARGIN <= alpha { return score; }
+    if score - LAZY_EVAL_MARGIN >= beta {
+        return score;
+    }
+    if score + LAZY_EVAL_MARGIN <= alpha {
+        return score;
+    }
 
     // 3. Positional Terms
     score += eval_mobility(board, tables, side) - eval_mobility(board, tables, enemy);
-    
+
     // Fix: Use the standard evaluate_pawn_structure and flip for perspective
     score += evaluate_pawn_structure(board) * color_multiplier;
 
     // 4. Phased King Safety
     // Subtracting enemy attacks on our king, adding our attacks on theirs.
-    score += calculate_phased_safety(board, side, tables) - calculate_phased_safety(board, enemy, tables);
+    score += calculate_phased_safety(board, side, tables)
+        - calculate_phased_safety(board, enemy, tables);
 
     score
 }
@@ -111,9 +116,11 @@ pub fn static_eval(board: &Board, tables: &MagicTables, alpha: i32, beta: i32) -
 fn calculate_phased_safety(board: &Board, color: Color, tables: &MagicTables) -> i32 {
     let enemy = color.opposite();
     let phase = calculate_phase(board); // 24 = MG, 0 = EG
-    
-    let attack_count = count_king_zone_attacks(board, enemy, color, tables); 
-    if attack_count == 0 { return 0; }
+
+    let attack_count = count_king_zone_attacks(board, enemy, color, tables);
+    if attack_count == 0 {
+        return 0;
+    }
 
     // Tapering logic: Penalty is 100% at phase 24 and 0% at phase 0.
     let penalty = (attack_count * KING_ZONE_ATTACK_PENALTY * phase as i32) / 24;
@@ -121,38 +128,73 @@ fn calculate_phased_safety(board: &Board, color: Color, tables: &MagicTables) ->
     -penalty // Return as negative value (a penalty)
 }
 
-fn count_king_zone_attacks(board: &Board, attacker_color: Color, victim_color: Color, tables: &MagicTables) -> i32 {
+fn count_king_zone_attacks(
+    board: &Board,
+    attacker_color: Color,
+    victim_color: Color,
+    tables: &MagicTables,
+) -> i32 {
     let king_sq = board.king_square(victim_color);
-    
+
     // Create a 3x3 bitboard zone around the king
     let b = 1u64 << king_sq.index();
     let mut king_zone = b | ((b << 1) & 0xFEFEFEFEFEFEFEFE) | ((b >> 1) & 0x7F7F7F7F7F7F7F7F);
     king_zone |= (king_zone << 8) | (king_zone >> 8);
-    
+
     let mut attack_count = 0;
-    
+
     // Get total occupancy bitboard
     let mut all_pieces = 0u64;
-    for p in [Piece::Pawn, Piece::Knight, Piece::Bishop, Piece::Rook, Piece::Queen, Piece::King] {
+    for p in [
+        Piece::Pawn,
+        Piece::Knight,
+        Piece::Bishop,
+        Piece::Rook,
+        Piece::Queen,
+        Piece::King,
+    ] {
         all_pieces |= board.pieces(p, Color::White) | board.pieces(p, Color::Black);
     }
 
     // Iterate through all attacker piece types
     for piece_type in [Piece::Knight, Piece::Bishop, Piece::Rook, Piece::Queen] {
         let mut attackers = board.pieces(piece_type, attacker_color);
-        
+
         while attackers != 0 {
             let from_idx = pop_lsb(&mut attackers);
             let from_sq = Square::from_index(from_idx as u8);
-            
+
             let is_attacking = match piece_type {
                 // Use the new standalone function for Knight attacks
-                Piece::Knight => (crate::moves::magic::get_knight_attacks(from_sq.index() as usize) & king_zone) != 0,
+                Piece::Knight => {
+                    (crate::moves::magic::get_knight_attacks(from_sq.index() as usize) & king_zone)
+                        != 0
+                }
                 // Access inner struct for Bishop/Rook attacks
-                Piece::Bishop => (tables.bishop.get_attacks(from_sq.index() as usize, all_pieces) & king_zone) != 0,
-                Piece::Rook => (tables.rook.get_attacks(from_sq.index() as usize, all_pieces) & king_zone) != 0,
-                Piece::Queen => ((tables.bishop.get_attacks(from_sq.index() as usize, all_pieces) | 
-                                 tables.rook.get_attacks(from_sq.index() as usize, all_pieces)) & king_zone) != 0,
+                Piece::Bishop => {
+                    (tables
+                        .bishop
+                        .get_attacks(from_sq.index() as usize, all_pieces)
+                        & king_zone)
+                        != 0
+                }
+                Piece::Rook => {
+                    (tables
+                        .rook
+                        .get_attacks(from_sq.index() as usize, all_pieces)
+                        & king_zone)
+                        != 0
+                }
+                Piece::Queen => {
+                    ((tables
+                        .bishop
+                        .get_attacks(from_sq.index() as usize, all_pieces)
+                        | tables
+                            .rook
+                            .get_attacks(from_sq.index() as usize, all_pieces))
+                        & king_zone)
+                        != 0
+                }
                 _ => false,
             };
 
