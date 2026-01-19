@@ -15,6 +15,31 @@ const MATE_THRESHOLD: i32 = 30000;
 const INF: i32 = 32000;
 const MAX_Q_SEARCH_DEPTH: usize = 100;
 
+// --- Tuning Constants ---
+
+// Reverse Futility Pruning (RFP)
+const RFP_DEPTH_LIMIT: i32 = 9;
+const RFP_MARGIN_BASE: i32 = 80;
+const RFP_MARGIN_MULT: i32 = 90;
+
+// Futility Pruning (FP)
+const FP_DEPTH_LIMIT: i32 = 7;
+const FP_MARGIN_BASE: i32 = 100;
+const FP_MARGIN_MULT: i32 = 100;
+#[allow(dead_code)] // Usage to be added
+const FP_HISTORY_THRESHOLD: i32 = 2000;
+
+// Late Move Pruning (LMP)
+const LMP_DEPTH_LIMIT: i32 = 14;
+const LMP_BASE_MOVES: i32 = 3;
+const LMP_MOVE_MULTIPLIER: i32 = 4;
+
+// Late Move Reduction (LMR)
+const LMR_MIN_DEPTH: i32 = 2;
+const LMR_MIN_MOVES: i32 = 4;
+const LMR_BASE: f64 = 0.75;
+const LMR_DIVISOR: f64 = 2.5;
+
 // --- TT Score Adjustment Helpers ---
 fn score_to_tt(score: i32, ply: i32) -> i32 {
     if score >= MATE_THRESHOLD {
@@ -226,9 +251,8 @@ pub fn alpha_beta(
     };
 
     // [STEP 2] Update Reverse Futility Pruning (RFP) to use the variable
-    if depth < 9 && !in_check_now && ply > 0 {
-        let margin = 120 * depth;
-        // Use the pre-calculated variable
+    if depth < RFP_DEPTH_LIMIT && !in_check_now && ply > 0 {
+        let margin = RFP_MARGIN_BASE + RFP_MARGIN_MULT * depth;
         if static_eval_val - margin >= beta {
             return (beta, None);
         }
@@ -275,13 +299,23 @@ pub fn alpha_beta(
     let mut move_count = 0;
 
     while let Some(mv) = picker.next(board, tables, &ctx.history) {
-        // [STEP 3] STANDARD FUTILITY PRUNING
+        // [STEP 3] OPTIMIZED FUTILITY PRUNING
         // Logic: If the move is quiet and our position is hopelessly below Alpha, skip it.
-        if depth < 7 && !in_check_now && !mv.is_capture() && !mv.is_promotion() && move_count > 0 {
-            // Margin: We assume a quiet move can improve our position by at most 150 * depth.
-            // If eval + margin is still <= alpha, this move cannot possibly beat alpha.
-            let margin = 150 * depth;
-            if static_eval_val + margin <= alpha {
+        if depth < FP_DEPTH_LIMIT
+            && !in_check_now
+            && !mv.is_capture()
+            && !mv.is_promotion()
+            && move_count > 0
+        {
+            let margin = FP_MARGIN_BASE + FP_MARGIN_MULT * depth;
+
+            // HISTORY PROTECTION (The Optimization):
+            // We retrieve the history score for this move.
+            let history = ctx.history[mv.from.index() as usize][mv.to.index() as usize];
+
+            // If the move has a high history score (> 2000), it has been good in other nodes.
+            // We should NOT prune it, even if static eval says it's bad.
+            if history < FP_HISTORY_THRESHOLD && static_eval_val + margin <= alpha {
                 continue; // PRUNE: Skip to next move
             }
         }
@@ -292,13 +326,13 @@ pub fn alpha_beta(
         // Logic: If we have searched many quiet moves and haven't found a
         // good one yet, it's highly unlikely the remaining (unsorted) moves
         // will be any better. Just cut them off.
-        if depth < 14
+        if depth < LMP_DEPTH_LIMIT
             && !in_check_now
             && !mv.is_capture()
             && !mv.is_promotion()
             && alpha == original_alpha
         {
-            let lmp_threshold = 3 + 4 * depth;
+            let lmp_threshold = LMP_BASE_MOVES + LMP_MOVE_MULTIPLIER * depth;
             if move_count > lmp_threshold as usize {
                 break;
             }
@@ -327,13 +361,17 @@ pub fn alpha_beta(
             let mut r = 0;
 
             // Only reduce if:
-            // 1. Depth > 2 (Don't reduce near leaves)
-            // 2. Late move (moves_count > 4)
+            // 1. Depth > LMR_MIN_DEPTH (Don't reduce near leaves)
+            // 2. Late move (moves_count > LMR_MIN_MOVES)
             // 3. Not a tactical move (Capture/Promotion)
-            if depth > 2 && move_count > 4 && !mv.is_capture() && !mv.is_promotion() {
-                // Formula: r = 0.75 + ln(depth) * ln(move_pos) / 2.5
+            if depth > LMR_MIN_DEPTH
+                && move_count > LMR_MIN_MOVES as usize
+                && !mv.is_capture()
+                && !mv.is_promotion()
+            {
+                // Formula: r = base + ln(depth) * ln(move_pos) / divisor
                 // This creates a smooth curve that is safe at high depths.
-                let lmr = 0.75 + (depth as f64).ln() * (move_count as f64).ln() / 2.5;
+                let lmr = LMR_BASE + (depth as f64).ln() * (move_count as f64).ln() / LMR_DIVISOR;
                 r = lmr as i32;
 
                 // Safety Cap: Never reduce below 0 or deeper than the search itself
