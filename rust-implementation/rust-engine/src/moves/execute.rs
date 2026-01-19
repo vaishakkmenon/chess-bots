@@ -4,7 +4,7 @@ use crate::hash::zobrist::{ep_file_to_hash, xor_castling_rights_delta, zobrist_k
 use crate::moves::magic::MagicTables;
 use crate::moves::movegen::generate_pseudo_legal;
 use crate::moves::square_control::{in_check, is_legal_castling};
-use crate::moves::types::{Move, NullMoveUndo, Undo};
+use crate::moves::types::{Move, MoveBuffer, NullMoveUndo, Undo};
 use crate::square::Square;
 
 /// Precomputed castling rook moves by king destination index.
@@ -401,8 +401,8 @@ pub fn undo_null_move(board: &mut Board, undo: NullMoveUndo) {
 pub fn generate_legal(
     board: &mut Board,
     tables: &MagicTables,
-    moves: &mut Vec<Move>,
-    scratch: &mut Vec<Move>,
+    moves: &mut impl MoveBuffer,
+    scratch: &mut impl MoveBuffer,
 ) {
     scratch.clear();
     generate_pseudo_legal(board, tables, scratch);
@@ -426,8 +426,8 @@ pub fn generate_legal(
 pub fn generate_captures(
     board: &mut Board,
     tables: &MagicTables,
-    moves: &mut Vec<Move>,
-    scratch: &mut Vec<Move>,
+    moves: &mut impl MoveBuffer,
+    scratch: &mut impl MoveBuffer,
 ) {
     // Generate all pseudo-legal moves
     scratch.clear();

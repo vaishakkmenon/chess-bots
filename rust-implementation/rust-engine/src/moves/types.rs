@@ -1,7 +1,31 @@
 use crate::board::{Color, Piece};
 use crate::square::Square;
-
+use arrayvec::ArrayVec;
 use std::fmt;
+use std::ops::{Deref, DerefMut};
+
+pub trait MoveBuffer: Deref<Target = [Move]> + DerefMut {
+    fn push(&mut self, mv: Move);
+    fn clear(&mut self);
+}
+
+impl MoveBuffer for Vec<Move> {
+    fn push(&mut self, mv: Move) {
+        self.push(mv);
+    }
+    fn clear(&mut self) {
+        self.clear();
+    }
+}
+
+impl<const N: usize> MoveBuffer for ArrayVec<Move, N> {
+    fn push(&mut self, mv: Move) {
+        self.push(mv);
+    }
+    fn clear(&mut self) {
+        self.clear();
+    }
+}
 
 // Move flag encoding (4 bits)
 // Bits 0-1: Special move type (00=quiet, 01=double pawn, 10=kingside castle, 11=queenside castle)

@@ -1,4 +1,5 @@
 use crate::board::Board;
+use arrayvec::ArrayVec;
 use crate::moves::execute::{
     generate_captures, generate_legal, make_move_basic, make_null_move, undo_move_basic,
     undo_null_move,
@@ -100,8 +101,8 @@ pub fn quiescence(
         alpha = stand_pat;
     }
 
-    let mut moves = Vec::with_capacity(128);
-    let mut scratch = Vec::with_capacity(128);
+    let mut moves: ArrayVec<Move, 256> = ArrayVec::new();
+    let mut scratch: ArrayVec<Move, 256> = ArrayVec::new();
     generate_captures(board, tables, &mut moves, &mut scratch);
     moves.sort_by_cached_key(|&mv| -mvv_lva_score(mv, board));
 
@@ -279,8 +280,8 @@ pub fn alpha_beta(
         }
     }
 
-    let mut moves = Vec::with_capacity(128);
-    let mut scratch = Vec::with_capacity(128);
+    let mut moves: ArrayVec<Move, 256> = ArrayVec::new();
+    let mut scratch: ArrayVec<Move, 256> = ArrayVec::new();
 
     generate_legal(board, tables, &mut moves, &mut scratch);
     order_moves(

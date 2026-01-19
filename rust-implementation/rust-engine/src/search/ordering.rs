@@ -1,4 +1,4 @@
-use crate::board::Board;
+use crate::board::{Board, Color, Piece};
 use crate::moves::magic::MagicTables;
 use crate::moves::types::Move;
 use crate::search::see::SeeExt;
@@ -70,6 +70,16 @@ pub fn order_moves(
         if let Some(k2) = killer_moves[1] {
             if mv.from == k2.from && mv.to == k2.to && mv.promotion == k2.promotion {
                 return -KILLER2_SCORE;
+            }
+        }
+
+        if mv.piece == Piece::Pawn && !mv.is_capture() {
+            let to_rank = mv.to.index() / 8;
+            let from_rank = mv.from.index() / 8;
+            let is_advancing = if board.side_to_move == Color::White { to_rank > from_rank } else { to_rank < from_rank };
+
+            if is_advancing && to_rank >= 3 && to_rank <= 5 {
+                return -(5000 + (to_rank as i32 * 100)); // Prioritize progress over shuffles
             }
         }
 

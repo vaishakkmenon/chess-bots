@@ -6,7 +6,7 @@ use crate::moves::magic::structs::{BishopMagicTables, RookMagicTables};
 use crate::moves::pawn::{BLACK_PAWN_ATTACKS, WHITE_PAWN_ATTACKS};
 use crate::moves::square_control::is_legal_castling;
 use crate::moves::types::{
-    CAPTURE, DOUBLE_PAWN_PUSH, EN_PASSANT, KINGSIDE_CASTLE, Move, PROMOTION, PROMOTION_CAPTURE,
+    CAPTURE, DOUBLE_PAWN_PUSH, EN_PASSANT, KINGSIDE_CASTLE, Move, MoveBuffer, PROMOTION, PROMOTION_CAPTURE,
     QUEENSIDE_CASTLE, QUIET_MOVE,
 };
 use crate::square::Square;
@@ -34,7 +34,7 @@ fn push_piece_moves(
     mut targets: u64,
     enemy: u64,
     move_piece: Piece,
-    move_list: &mut Vec<Move>,
+    move_list: &mut impl MoveBuffer,
 ) {
     while targets != 0 {
         let to = pop_lsb(&mut targets);
@@ -67,7 +67,7 @@ fn queenside_between(color: Color) -> u64 {
     }
 }
 
-pub fn generate_knight_moves(board: &Board, move_list: &mut Vec<Move>) {
+pub fn generate_knight_moves(board: &Board, move_list: &mut impl MoveBuffer) {
     let color = board.side_to_move;
     let knights = board.pieces(Piece::Knight, color);
     let friendly = board.occupancy(color);
@@ -82,7 +82,7 @@ pub fn generate_knight_moves(board: &Board, move_list: &mut Vec<Move>) {
     }
 }
 
-pub fn generate_bishop_moves(board: &Board, tables: &BishopMagicTables, move_list: &mut Vec<Move>) {
+pub fn generate_bishop_moves(board: &Board, tables: &BishopMagicTables, move_list: &mut impl MoveBuffer) {
     let color = board.side_to_move;
     let bishops = board.pieces(Piece::Bishop, color);
     let friendly = board.occupancy(color);
@@ -99,7 +99,7 @@ pub fn generate_bishop_moves(board: &Board, tables: &BishopMagicTables, move_lis
     }
 }
 
-pub fn generate_rook_moves(board: &Board, tables: &RookMagicTables, move_list: &mut Vec<Move>) {
+pub fn generate_rook_moves(board: &Board, tables: &RookMagicTables, move_list: &mut impl MoveBuffer) {
     let color = board.side_to_move;
     let rooks: u64 = board.pieces(Piece::Rook, color);
     let friendly = board.occupancy(color);
@@ -116,7 +116,7 @@ pub fn generate_rook_moves(board: &Board, tables: &RookMagicTables, move_list: &
     }
 }
 
-pub fn generate_queen_moves(board: &Board, tables: &MagicTables, move_list: &mut Vec<Move>) {
+pub fn generate_queen_moves(board: &Board, tables: &MagicTables, move_list: &mut impl MoveBuffer) {
     let color = board.side_to_move;
     let queens: u64 = board.pieces(Piece::Queen, color);
     let friendly = board.occupancy(color);
@@ -133,7 +133,7 @@ pub fn generate_queen_moves(board: &Board, tables: &MagicTables, move_list: &mut
     }
 }
 
-pub fn generate_king_moves(board: &Board, tables: &MagicTables, move_list: &mut Vec<Move>) {
+pub fn generate_king_moves(board: &Board, tables: &MagicTables, move_list: &mut impl MoveBuffer) {
     let color = board.side_to_move;
     let king_bb = board.pieces(Piece::King, color);
 
@@ -178,7 +178,7 @@ pub fn generate_king_moves(board: &Board, tables: &MagicTables, move_list: &mut 
     }
 }
 
-pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
+pub fn generate_pawn_moves(board: &Board, move_list: &mut impl MoveBuffer) {
     let color = board.side_to_move;
     let pawns = board.pieces(Piece::Pawn, color);
     let enemy_without_king =
@@ -336,7 +336,7 @@ pub fn generate_pawn_moves(board: &Board, move_list: &mut Vec<Move>) {
     }
 }
 
-pub fn generate_pseudo_legal(board: &Board, tables: &MagicTables, moves: &mut Vec<Move>) {
+pub fn generate_pseudo_legal(board: &Board, tables: &MagicTables, moves: &mut impl MoveBuffer) {
     moves.clear();
     generate_pawn_moves(board, moves);
     generate_knight_moves(board, moves);

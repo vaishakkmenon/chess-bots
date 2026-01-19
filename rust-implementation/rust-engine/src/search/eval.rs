@@ -1,27 +1,15 @@
 use crate::board::{Board, Color, Piece};
+use crate::square::Square;
 use crate::moves::magic::MagicTables;
 use crate::search::pesto;
 use crate::utils::pop_lsb;
 
-// --- Evaluation Weights (Centipawns) ---
-// Reduced to stabilize start position.
 const MOBILITY_WEIGHT: i32 = 5;
-// Incentivize advancing pawns.
-// --- TUNING CONSTANTS ---
-// Values are in Centipawns.
-// Doubled is -20 per pawn (so -40 for the pair).
 const ISOLATED_PAWN_PENALTY: i32 = -15;
 const DOUBLED_PAWN_PENALTY: i32 = -10;
-const KING_SHIELD_BONUS: i32 = 10;
-const KING_EXPOSED_PENALTY: i32 = -30;
-
-// Conservative margin to prevent tactical blindness.
-// Represents the max possible swing from expensive evaluation terms.
 const LAZY_EVAL_MARGIN: i32 = 200;
+const KING_ZONE_ATTACK_PENALTY: i32 = 15;
 
-// Bonuses by Rank (0..7).
-// Rank 0,1 are 0. Rank 7 is 0 (promotion).
-// We heavily reward pushing the pawn to Rank 6 (7th rank).
 #[allow(dead_code)]
 const PASSED_PAWN_BONUS: [i32; 8] = [0, 0, 10, 20, 40, 70, 120, 0];
 
@@ -95,67 +83,86 @@ fn get_piece_value(kind: Piece) -> (i32, i32) {
     }
 }
 
-// --- Mop-Up Helper Functions ---
-// (Removed as part of optimized static_eval)
-
 pub fn static_eval(board: &Board, tables: &MagicTables, alpha: i32, beta: i32) -> i32 {
-    // 1. CHEAP SCORE (Absolute / White Perspective)
-    // Positive = White winning, Negative = Black winning
-    let cheap_score_abs = pesto_eval(board);
+    let side = board.side_to_move;
+    let enemy = side.opposite();
+    
+    // 1. Perspective Base Score
+    let color_multiplier = if side == Color::White { 1 } else { -1 };
+    let mut score = pesto_eval(board) * color_multiplier;
 
-    // 2. CONVERT NEGAMAX BOUNDS TO ABSOLUTE PERSPECTIVE
-    // We need absolute bounds to compare with our absolute score.
-    // If White to move: alpha is alpha, beta is beta.
-    // If Black to move: alpha is -beta, beta is -alpha (Standard NegaMax inversion).
-    let (alpha_abs, beta_abs) = if board.side_to_move == Color::White {
-        (alpha, beta)
-    } else {
-        (-beta, -alpha)
-    };
+    // 2. Lazy Cutoffs
+    if score - LAZY_EVAL_MARGIN >= beta { return score; }
+    if score + LAZY_EVAL_MARGIN <= alpha { return score; }
 
-    // 3. LAZY BETA CUTOFF
-    // "We are winning by so much that even the max penalty won't drop us below beta."
-    if cheap_score_abs - LAZY_EVAL_MARGIN > beta_abs {
-        // Return converted to side-to-move perspective
-        return if board.side_to_move == Color::White {
-            cheap_score_abs
-        } else {
-            -cheap_score_abs
-        };
+    // 3. Positional Terms
+    score += eval_mobility(board, tables, side) - eval_mobility(board, tables, enemy);
+    
+    // Fix: Use the standard evaluate_pawn_structure and flip for perspective
+    score += evaluate_pawn_structure(board) * color_multiplier;
+
+    // 4. Phased King Safety
+    // Subtracting enemy attacks on our king, adding our attacks on theirs.
+    score += calculate_phased_safety(board, side, tables) - calculate_phased_safety(board, enemy, tables);
+
+    score
+}
+
+fn calculate_phased_safety(board: &Board, color: Color, tables: &MagicTables) -> i32 {
+    let enemy = color.opposite();
+    let phase = calculate_phase(board); // 24 = MG, 0 = EG
+    
+    let attack_count = count_king_zone_attacks(board, enemy, color, tables); 
+    if attack_count == 0 { return 0; }
+
+    // Tapering logic: Penalty is 100% at phase 24 and 0% at phase 0.
+    let penalty = (attack_count * KING_ZONE_ATTACK_PENALTY * phase as i32) / 24;
+
+    -penalty // Return as negative value (a penalty)
+}
+
+fn count_king_zone_attacks(board: &Board, attacker_color: Color, victim_color: Color, tables: &MagicTables) -> i32 {
+    let king_sq = board.king_square(victim_color);
+    
+    // Create a 3x3 bitboard zone around the king
+    let b = 1u64 << king_sq.index();
+    let mut king_zone = b | ((b << 1) & 0xFEFEFEFEFEFEFEFE) | ((b >> 1) & 0x7F7F7F7F7F7F7F7F);
+    king_zone |= (king_zone << 8) | (king_zone >> 8);
+    
+    let mut attack_count = 0;
+    
+    // Get total occupancy bitboard
+    let mut all_pieces = 0u64;
+    for p in [Piece::Pawn, Piece::Knight, Piece::Bishop, Piece::Rook, Piece::Queen, Piece::King] {
+        all_pieces |= board.pieces(p, Color::White) | board.pieces(p, Color::Black);
     }
 
-    // 4. LAZY ALPHA CUTOFF (Optional but recommended)
-    // "We are losing by so much that even the max bonus won't raise us above alpha."
-    if cheap_score_abs + LAZY_EVAL_MARGIN < alpha_abs {
-        // Return converted to side-to-move perspective
-        return if board.side_to_move == Color::White {
-            cheap_score_abs
-        } else {
-            -cheap_score_abs
-        };
+    // Iterate through all attacker piece types
+    for piece_type in [Piece::Knight, Piece::Bishop, Piece::Rook, Piece::Queen] {
+        let mut attackers = board.pieces(piece_type, attacker_color);
+        
+        while attackers != 0 {
+            let from_idx = pop_lsb(&mut attackers);
+            let from_sq = Square::from_index(from_idx as u8);
+            
+            let is_attacking = match piece_type {
+                // Use the new standalone function for Knight attacks
+                Piece::Knight => (crate::moves::magic::get_knight_attacks(from_sq.index() as usize) & king_zone) != 0,
+                // Access inner struct for Bishop/Rook attacks
+                Piece::Bishop => (tables.bishop.get_attacks(from_sq.index() as usize, all_pieces) & king_zone) != 0,
+                Piece::Rook => (tables.rook.get_attacks(from_sq.index() as usize, all_pieces) & king_zone) != 0,
+                Piece::Queen => ((tables.bishop.get_attacks(from_sq.index() as usize, all_pieces) | 
+                                 tables.rook.get_attacks(from_sq.index() as usize, all_pieces)) & king_zone) != 0,
+                _ => false,
+            };
+
+            if is_attacking {
+                attack_count += 1;
+            }
+        }
     }
 
-    // 5. FULL EVALUATION (The position is "close")
-    // Start with cheap score, add expensive terms.
-    // KEEP EVERYTHING IN ABSOLUTE COORDINATES (White - Black).
-    let mut score_abs = cheap_score_abs;
-
-    // Mobility
-    score_abs +=
-        eval_mobility(board, tables, Color::White) - eval_mobility(board, tables, Color::Black);
-
-    // Pawn Structure (Assuming this function returns White relative score)
-    score_abs += evaluate_pawn_structure(board);
-
-    // King Safety
-    score_abs += eval_king_safety(board, Color::White) - eval_king_safety(board, Color::Black);
-
-    // 6. FINAL RETURN (Convert to side-to-move perspective)
-    if board.side_to_move == Color::White {
-        score_abs
-    } else {
-        -score_abs
-    }
+    attack_count
 }
 
 fn eval_mobility(board: &Board, tables: &MagicTables, color: Color) -> i32 {
@@ -241,38 +248,6 @@ pub fn evaluate_pawn_structure(board: &Board) -> i32 {
     // You can re-enable specialized passed logic later.
 
     white_score - black_score
-}
-
-fn eval_king_safety(board: &Board, color: Color) -> i32 {
-    let ksq_iter = BitIter(board.piece_bb[color as usize][Piece::King as usize]);
-    let ksq = if let Some(k) = ksq_iter.into_iter().next() {
-        k
-    } else {
-        return 0;
-    };
-
-    let file = ksq % 8;
-    let rank = ksq / 8;
-
-    // Only care about safety if king is on back ranks
-    if (color == Color::White && rank > 2) || (color == Color::Black && rank < 5) {
-        return 0;
-    }
-
-    let pawns = board.piece_bb[color as usize][Piece::Pawn as usize];
-    let mut score = 0;
-
-    for f in (file.saturating_sub(1))..=(file.saturating_add(1).min(7)) {
-        let file_mask = 0x0101010101010101u64 << f;
-        let pawn_shield = pawns & file_mask;
-
-        if pawn_shield != 0 {
-            score += KING_SHIELD_BONUS;
-        } else {
-            score += KING_EXPOSED_PENALTY;
-        }
-    }
-    score
 }
 
 // Renamed from evaluate to pesto_eval
