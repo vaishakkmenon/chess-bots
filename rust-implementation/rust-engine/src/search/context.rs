@@ -27,6 +27,7 @@ impl SearchContext {
     }
 
     pub fn update_history(&mut self, mv: Move, depth: i32) {
-        self.history[mv.from.index() as usize][mv.to.index() as usize] += depth * depth;
+        let bonus = (depth * depth).min(400);
+        self.history[mv.from.index() as usize][mv.to.index() as usize] += bonus;
     }
 }

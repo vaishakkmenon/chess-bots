@@ -14,6 +14,7 @@ const MATE_SCORE: i32 = 31000;
 const MATE_THRESHOLD: i32 = 30000;
 const INF: i32 = 32000;
 const MAX_Q_SEARCH_DEPTH: usize = 100;
+const DRAW_SCORE: i32 = -20;
 
 // --- Tuning Constants ---
 
@@ -26,19 +27,18 @@ const RFP_MARGIN_MULT: i32 = 90;
 const FP_DEPTH_LIMIT: i32 = 7;
 const FP_MARGIN_BASE: i32 = 100;
 const FP_MARGIN_MULT: i32 = 100;
-#[allow(dead_code)] // Usage to be added
-const FP_HISTORY_THRESHOLD: i32 = 2000;
+const FP_HISTORY_THRESHOLD: i32 = 512;
 
 // Late Move Pruning (LMP)
 const LMP_DEPTH_LIMIT: i32 = 14;
 const LMP_BASE_MOVES: i32 = 3;
-const LMP_MOVE_MULTIPLIER: i32 = 4;
+const LMP_MOVE_MULTIPLIER: i32 = 6;
 
 // Late Move Reduction (LMR)
 const LMR_MIN_DEPTH: i32 = 2;
 const LMR_MIN_MOVES: i32 = 4;
-const LMR_BASE: f64 = 0.75;
-const LMR_DIVISOR: f64 = 2.5;
+// const LMR_BASE: f64 = 0.75;
+// const LMR_DIVISOR: f64 = 2.5;
 
 // --- TT Score Adjustment Helpers ---
 fn score_to_tt(score: i32, ply: i32) -> i32 {
@@ -194,9 +194,9 @@ pub fn alpha_beta(
     }
     *nodes += 1;
 
-    // Repetition Detection
+    // 2. Repetition & TT Probing (Standard)
     if ply > 0 && board.is_repetition() {
-        return (0, None);
+        return (DRAW_SCORE, None);
     }
 
     if time.stop_signal {
@@ -357,35 +357,35 @@ pub fn alpha_beta(
             );
             score = -val;
         } else {
-            // LOGARITHMIC LMR (Precision Logic)
+            // [STEP 3] LINEAR LMR (Aggressive Formula + History Safety)
             let mut r = 0;
-
-            // Only reduce if:
-            // 1. Depth > LMR_MIN_DEPTH (Don't reduce near leaves)
-            // 2. Late move (moves_count > LMR_MIN_MOVES)
-            // 3. Not a tactical move (Capture/Promotion)
             if depth > LMR_MIN_DEPTH
                 && move_count > LMR_MIN_MOVES as usize
                 && !mv.is_capture()
                 && !mv.is_promotion()
             {
-                // Formula: r = base + ln(depth) * ln(move_pos) / divisor
-                // This creates a smooth curve that is safe at high depths.
-                let lmr = LMR_BASE + (depth as f64).ln() * (move_count as f64).ln() / LMR_DIVISOR;
-                r = lmr as i32;
+                // [FIX] Return to Sledgehammer Formula for SPEED
+                // 1 + depth/3 + moves/10
+                r = 1 + (depth / 3) + (move_count as i32 / 10);
 
-                // Safety Cap: Never reduce below 0 or deeper than the search itself
+                // [SAFETY] Keep the History Protection we added
+                // This ensures we don't crush good moves too hard
+                let history = ctx.history[mv.from.index() as usize][mv.to.index() as usize];
+                if history > FP_HISTORY_THRESHOLD {
+                    // Threshold is 512
+                    r -= 1;
+                }
+
+                // PV Protection
+                if beta - alpha > 1 {
+                    r = (r * 2) / 3;
+                }
+
                 if r < 0 {
                     r = 0;
                 }
                 if r > depth - 1 {
                     r = depth - 1;
-                }
-
-                // PV Node Protection:
-                // If we are in a PV Node (window is open), reduce less to be safe.
-                if beta - alpha > 1 {
-                    r = (r * 2) / 3;
                 }
             }
 
