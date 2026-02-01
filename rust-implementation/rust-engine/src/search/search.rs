@@ -10,11 +10,11 @@ use crate::search::see::SeeExt;
 use crate::search::tt::{NodeType, TranspositionTable};
 use std::time::{Duration, Instant};
 
-const MATE_SCORE: i32 = 31000;
-const MATE_THRESHOLD: i32 = 30000;
 const INF: i32 = 32000;
+const MATE_SCORE: i32 = 31000;
+const MATE_THRESHOLD: i32 = MATE_SCORE - 1000;  // 30000 - buffer for mate distance
 const MAX_Q_SEARCH_DEPTH: usize = 100;
-const DRAW_SCORE: i32 = -20;
+const DRAW_SCORE: i32 = -50;
 
 // --- Tuning Constants ---
 
@@ -92,6 +92,18 @@ impl TimeManager {
             }
         }
     }
+
+    /// Returns the allocated time limit
+    #[inline(always)]
+    pub fn allocated_time(&self) -> Option<Duration> {
+        self.allotted
+    }
+
+    /// Returns elapsed time since search started
+    #[inline(always)]
+    pub fn elapsed(&self) -> Duration {
+        self.start_time.elapsed()
+    }
 }
 
 #[allow(clippy::too_many_arguments, clippy::only_used_in_recursion)]
@@ -127,7 +139,7 @@ pub fn quiescence(
 
     while let Some(mv) = picker.next(board, tables, &empty_history) {
         *nodes += 1;
-        if *nodes & 1023 == 0 {
+        if *nodes & 63 == 0 {
             time.check_time();
         }
         if time.stop_signal {
@@ -185,7 +197,7 @@ pub fn alpha_beta(
     time: &mut TimeManager,
 ) -> (i32, Option<Move>) {
     // Check every 1024 nodes instead of 2047 for tighter control
-    if *nodes & 1023 == 0 {
+    if *nodes & 63 == 0 {
         time.check_time();
     }
 
@@ -522,8 +534,28 @@ pub fn search(
     let mut tt = TranspositionTable::new(512);
     let mut ctx = SearchContext::new();
     let mut time = TimeManager::new(time_limit);
+    let mut last_iter_duration = Duration::from_millis(0);
 
     for depth in 1..=max_depth {
+        let iter_start = Instant::now();
+
+        // --- ITERATIVE DEEPENING SAFETY CHECK ---
+        // Predict if we can afford the next depth before starting it.
+        // Conservative estimate: Next depth takes ~3x longer than previous.
+        // (Using 3x instead of 2x because branching factor can spike in tactical positions)
+        if depth > 1 {
+            if let Some(limit) = time.allocated_time() {
+                let total_elapsed = time.elapsed();
+                let predicted_next = last_iter_duration * 3;
+
+                // If predicting the next depth would push us over the limit: STOP.
+                if total_elapsed + predicted_next > limit {
+                    break;
+                }
+            }
+        }
+        // -----------------------------------------
+
         for from in 0..64 {
             for to in 0..64 {
                 ctx.history[from][to] /= 8;
@@ -576,6 +608,9 @@ pub fn search(
             break;
         }
         // -------------------------------
+
+        // Record duration for the NEXT prediction check
+        last_iter_duration = iter_start.elapsed();
 
         // CRITICAL FIX: If the stop signal was triggered, DO NOT update the best move.
         // The search at this depth is incomplete and likely contains blunders.

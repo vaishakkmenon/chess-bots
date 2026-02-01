@@ -1,0 +1,270 @@
+Parsing PGN file...
+Parsed 100 games
+
+Analyzing hallucinations...
+Analyzing king safety collapses...
+Analyzing opening performance...
+Analyzing wins...
+
+Generating report...
+
+================================================================================
+WAYFINDER vs CRAFTY - PGN ANALYSIS REPORT
+================================================================================
+
+Total Games: 100
+Wayfinder Games: 100
+Wayfinder Record: 4W - 89L - 7D
+Win Rate: 4.0%
+
+================================================================================
+1. HALLUCINATION ANALYSIS
+================================================================================
+
+A hallucination occurs when Wayfinder thought it was winning (+eval)
+but eventually lost the game.
+
+Losses with eval > +1.00 at any point: 58
+Losses with eval > +2.00 at any point: 49
+
+TOP 3 WORST HALLUCINATIONS (including mate-eval bugs):
+
+#1 - Game 1
+    Peak Evaluation: +327.66 (Wayfinder winning) [MATE EVAL BUG!]
+    At Move: 33. Bg7#
+    Move by: Black (Crafty)
+    Ply: 66
+    Wayfinder playing as: WHITE
+    Final Result: 0-1 (Wayfinder LOST)
+    Context (moves 31 to 35):
+        31. Ka2 (-300.00)
+        31. Qxc4+ (+327.62)
+        32. Ka1 (-300.00)
+        32. Qxa6+ (+327.64)
+        33. Qa2 (-300.00)
+        33. Bg7# (+327.66) <<<
+
+#2 - Game 3
+    Peak Evaluation: +327.66 (Wayfinder winning) [MATE EVAL BUG!]
+    At Move: 61. Rh1#
+    Move by: Black (Crafty)
+    Ply: 122
+    Wayfinder playing as: WHITE
+    Final Result: 0-1 (Wayfinder LOST)
+    Context (moves 59 to 63):
+        59. Kf1 (-300.00)
+        59. Rf5+ (+327.62)
+        60. Ke1 (-300.00)
+        60. Rff2 (+327.64)
+        61. Rd2 (-300.00)
+        61. Rh1# (+327.66) <<<
+
+#3 - Game 7
+    Peak Evaluation: +327.66 (Wayfinder winning) [MATE EVAL BUG!]
+    At Move: 56. Rf3#
+    Move by: Black (Crafty)
+    Ply: 112
+    Wayfinder playing as: WHITE
+    Final Result: 0-1 (Wayfinder LOST)
+    Context (moves 54 to 58):
+        54. Kf3 (-9.51)
+        54. Rd3+ (+327.62)
+        55. Kg4 (-10.17)
+        55. Qc4+ (+327.64)
+        56. Kf5 (-300.00)
+        56. Rf3# (+327.66) <<<
+
+
+TOP 5 NON-MATE HALLUCINATIONS (real position miseval):
+
+#1 - Game 21
+    Peak Evaluation: +32.60
+    At Move: 60. b2
+    Move by: Black (Crafty)
+    Wayfinder playing as: WHITE
+    Context (moves 58 to 62):
+        58. Rb6+ (-10.21)
+        58. Kf5 (+9.47)
+        59. Rb4 (-10.95)
+        59. f3 (+12.96)
+        60. Rd4 (-14.61)
+        60. b2 (+32.60) <<<
+        61. Kd2 (-24.43)
+        61. Ne4+ (+327.56)
+        62. Rxe4 (-31.29)
+        62. b1=N+ (+327.58)
+
+#2 - Game 37
+    Peak Evaluation: +31.81
+    At Move: 66. a1=Q
+    Move by: Black (Crafty)
+    Wayfinder playing as: WHITE
+    Context (moves 64 to 68):
+        64. Rg5 (-15.30)
+        64. Kb6 (+20.22)
+        65. Rg8 (-16.87)
+        65. a2 (+20.72)
+        66. Ra8 (-18.07)
+        66. a1=Q (+31.81) <<<
+        67. Rxa1 (-25.24)
+        67. Rxa1 (N/A)
+        68. Kxf3 (-25.91)
+        68. g1=Q (+327.56)
+
+#3 - Game 51
+    Peak Evaluation: +28.30
+    At Move: 59. Qd5+
+    Move by: Black (Crafty)
+    Wayfinder playing as: WHITE
+    Context (moves 57 to 61):
+        57. Kf4 (-11.51)
+        57. Qf1+ (+14.13)
+        58. Kg4 (-11.67)
+        58. Qd1+ (+16.11)
+        59. Kg5 (-19.01)
+        59. Qd5+ (+28.30) <<<
+        60. Kf4 (-22.06)
+        60. Qxa5 (+327.50)
+        61. Ke4 (-21.89)
+        61. Qe1+ (+327.52)
+
+#4 - Game 13
+    Peak Evaluation: +27.22
+    At Move: 71. Ka5
+    Move by: Black (Crafty)
+    Wayfinder playing as: WHITE
+    Context (moves 69 to 73):
+        69. Ra5+ (-12.25)
+        69. Kb4 (+17.79)
+        70. Ra7 (-12.30)
+        70. b2 (+22.20)
+        71. Rb7+ (-12.91)
+        71. Ka5 (+27.22) <<<
+        72. Kf2 (-16.60)
+        72. c2 (+327.50)
+        73. Rxb2 (-20.05)
+        73. c1=Q (+327.56)
+
+#5 - Game 89
+    Peak Evaluation: +25.54
+    At Move: 75. a3
+    Move by: Black (Crafty)
+    Wayfinder playing as: WHITE
+    Context (moves 73 to 77):
+        73. Kd4 (-16.29)
+        73. b6 (+18.07)
+        74. Kc3 (-16.95)
+        74. a4 (+21.67)
+        75. Kd2 (-17.95)
+        75. a3 (+25.54) <<<
+        76. Kc2 (-23.87)
+        76. f3 (+327.50)
+        77. Kd2 (-23.93)
+        77. f2 (+327.54)
+
+================================================================================
+2. KING SAFETY COLLAPSE ANALYSIS
+================================================================================
+
+Total Collapses (eval drop > 1.50): 2742
+
+LARGEST COLLAPSES:
+
+#1 - Game 1, Move 33
+    Move: Qa2
+    Eval Before: +327.64
+    Eval After: -300.00
+    Drop: 627.64
+    Wayfinder: WHITE
+
+#2 - Game 3, Move 61
+    Move: Rd2
+    Eval Before: +327.64
+    Eval After: -300.00
+    Drop: 627.64
+    Wayfinder: WHITE
+
+#3 - Game 7, Move 56
+    Move: Kf5
+    Eval Before: +327.64
+    Eval After: -300.00
+    Drop: 627.64
+    Wayfinder: WHITE
+
+#4 - Game 9, Move 92
+    Move: Kh6
+    Eval Before: +327.64
+    Eval After: -300.00
+    Drop: 627.64
+    Wayfinder: WHITE
+
+#5 - Game 11, Move 65
+    Move: Ka2
+    Eval Before: +300.00
+    Eval After: -327.64
+    Drop: 627.64
+    Wayfinder: WHITE
+
+NOTE: Enemy piece position analysis requires FEN reconstruction,
+which is not implemented in this version of the script.
+
+================================================================================
+3. OPENING PERFORMANCE ANALYSIS
+================================================================================
+
+Games with data at move 10: 100
+Average eval at move 10: +0.17
+Opening book deficit: NO
+
+✓ Wayfinder's opening is competitive
+
+================================================================================
+4. WIN ANALYSIS
+================================================================================
+
+Total Wins: 4
+Average Move Count: 77.2
+Positional Wins: 0 (0.0%)
+Tactical Wins: 4 (100.0%)
+
+Win Type Breakdown:
+  Game 11: 64 moves (tactical)
+  Game 38: 85 moves (tactical)
+  Game 69: 74 moves (tactical)
+  Game 81: 86 moves (tactical)
+
+================================================================================
+5. FINDINGS AND RECOMMENDATIONS
+================================================================================
+
+KEY FINDINGS:
+
+⚠ HIGH HALLUCINATION RATE: 65.2% of losses
+  → Evaluation function is overoptimistic
+  → Consider: More conservative eval, better king safety
+
+⚠ FREQUENT EVAL COLLAPSES: 2742 instances
+  → Wayfinder missing tactical shots
+  → Consider: Deeper search, tactical pattern recognition
+
+✓ STRONG TACTICAL PLAY: 100% of wins are tactical
+  → Wayfinder excels at exploiting blunders
+
+RECOMMENDATIONS:
+
+1. Evaluation Calibration:
+   - Review eval function for overoptimism
+   - Increase king safety weight
+   - Add pawn structure penalties
+
+2. Tactical Awareness:
+   - Increase search depth in critical positions
+   - Add quiescence search extensions
+   - Implement tactical pattern recognition
+
+3. Opening Preparation:
+   - Expand opening book
+   - Tune early-game piece-square tables
+   - Focus on solid, defensive openings
+
+================================================================================

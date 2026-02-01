@@ -228,44 +228,48 @@ fn handle_go(parts: &[&str], board: &mut Board, tables: &MagicTables) {
         };
 
         if let Some(t) = my_time {
+            // --- SAFETY BUFFER (Hidden from engine) ---
+            // Reserve 15% of time or 500ms (whichever is smaller) for lag/OS overhead.
+            // This time is INVISIBLE to the search engine.
+            let safety_buffer = (t * 15 / 100).min(500);
+            let usable_time = t.saturating_sub(safety_buffer);
+
             let mut alloc: u64;
 
             if let Some(mtg) = movestogo {
                 let moves_to_plan = mtg.max(2);
-                alloc = t / moves_to_plan;
+                alloc = usable_time / moves_to_plan;
                 alloc += (my_inc * 3) / 4;
             } else {
-                if t > 5000 {
-                    alloc = t / 15 + (my_inc * 9) / 10;
-                } else if t > 2000 {
-                    alloc = t / 20 + (my_inc * 3) / 4;
+                // VERY CONSERVATIVE tiered allocation
+                // Assume ~40 moves remaining in a typical game
+                if usable_time > 5000 {
+                    // Normal game: 1/40th of time + most of increment
+                    alloc = usable_time / 40 + (my_inc * 9) / 10;
+                } else if usable_time > 2000 {
+                    // Low time: 1/30th
+                    alloc = usable_time / 30 + (my_inc * 3) / 4;
+                } else if usable_time > 500 {
+                    // Very low: 1/20th
+                    alloc = usable_time / 20 + my_inc / 2;
                 } else {
-                    alloc = t / 33 + my_inc / 2;
+                    // CRITICAL: Just use increment + tiny bit
+                    alloc = my_inc / 2 + 20;
                 }
             }
 
-            let safety_buffer = 200;
-            if t < 500 {
-                alloc = (t / 20).max(5).min(t.saturating_sub(50));
-            } else if t < 1000 {
-                alloc = alloc.min(t / 10).min(t.saturating_sub(100));
-            } else if t > safety_buffer {
-                alloc = alloc.min(t - safety_buffer);
-            } else {
-                alloc = 5;
-            }
+            // HARD CAP: Never use more than 20% of remaining time on one move
+            // This prevents catastrophic time loss
+            let hard_cap = usable_time / 5;
+            alloc = alloc.min(hard_cap);
 
-            if alloc == 0 && t > 10 {
-                alloc = 5;
-            }
+            // Also cap at usable time
+            alloc = alloc.min(usable_time);
 
-            // --- NEW FIX: SLICE SUBTRACTION ---
-            // Subtract 50ms from EVERY move to account for GUI lag/overhead.
-            // This ensures we return "bestmove" before the GUI thinks we timed out.
-            if alloc > 50 {
-                alloc -= 50;
+            // Minimum: Ensure we at least calculate for a tiny bit (10ms)
+            if alloc < 10 && usable_time >= 10 {
+                alloc = 10;
             }
-            // ----------------------------------
 
             time_limit = Some(Duration::from_millis(alloc));
         }

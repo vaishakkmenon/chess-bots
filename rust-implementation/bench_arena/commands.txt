@@ -1,1 +1,20 @@
-cutechess-cli -engine name=Wayfinder cmd=../rust-cli/target/release/rust-cli proto=uci -engine name=TSCP cmd=./tscp proto=xboard -each tc=10+0.1 -rounds 25 -games 2 -repeat -openings file=2moves_v2.pgn format=pgn order=random -pgnout results_1_17_25-oldv-4.pgn
+cutechess-cli -engine name=Wayfinder cmd=../rust-cli/target/release/rust-cli proto=uci -engine name=TSCP cmd=./tscp proto=xboard -each tc=10+0.1 -rounds 50 -games 2 -repeat -openings file=2moves_v2.pgn format=pgn order=random -pgnout results_1_20_26-reset-6.pgn
+
+cutechess-cli -concurrency 4 -engine name=Wayfinder cmd=../rust-cli/target/release/rust-cli proto=uci -engine name=TSCP cmd=./tscp proto=xboard -each tc=10+0.1 -rounds 50 -games 2 -repeat -openings file=2moves_v2.pgn format=pgn order=random -pgnout results_1_20_26-reset-7.pgn
+
+
+cutechess-cli -concurrency 2 \
+    -engine name=Wayfinder cmd=../rust-cli/target/release/rust-cli proto=uci \
+    -engine name=Crafty cmd=./crafty proto=xboard \
+    -each tc=10+0.1 \
+    -rounds 50 -games 2 -repeat \
+    -openings file=2moves_v2.pgn format=pgn order=random \
+    -pgnout wayfinder_vs_crafty_latest.pgn
+
+ cutechess-cli -concurrency 2 \
+    -engine name=Wayfinder cmd=../rust-cli/target/release/rust-cli proto=uci \
+    -engine name=TSCP cmd=./tscp proto=xboard \
+    -each tc=10+0.1 \
+    -rounds 50 -games 2 -repeat \
+    -openings file=2moves_v2.pgn format=pgn order=random \
+    -pgnout wayfinder_vs_tscp_latest.pgn
