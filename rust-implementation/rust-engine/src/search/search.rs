@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 
 const INF: i32 = 32000;
 const MATE_SCORE: i32 = 31000;
-const MATE_THRESHOLD: i32 = MATE_SCORE - 1000;  // 30000 - buffer for mate distance
+const MATE_THRESHOLD: i32 = MATE_SCORE - 1000; // 30000 - buffer for mate distance
 const MAX_Q_SEARCH_DEPTH: usize = 100;
 const DRAW_SCORE: i32 = -50;
 
