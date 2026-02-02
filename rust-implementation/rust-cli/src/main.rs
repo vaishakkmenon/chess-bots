@@ -1,4 +1,5 @@
 use rust_engine::board::{Board, Color, Piece};
+use rust_engine::book::PolyglotBook;
 use rust_engine::moves::execute::{generate_legal, make_move_basic};
 use rust_engine::moves::magic::MagicTables;
 use rust_engine::moves::magic::loader::load_magic_tables;
@@ -14,6 +15,13 @@ fn main() {
     let magic_tables = load_magic_tables();
 
     let mut board = Board::new(); // Start position
+
+    let book = PolyglotBook::load("book.bin").ok();
+    if book.is_some() {
+        println!("info string Opening Book loaded successfully");
+    } else {
+        println!("info string No opening book found (book.bin), running engine only");
+    }
 
     // Main UCI loop
     let stdin = io::stdin();
@@ -42,7 +50,7 @@ fn main() {
                 }
             }
             "go" => {
-                handle_go(&parts, &mut board, &magic_tables);
+                handle_go(&parts, &mut board, &magic_tables, &book);
             }
             "fen" => {
                 println!("{}", board.to_fen());
@@ -150,7 +158,17 @@ fn parse_uci_move(board: &Board, move_str: &str, tables: &MagicTables) -> Option
     None
 }
 
-fn handle_go(parts: &[&str], board: &mut Board, tables: &MagicTables) {
+fn handle_go(parts: &[&str], board: &mut Board, tables: &MagicTables, book: &Option<PolyglotBook>) {
+    // --- STEP A: Check Opening Book First ---
+    // If we have a book, and the board position is in it, play immediately.
+    if let Some(b) = book {
+        if let Some(book_move) = b.probe(board) {
+            println!("info string Book move found");
+            println!("bestmove {}", book_move.to_uci());
+            return; // EXIT IMMEDIATELY - Do not search!
+        }
+    }
+    // ----------------------------------------
     let mut depth = 64;
     let mut time_limit = None;
 
